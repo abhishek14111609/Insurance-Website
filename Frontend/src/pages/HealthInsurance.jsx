@@ -1,0 +1,235 @@
+import './HealthInsurance.css';
+
+const HealthInsurance = () => {
+    return (
+        <div className="health-insurance">
+            {/* Hero Section */}
+            <section className="page-hero">
+                <div className="container">
+                    <h1>Health Insurance Plans</h1>
+                    <p>Comprehensive health coverage with cashless hospitalization at 15,000+ network hospitals</p>
+                </div>
+            </section>
+
+            {/* Health Plans */}
+            <section className="section">
+                <div className="container">
+                    <h2 className="section-title">Our Health Insurance Plans</h2>
+                    <div className="grid grid-3">
+                        <div className="plan-card featured">
+                            <div className="plan-badge">Most Popular</div>
+                            <h3>Optima Secure</h3>
+                            <div className="plan-price">
+                                <span className="price">₹499</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ 4X Coverage Guaranteed</li>
+                                <li>✓ Cashless hospitalization</li>
+                                <li>✓ Sum Insured up to ₹50 Lacs</li>
+                                <li>✓ No room rent limit</li>
+                                <li>✓ Day 1 coverage for pre-existing conditions after 36 months</li>
+                                <li>✓ Restore benefit</li>
+                                <li>✓ Preventive health check-ups</li>
+                            </ul>
+                            <button className="btn btn-primary">Get Quote</button>
+                        </div>
+
+                        <div className="plan-card">
+                            <h3>Family Floater</h3>
+                            <div className="plan-price">
+                                <span className="price">₹899</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ Cover for entire family</li>
+                                <li>✓ Cashless hospitalization</li>
+                                <li>✓ Sum Insured up to ₹25 Lacs</li>
+                                <li>✓ Unlimited restore benefit</li>
+                                <li>✓ Pre and post hospitalization</li>
+                                <li>✓ No claim bonus</li>
+                                <li>✓ Tax benefits under 80D</li>
+                            </ul>
+                            <button className="btn btn-secondary">Get Quote</button>
+                        </div>
+
+                        <div className="plan-card">
+                            <h3>Critical Illness</h3>
+                            <div className="plan-price">
+                                <span className="price">₹349</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ Covers 15 critical illnesses</li>
+                                <li>✓ Lump sum payout</li>
+                                <li>✓ Sum Insured up to ₹1 Crore</li>
+                                <li>✓ No medical checkups till 45 years</li>
+                                <li>✓ Affordable premiums</li>
+                                <li>✓ Lifelong renewability</li>
+                                <li>✓ Tax benefits</li>
+                            </ul>
+                            <button className="btn btn-secondary">Get Quote</button>
+                        </div>
+
+                        <div className="plan-card">
+                            <h3>Senior Citizen Plan</h3>
+                            <div className="plan-price">
+                                <span className="price">₹1,299</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ For ages 60-80 years</li>
+                                <li>✓ Pre-existing disease coverage</li>
+                                <li>✓ Sum Insured up to ₹20 Lacs</li>
+                                <li>✓ Domiciliary expenses</li>
+                                <li>✓ Organ donor expenses</li>
+                                <li>✓ Health check-ups</li>
+                                <li>✓ No medical tests required</li>
+                            </ul>
+                            <button className="btn btn-secondary">Get Quote</button>
+                        </div>
+
+                        <div className="plan-card">
+                            <h3>Super Top-Up</h3>
+                            <div className="plan-price">
+                                <span className="price">₹249</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ Higher cover at low premium</li>
+                                <li>✓ Works on aggregate deductible</li>
+                                <li>✓ Sum Insured up to ₹1 Crore</li>
+                                <li>✓ No health checkups till 55</li>
+                                <li>✓ No premium hike post 61 years</li>
+                                <li>✓ Worldwide coverage</li>
+                                <li>✓ Tax benefits</li>
+                            </ul>
+                            <button className="btn btn-secondary">Get Quote</button>
+                        </div>
+
+                        <div className="plan-card">
+                            <h3>Personal Accident</h3>
+                            <div className="plan-price">
+                                <span className="price">₹149</span>
+                                <span className="period">/month</span>
+                            </div>
+                            <ul className="plan-features">
+                                <li>✓ 24/7 accident coverage</li>
+                                <li>✓ Sum Insured up to ₹1 Crore</li>
+                                <li>✓ Accidental death benefit</li>
+                                <li>✓ Permanent disability cover</li>
+                                <li>✓ Temporary disability cover</li>
+                                <li>✓ Education benefit for children</li>
+                                <li>✓ Low premiums</li>
+                            </ul>
+                            <button className="btn btn-secondary">Get Quote</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Benefits Section */}
+            <section className="section bg-light">
+                <div className="container">
+                    <h2 className="section-title">Key Benefits</h2>
+                    <div className="grid grid-4">
+                        <div className="benefit-card">
+                            <div className="benefit-icon">🏥</div>
+                            <h3>15,000+ Network Hospitals</h3>
+                            <p>Cashless treatment at our extensive network of hospitals across India</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">💳</div>
+                            <h3>Cashless Claims</h3>
+                            <p>No upfront payment required at network hospitals with pre-authorization</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">⚡</div>
+                            <h3>Quick Settlement</h3>
+                            <p>Claims processed and settled within 3-7 working days</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">📱</div>
+                            <h3>Digital First</h3>
+                            <p>Buy, manage, and claim entirely online through our mobile app</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">💰</div>
+                            <h3>Tax Benefits</h3>
+                            <p>Save up to ₹75,000 on taxes under Section 80D</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">🔄</div>
+                            <h3>Restore Benefit</h3>
+                            <p>Sum insured gets restored if exhausted during policy year</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">🎁</div>
+                            <h3>No Claim Bonus</h3>
+                            <p>Get up to 50% bonus on sum insured for claim-free years</p>
+                        </div>
+                        <div className="benefit-card">
+                            <div className="benefit-icon">📞</div>
+                            <h3>24/7 Support</h3>
+                            <p>Round-the-clock customer support and claims assistance</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Coverage Details */}
+            <section className="section">
+                <div className="container">
+                    <h2 className="section-title">What's Covered?</h2>
+                    <div className="grid grid-2">
+                        <div className="coverage-box">
+                            <h3>✓ Covered</h3>
+                            <ul>
+                                <li>In-patient hospitalization</li>
+                                <li>Pre & post hospitalization (60/180 days)</li>
+                                <li>Day care procedures</li>
+                                <li>Ambulance charges</li>
+                                <li>Room rent & ICU charges</li>
+                                <li>Doctor's consultation fees</li>
+                                <li>Diagnostic tests</li>
+                                <li>Medicines & pharmacy bills</li>
+                                <li>OPD expenses (optional)</li>
+                                <li>Maternity expenses (optional)</li>
+                                <li>Alternative treatments (AYUSH)</li>
+                                <li>Health check-ups</li>
+                            </ul>
+                        </div>
+                        <div className="coverage-box exclusion">
+                            <h3>✗ Not Covered</h3>
+                            <ul>
+                                <li>Cosmetic or plastic surgery</li>
+                                <li>Self-inflicted injuries</li>
+                                <li>Drug or alcohol abuse</li>
+                                <li>War or nuclear risks</li>
+                                <li>Pre-existing diseases (initial 36 months)</li>
+                                <li>Dental treatment (unless accident)</li>
+                                <li>Congenital anomalies</li>
+                                <li>Eyeglasses & contact lenses</li>
+                                <li>Experimental treatments</li>
+                                <li>Infertility treatments</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA Section */}
+            <section className="section bg-gradient">
+                <div className="container">
+                    <div className="cta-content">
+                        <h2>Get Your Health Insurance Today</h2>
+                        <p>Compare plans, get instant quotes, and buy online in minutes</p>
+                        <button className="btn btn-outline">Get Free Quote</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
+};
+
+export default HealthInsurance;
