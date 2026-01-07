@@ -41,8 +41,8 @@ const Login = () => {
                     window.location.href = 'http://localhost:5175';
                     break;
                 case 'Agent':
-                    // Redirect to Agent Portal
-                    window.location.href = 'http://localhost:5174';
+                    // Redirect to Agent Portal (Internal)
+                    navigate('/agent/dashboard');
                     break;
                 case 'Customer':
                     // Navigate internally
@@ -63,7 +63,7 @@ const Login = () => {
                 </div>
 
                 <form className="login-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
+                    {/* <div className="form-group">
                         <label htmlFor="userType">Login As</label>
                         <select
                             id="userType"
@@ -73,9 +73,9 @@ const Login = () => {
                         >
                             <option value="Customer">Customer</option>
                             <option value="Agent">Agent</option>
-                            <option value="Admin">Admin</option>
-                        </select>
-                    </div>
+                         
+                        </select> 
+                    </div> */}
 
                     <div className="form-group">
                         <label htmlFor="username">Username / Email</label>

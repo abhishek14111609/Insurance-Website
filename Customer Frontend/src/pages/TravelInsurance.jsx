@@ -1,13 +1,109 @@
+import { useState } from 'react';
 import './TravelInsurance.css';
 
 const TravelInsurance = () => {
+    const [travelData, setTravelData] = useState({
+        destination: '',
+        startDate: '',
+        endDate: '',
+        travelers: '1',
+        travelerAge: ''
+    });
+
+    const handleCalculate = (e) => {
+        e.preventDefault();
+        alert('Travel Insurance Plans loading...');
+    };
+
     return (
         <div className="travel-insurance">
             {/* Hero Section */}
-            <section className="page-hero">
+            <section className="page-hero travel-hero">
                 <div className="container">
-                    <h1>Travel Insurance</h1>
-                    <p>Travel worry-free with comprehensive coverage for medical emergencies, trip cancellations, and baggage loss</p>
+                    <span className="hero-badge">COVID-19 Covered</span>
+                    <h1>Travel the World Worry-Free</h1>
+                    <p>Comprehensive travel insurance starting at ₹49/day. Covers flight delays, lost baggage, and medical emergencies.</p>
+                </div>
+            </section>
+
+            {/* Premium Calculator */}
+            <section className="section bg-light">
+                <div className="container">
+                    <div className="calculator-card animate-fade-in">
+                        <div className="text-center mb-6">
+                            <h2>Get Travel Insurance Quote</h2>
+                            <p className="text-muted">Enter trip details to get an instant premium estimate.</p>
+                        </div>
+                        <form onSubmit={handleCalculate} className="calculator-form">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Destination</label>
+                                    <select
+                                        value={travelData.destination}
+                                        onChange={(e) => setTravelData({ ...travelData, destination: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select Country/Region</option>
+                                        <option value="usa">USA & Canada</option>
+                                        <option value="schengen">Schengen (Europe)</option>
+                                        <option value="asia">Asia</option>
+                                        <option value="worldwide">Worldwide</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Travelers</label>
+                                    <select
+                                        value={travelData.travelers}
+                                        onChange={(e) => setTravelData({ ...travelData, travelers: e.target.value })}
+                                    >
+                                        <option value="1">1 Traveler</option>
+                                        <option value="2">2 Travelers</option>
+                                        <option value="family">Family (2A + 2C)</option>
+                                        <option value="group">Group (5+)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Trip Start Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={travelData.startDate}
+                                        onChange={(e) => setTravelData({ ...travelData, startDate: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Trip End Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={travelData.endDate}
+                                        onChange={(e) => setTravelData({ ...travelData, endDate: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group full-width">
+                                    <label>Age of Primary Traveler</label>
+                                    <input
+                                        type="number"
+                                        placeholder="Age"
+                                        min="1" max="100"
+                                        value={travelData.travelerAge}
+                                        onChange={(e) => setTravelData({ ...travelData, travelerAge: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: '1.5rem' }}>
+                                View Plans
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </section>
 

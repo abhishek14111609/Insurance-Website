@@ -41,17 +41,14 @@ const Navbar = () => {
                             <Link to="/travel-insurance" onClick={closeMenu}>✈️ Travel Insurance</Link>
                         </div>
                     </div>
-                    <Link to="/services" className="navbar-link" onClick={closeMenu}>Services</Link>
-                    <Link to="/faq" className="navbar-link" onClick={closeMenu}>FAQ</Link>
 
-                    <Link to="/compare-plans" className="navbar-link" onClick={closeMenu}>Compare</Link>
-                    <Link to="/renewals" className="navbar-link" onClick={closeMenu}>Renewals</Link>
                     <Link to="/claims" className="navbar-link" onClick={closeMenu}>Claims</Link>
-                    <Link to="/about-us" className="navbar-link" onClick={closeMenu}>About</Link>
-                    <Link to="/login" className="navbar-link" onClick={closeMenu}>Login/Register</Link>
+                    <Link to="/renewals" className="navbar-link" onClick={closeMenu}>Renewals</Link>
+                    <Link to="/become-agent" className="navbar-link highlight-link" onClick={closeMenu}>Become a Partner</Link>
+                    <Link to="/login" className="navbar-link" onClick={closeMenu}>Login</Link>
 
                     <Link to="/contact-us" className="navbar-btn" onClick={closeMenu}>
-                        Contact Us
+                        Get Quote
                     </Link>
                 </div>
 

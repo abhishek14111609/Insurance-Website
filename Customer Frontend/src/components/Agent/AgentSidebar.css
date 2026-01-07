@@ -1,0 +1,107 @@
+.agent-sidebar {
+    width: 280px;
+    background: var(--primary-dark);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    color: var(--text-on-dark);
+    box-shadow: var(--shadow-xl);
+}
+
+.sidebar-header {
+    padding: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header h2 {
+    font-size: 1.5rem;
+    color: var(--background-white);
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-header span {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+}
+
+.nav-group {
+    margin-bottom: 2rem;
+}
+
+.nav-group h3 {
+    padding: 0 2rem;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    opacity: 0.7;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 2rem;
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--background-white);
+    padding-left: 2.25rem;
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(50, 130, 184, 0.2) 0%, transparent 100%);
+    color: var(--background-white);
+    border-left-color: var(--primary-light);
+}
+
+.nav-item .icon {
+    margin-right: 1rem;
+    font-size: 1.25rem;
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.nav-item:hover .icon {
+    transform: scale(1.1);
+}
+
+.nav-item.logout {
+    color: var(--error-color);
+    margin-top: auto;
+}
+
+.nav-item.logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}

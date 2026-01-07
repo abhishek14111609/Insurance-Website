@@ -31,14 +31,18 @@ const Footer = () => {
                     </div>
 
                     <div className="footer-column">
-                        <h4>Quick Links</h4>
+                        <h4>Partner with Us</h4>
+                        <ul>
+                            <li><Link to="/become-agent" style={{ fontWeight: 600, color: 'var(--secondary-light)' }}>Become a POSP Agent</Link></li>
+                            <li><Link to="/become-agent#login">Partner Login</Link></li>
+                        </ul>
+                        <h4 style={{ marginTop: '1.5rem' }}>Quick Links</h4>
                         <ul>
                             <li><Link to="/about-us">About Us</Link></li>
                             <li><Link to="/compare-plans">Compare Plans</Link></li>
                             <li><Link to="/renewals">Renew Policy</Link></li>
                             <li><Link to="/faq">FAQ</Link></li>
                             <li><Link to="/claims">File a Claim</Link></li>
-                            <li><Link to="/contact-us">Contact Us</Link></li>
                         </ul>
                     </div>
 

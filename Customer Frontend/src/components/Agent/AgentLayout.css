@@ -1,0 +1,32 @@
+.agent-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--background-body);
+}
+
+.agent-main {
+    flex: 1;
+    margin-left: 280px;
+    /* Matches Sidebar Width */
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Prevent flex overflow */
+}
+
+.agent-content {
+    flex: 1;
+    padding: 2.5rem;
+    overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+    .agent-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .agent-main {
+        margin-left: 0;
+    }
+}

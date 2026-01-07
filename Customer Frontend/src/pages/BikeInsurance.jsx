@@ -24,17 +24,20 @@ const BikeInsurance = () => {
             </section>
 
             {/* Premium Calculator */}
-            <section className="section">
+            <section className="section bg-light">
                 <div className="container">
-                    <div className="calculator-card">
-                        <h2>Calculate Your Bike Insurance Premium</h2>
+                    <div className="calculator-card animate-fade-in">
+                        <div className="text-center mb-6">
+                            <h2>Calculate Bike Insurance Premium</h2>
+                            <p className="text-muted">Enter your bike details for an instant quote.</p>
+                        </div>
                         <form onSubmit={handleCalculate} className="calculator-form">
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Bike Registration Number</label>
+                                    <label>Registration Number</label>
                                     <input
                                         type="text"
-                                        placeholder="DL01AB1234"
+                                        placeholder="e.g. MH02AB1234"
                                         value={calculatorData.bikeNumber}
                                         onChange={(e) => setCalculatorData({ ...calculatorData, bikeNumber: e.target.value })}
                                         required
@@ -51,7 +54,53 @@ const BikeInsurance = () => {
                                     />
                                 </div>
                             </div>
-                            <button type="submit" className="btn btn-primary">Get Quote</button>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Bike Make</label>
+                                    <select required>
+                                        <option value="">Select Make</option>
+                                        <option value="hero">Hero MotoCorp</option>
+                                        <option value="honda">Honda</option>
+                                        <option value="tvs">TVS</option>
+                                        <option value="bajaj">Bajaj</option>
+                                        <option value="royal_enfield">Royal Enfield</option>
+                                        <option value="yamaha">Yamaha</option>
+                                        <option value="suzuki">Suzuki</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Bike Model</label>
+                                    <input type="text" placeholder="e.g. Splendor, Activa" required />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Registration Year</label>
+                                    <select required>
+                                        <option value="">Select Year</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2022">2022</option>
+                                        <option value="2021">2021</option>
+                                        <option value="older">Older</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Policy Status</label>
+                                    <select required>
+                                        <option value="not_expired">Not Expired</option>
+                                        <option value="expired_within_90">Expired within 90 days</option>
+                                        <option value="expired_over_90">Expired &gt; 90 days</option>
+                                        <option value="new">Brand New Bike</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: '1rem' }}>
+                                Get Bike Quote
+                            </button>
                         </form>
                     </div>
                 </div>

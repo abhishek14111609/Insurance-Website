@@ -24,32 +24,44 @@ const CarInsurance = () => {
             </section>
 
             {/* Premium Calculator */}
-            <section className="section">
+            <section className="section bg-light">
                 <div className="container">
-                    <div className="calculator-card">
-                        <h2>Calculate Your Premium</h2>
+                    <div className="calculator-card animate-fade-in">
+                        <div className="text-center mb-6">
+                            <h2>Get Your Car Insurance Quote</h2>
+                            <p className="text-muted">Fill in the details to get an instant premium estimate.</p>
+                        </div>
                         <form onSubmit={handleCalculate} className="calculator-form">
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Car Registration Number</label>
-                                    <input type="text" placeholder="DL01AB1234" required />
+                                    <input type="text" placeholder="e.g. MH01AB1234" required />
                                 </div>
                                 <div className="form-group">
                                     <label>Mobile Number</label>
                                     <input type="tel" placeholder="Enter mobile number" required />
                                 </div>
                             </div>
+
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Car Value (IDV)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="₹5,00,000"
-                                        value={calculatorData.carValue}
-                                        onChange={(e) => setCalculatorData({ ...calculatorData, carValue: e.target.value })}
-                                        required
-                                    />
+                                    <label>Car Make</label>
+                                    <select required>
+                                        <option value="">Select Make</option>
+                                        <option value="maruti">Maruti Suzuki</option>
+                                        <option value="hyundai">Hyundai</option>
+                                        <option value="tata">Tata Motors</option>
+                                        <option value="honda">Honda</option>
+                                        <option value="toyota">Toyota</option>
+                                    </select>
                                 </div>
+                                <div className="form-group">
+                                    <label>Car Model</label>
+                                    <input type="text" placeholder="e.g. Swift, Creta" required />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
                                 <div className="form-group">
                                     <label>Registration Year</label>
                                     <select
@@ -63,24 +75,23 @@ const CarInsurance = () => {
                                         <option value="2022">2022</option>
                                         <option value="2021">2021</option>
                                         <option value="2020">2020</option>
+                                        <option value="older">Older</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div className="form-row">
                                 <div className="form-group">
-                                    <label>Fuel Type</label>
-                                    <select
-                                        value={calculatorData.fuelType}
-                                        onChange={(e) => setCalculatorData({ ...calculatorData, fuelType: e.target.value })}
-                                    >
-                                        <option value="petrol">Petrol</option>
-                                        <option value="diesel">Diesel</option>
-                                        <option value="cng">CNG</option>
-                                        <option value="electric">Electric</option>
+                                    <label>Previous Policy Expiry</label>
+                                    <select required>
+                                        <option value="not_expired">Not Expired</option>
+                                        <option value="expired_90">Expired within 90 days</option>
+                                        <option value="expired_over_90">Expired &gt; 90 days</option>
+                                        <option value="new">Brand New Car</option>
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" className="btn btn-primary">Get Quote</button>
+
+                            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: '1rem' }}>
+                                View Prices & Plans
+                            </button>
                         </form>
                     </div>
                 </div>

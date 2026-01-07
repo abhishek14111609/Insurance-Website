@@ -1,18 +1,104 @@
+
+import { useState } from 'react';
 import './HealthInsurance.css';
 
 const HealthInsurance = () => {
+    const [data, setData] = useState({
+        age: '',
+        gender: '',
+        members: [],
+        pincode: '',
+        preExisting: 'no'
+    });
+
+    const handleCalculate = (e) => {
+        e.preventDefault();
+        alert('Health Insurance Plans for your family loading...');
+    };
+
     return (
         <div className="health-insurance">
             {/* Hero Section */}
-            <section className="page-hero">
+            <section className="page-hero health-hero">
                 <div className="container">
-                    <h1>Health Insurance Plans</h1>
-                    <p>Comprehensive health coverage with cashless hospitalization at 15,000+ network hospitals</p>
+                    <span className="hero-badge">Medical Inflation is 14%</span>
+                    <h1>Secure Your Family's Health</h1>
+                    <p>Comprehensive health insurance starting at just ₹500/month. Cashless treatment at 8,500+ hospitals.</p>
                 </div>
             </section>
 
-            {/* Health Plans */}
-            <section className="section">
+            {/* Premium Calculator */}
+            <section className="section bg-light">
+                <div className="container">
+                    <div className="calculator-card animate-fade-in">
+                        <div className="text-center mb-6">
+                            <h2>Calculate Health Premium</h2>
+                            <p className="text-muted">Get a customized quote for you and your family.</p>
+                        </div>
+                        <form onSubmit={handleCalculate} className="calculator-form">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Gender</label>
+                                    <select 
+                                        value={data.gender} 
+                                        onChange={(e) => setData({...data, gender: e.target.value})}
+                                        required
+                                    >
+                                        <option value="">Select Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Your Age</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="Age in years" 
+                                        min="18" 
+                                        max="100"
+                                        required 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Who are you insuring?</label>
+                                    <select required>
+                                        <option value="self">Self Only</option>
+                                        <option value="spouse">Self + Spouse</option>
+                                        <option value="family">Self + Spouse + Kids</option>
+                                        <option value="parents">Parents</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Pincode</label>
+                                    <input type="text" placeholder="e.g. 110001" required maxLength="6" />
+                                </div>
+                            </div>
+
+                             <div className="form-row">
+                                <div className="form-group full-width">
+                                    <label>Any Pre-existing Diseases?</label>
+                                    <div className="radio-group">
+                                        <label className="radio-label">
+                                            <input type="radio" name="disease" value="yes" /> Yes
+                                        </label>
+                                        <label className="radio-label">
+                                            <input type="radio" name="disease" value="no" defaultChecked /> No
+                                        </label>
+                                    </div>
+                                    <small className="form-text">Diabetes, Hypertension, Thyroid, Astrology, etc.</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: '1.5rem' }}>
+                                View Health Plans
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
                 <div className="container">
                     <h2 className="section-title">Our Health Insurance Plans</h2>
                     <div className="grid grid-3">
@@ -126,9 +212,8 @@ const HealthInsurance = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            {/* </section> */}
 
-            {/* Benefits Section */}
             <section className="section bg-light">
                 <div className="container">
                     <h2 className="section-title">Key Benefits</h2>
