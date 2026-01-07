@@ -38,11 +38,11 @@ const Login = () => {
             switch (userType) {
                 case 'Admin':
                     // Redirect to Admin Portal
-                    window.location.href = 'http://localhost:5175';
+                    window.location.href = '';
                     break;
                 case 'Agent':
                     // Redirect to Agent Portal
-                    window.location.href = 'http://localhost:5174';
+                    window.location.href = '';
                     break;
                 case 'Customer':
                     // Navigate internally
