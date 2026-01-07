@@ -13,6 +13,7 @@ import Claims from './pages/Claims';
 import FAQ from './pages/FAQ';
 import ComparePlans from './pages/ComparePlans';
 import Renewals from './pages/Renewals';
+import Login from './pages/Login';
 import './App.css';
 
 function ScrollToTop() {
@@ -44,6 +45,7 @@ function App() {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/compare-plans" element={<ComparePlans />} />
             <Route path="/renewals" element={<Renewals />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
         <Footer />

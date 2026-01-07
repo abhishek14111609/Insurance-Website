@@ -173,18 +173,6 @@
     transform: translateX(0);
 }
 
-font-size: 0.95rem;
-font-weight: 500;
-border-left: 3px solid transparent;
-}
-
-.dropdown-content a:hover {
-    background: var(--background-light);
-    color: var(--primary-color);
-    border-left-color: var(--primary-color);
-    padding-left: 28px;
-}
-
 .navbar-btn {
     background: var(--gradient-primary);
     color: white;
