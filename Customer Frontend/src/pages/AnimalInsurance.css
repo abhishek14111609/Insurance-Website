@@ -1,0 +1,379 @@
+/* AnimalInsurance.css */
+
+/* Hero Section */
+.animal-hero {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 140px 20px 100px;
+    position: relative;
+    overflow: hidden;
+}
+
+.animal-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.hero-content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-text {
+    text-align: left;
+}
+
+.hero-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.animal-hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+}
+
+.animal-hero p {
+    font-size: 1.2rem;
+    opacity: 0.95;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.hero-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.feature-icon {
+    background: rgba(255, 255, 255, 0.3);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.hero-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pet-illustration {
+    font-size: 12rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* Calculator Section */
+.calculator-section {
+    margin-top: -50px;
+    position: relative;
+    z-index: 10;
+}
+
+.calculator-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Premium Estimate */
+.premium-estimate {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-top: 1.5rem;
+    border: 2px solid #3b82f6;
+}
+
+.estimate-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.estimate-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin-bottom: 0.5rem;
+}
+
+.estimate-note {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Policy Showcase */
+.policy-showcase {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.policy-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 2px solid #e2e8f0;
+    position: relative;
+}
+
+.policy-card.featured {
+    border-color: #10b981;
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+}
+
+.policy-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.policy-icon {
+    font-size: 4rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.policy-card h3 {
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+}
+
+.policy-price {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    color: #64748b;
+}
+
+.policy-price .price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.policy-price .period {
+    font-size: 1rem;
+}
+
+.policy-features {
+    list-style: none;
+    padding: 0;
+}
+
+.policy-features li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.policy-features li:last-child {
+    border-bottom: none;
+}
+
+/* Coverage Boxes */
+.coverage-box {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.coverage-box.covered {
+    border-left: 4px solid #10b981;
+}
+
+.coverage-box.not-covered {
+    border-left: 4px solid #ef4444;
+}
+
+.coverage-box h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.coverage-box.covered h3 {
+    color: #10b981;
+}
+
+.coverage-box.not-covered h3 {
+    color: #ef4444;
+}
+
+.coverage-box ul {
+    list-style: none;
+    padding: 0;
+}
+
+.coverage-box ul li {
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* Benefit Cards */
+.benefit-card {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.benefit-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.benefit-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 0.75rem;
+}
+
+.benefit-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* CTA Section */
+.cta-section {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.cta-content h2 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.cta-content p {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .hero-content-wrapper {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .hero-text {
+        text-align: center;
+    }
+
+    .hero-features {
+        align-items: center;
+    }
+
+    .animal-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .pet-illustration {
+        font-size: 8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .animal-hero {
+        padding: 100px 20px 60px;
+    }
+
+    .animal-hero h1 {
+        font-size: 2rem;
+    }
+
+    .estimate-amount {
+        font-size: 2rem;
+    }
+
+    .calculator-card {
+        padding: 1.5rem;
+    }
+
+    .policy-card {
+        padding: 1.5rem;
+    }
+}

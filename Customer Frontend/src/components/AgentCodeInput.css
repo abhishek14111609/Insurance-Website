@@ -1,0 +1,217 @@
+/* AgentCodeInput.css */
+.agent-code-field {
+    margin-bottom: 1.5rem;
+}
+
+.agent-code-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.required-star {
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.agent-code-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.agent-code-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.1);
+}
+
+.agent-code-input.valid {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.agent-code-input.invalid {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.validation-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.validation-icon.success {
+    color: #10b981;
+}
+
+.validation-icon.error {
+    color: #ef4444;
+}
+
+.agent-info-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+    border-radius: 12px;
+    border: 2px solid #c7d2fe;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.agent-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0.75rem;
+}
+
+.agent-icon {
+    font-size: 2rem;
+    background: white;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.agent-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+}
+
+.agent-code-display {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.level-badge {
+    margin-left: auto;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.level-badge.level-1 {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.level-badge.level-2 {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.level-badge.level-3 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.agent-hierarchy {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.hierarchy-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.hierarchy-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.hierarchy-item {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.hierarchy-arrow {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.commission-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+}
+
+.commission-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.commission-rate {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.error-message {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid #ef4444;
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.help-text {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    font-style: italic;
+}

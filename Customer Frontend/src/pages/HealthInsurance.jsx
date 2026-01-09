@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import './HealthInsurance.css';
 
@@ -39,9 +38,9 @@ const HealthInsurance = () => {
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Gender</label>
-                                    <select 
-                                        value={data.gender} 
-                                        onChange={(e) => setData({...data, gender: e.target.value})}
+                                    <select
+                                        value={data.gender}
+                                        onChange={(e) => setData({ ...data, gender: e.target.value })}
                                         required
                                     >
                                         <option value="">Select Gender</option>
@@ -51,12 +50,12 @@ const HealthInsurance = () => {
                                 </div>
                                 <div className="form-group">
                                     <label>Your Age</label>
-                                    <input 
-                                        type="number" 
-                                        placeholder="Age in years" 
-                                        min="18" 
+                                    <input
+                                        type="number"
+                                        placeholder="Age in years"
+                                        min="18"
                                         max="100"
-                                        required 
+                                        required
                                     />
                                 </div>
                             </div>
@@ -77,7 +76,7 @@ const HealthInsurance = () => {
                                 </div>
                             </div>
 
-                             <div className="form-row">
+                            <div className="form-row">
                                 <div className="form-group full-width">
                                     <label>Any Pre-existing Diseases?</label>
                                     <div className="radio-group">
@@ -88,7 +87,7 @@ const HealthInsurance = () => {
                                             <input type="radio" name="disease" value="no" defaultChecked /> No
                                         </label>
                                     </div>
-                                    <small className="form-text">Diabetes, Hypertension, Thyroid, Astrology, etc.</small>
+                                    <small className="form-text">Diabetes, Hypertension, Thyroid, etc.</small>
                                 </div>
                             </div>
 
@@ -99,6 +98,8 @@ const HealthInsurance = () => {
                     </div>
                 </div>
             </section>
+
+            <section className="section">
                 <div className="container">
                     <h2 className="section-title">Our Health Insurance Plans</h2>
                     <div className="grid grid-3">
@@ -156,63 +157,9 @@ const HealthInsurance = () => {
                             </ul>
                             <button className="btn btn-secondary">Get Quote</button>
                         </div>
-
-                        <div className="plan-card">
-                            <h3>Senior Citizen Plan</h3>
-                            <div className="plan-price">
-                                <span className="price">₹1,299</span>
-                                <span className="period">/month</span>
-                            </div>
-                            <ul className="plan-features">
-                                <li>✓ For ages 60-80 years</li>
-                                <li>✓ Pre-existing disease coverage</li>
-                                <li>✓ Sum Insured up to ₹20 Lacs</li>
-                                <li>✓ Domiciliary expenses</li>
-                                <li>✓ Organ donor expenses</li>
-                                <li>✓ Health check-ups</li>
-                                <li>✓ No medical tests required</li>
-                            </ul>
-                            <button className="btn btn-secondary">Get Quote</button>
-                        </div>
-
-                        <div className="plan-card">
-                            <h3>Super Top-Up</h3>
-                            <div className="plan-price">
-                                <span className="price">₹249</span>
-                                <span className="period">/month</span>
-                            </div>
-                            <ul className="plan-features">
-                                <li>✓ Higher cover at low premium</li>
-                                <li>✓ Works on aggregate deductible</li>
-                                <li>✓ Sum Insured up to ₹1 Crore</li>
-                                <li>✓ No health checkups till 55</li>
-                                <li>✓ No premium hike post 61 years</li>
-                                <li>✓ Worldwide coverage</li>
-                                <li>✓ Tax benefits</li>
-                            </ul>
-                            <button className="btn btn-secondary">Get Quote</button>
-                        </div>
-
-                        <div className="plan-card">
-                            <h3>Personal Accident</h3>
-                            <div className="plan-price">
-                                <span className="price">₹149</span>
-                                <span className="period">/month</span>
-                            </div>
-                            <ul className="plan-features">
-                                <li>✓ 24/7 accident coverage</li>
-                                <li>✓ Sum Insured up to ₹1 Crore</li>
-                                <li>✓ Accidental death benefit</li>
-                                <li>✓ Permanent disability cover</li>
-                                <li>✓ Temporary disability cover</li>
-                                <li>✓ Education benefit for children</li>
-                                <li>✓ Low premiums</li>
-                            </ul>
-                            <button className="btn btn-secondary">Get Quote</button>
-                        </div>
                     </div>
                 </div>
-            {/* </section> */}
+            </section>
 
             <section className="section bg-light">
                 <div className="container">
@@ -238,26 +185,6 @@ const HealthInsurance = () => {
                             <h3>Digital First</h3>
                             <p>Buy, manage, and claim entirely online through our mobile app</p>
                         </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">💰</div>
-                            <h3>Tax Benefits</h3>
-                            <p>Save up to ₹75,000 on taxes under Section 80D</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">🔄</div>
-                            <h3>Restore Benefit</h3>
-                            <p>Sum insured gets restored if exhausted during policy year</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">🎁</div>
-                            <h3>No Claim Bonus</h3>
-                            <p>Get up to 50% bonus on sum insured for claim-free years</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">📞</div>
-                            <h3>24/7 Support</h3>
-                            <p>Round-the-clock customer support and claims assistance</p>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -278,10 +205,6 @@ const HealthInsurance = () => {
                                 <li>Doctor's consultation fees</li>
                                 <li>Diagnostic tests</li>
                                 <li>Medicines & pharmacy bills</li>
-                                <li>OPD expenses (optional)</li>
-                                <li>Maternity expenses (optional)</li>
-                                <li>Alternative treatments (AYUSH)</li>
-                                <li>Health check-ups</li>
                             </ul>
                         </div>
                         <div className="coverage-box exclusion">
@@ -295,8 +218,6 @@ const HealthInsurance = () => {
                                 <li>Dental treatment (unless accident)</li>
                                 <li>Congenital anomalies</li>
                                 <li>Eyeglasses & contact lenses</li>
-                                <li>Experimental treatments</li>
-                                <li>Infertility treatments</li>
                             </ul>
                         </div>
                     </div>

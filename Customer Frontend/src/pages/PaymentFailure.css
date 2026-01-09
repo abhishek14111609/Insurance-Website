@@ -1,0 +1,266 @@
+/* PaymentFailure.css */
+
+.payment-failure-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    padding: 100px 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.failure-container {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Failure Animation */
+.failure-animation {
+    margin-bottom: 2rem;
+}
+
+.error-circle {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 50%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
+}
+
+.error-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.failure-title {
+    font-size: 3rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+}
+
+.failure-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2rem;
+}
+
+/* Error Details Card */
+.error-details-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.error-icon-large {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.error-details-card h3 {
+    font-size: 1.5rem;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+}
+
+.error-reason {
+    color: #ef4444;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #fee2e2;
+    border-radius: 8px;
+    border-left: 4px solid #ef4444;
+}
+
+.amount-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 1.1rem;
+}
+
+.amount-info .amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Common Issues */
+.common-issues {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: left;
+}
+
+.common-issues h3 {
+    font-size: 1.5rem;
+    color: var(--primary-dark);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.issues-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.issue-card {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border-left: 4px solid #ef4444;
+}
+
+.issue-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.issue-card h4 {
+    font-size: 1rem;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.issue-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.action-buttons .btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+.btn-outline:hover {
+    background: white;
+    color: #ef4444;
+}
+
+/* Help Section */
+.help-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+}
+
+.help-section h4 {
+    color: white;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.help-options {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.help-link {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.help-link:hover {
+    background: white;
+    color: #ef4444;
+    border-color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .failure-title {
+        font-size: 2rem;
+    }
+
+    .failure-subtitle {
+        font-size: 1rem;
+    }
+
+    .issues-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+
+    .help-options {
+        flex-direction: column;
+    }
+
+    .help-link {
+        width: 100%;
+        text-align: center;
+    }
+}

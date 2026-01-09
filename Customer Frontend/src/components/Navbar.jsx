@@ -1,10 +1,31 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { isCustomerLoggedIn, getCurrentCustomer, logoutCustomer } from '../utils/authUtils';
 import './Navbar.css';
 
 const Navbar = () => {
+    const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [customer, setCustomer] = useState(null);
+
+    // Check login status on mount and when navigating
+    useEffect(() => {
+        const checkLogin = () => {
+            const loggedIn = isCustomerLoggedIn();
+            if (loggedIn) {
+                setCustomer(getCurrentCustomer());
+            } else {
+                setCustomer(null);
+            }
+        };
+
+        checkLogin();
+
+        // Listen for storage events (multi-tab support)
+        window.addEventListener('storage', checkLogin);
+        return () => window.removeEventListener('storage', checkLogin);
+    }, [isMenuOpen]);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -12,11 +33,18 @@ const Navbar = () => {
 
     const closeMenu = () => {
         setIsMenuOpen(false);
-        setIsDropdownOpen(false);
+        setIsProfileOpen(false);
     };
 
-    const toggleDropdown = () => {
-        setIsDropdownOpen(!isDropdownOpen);
+    const toggleProfile = () => {
+        setIsProfileOpen(!isProfileOpen);
+    };
+
+    const handleLogout = () => {
+        logoutCustomer();
+        setCustomer(null);
+        closeMenu();
+        navigate('/');
     };
 
     return (
@@ -29,27 +57,49 @@ const Navbar = () => {
                 <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
                     <Link to="/" className="navbar-link" onClick={closeMenu}>Home</Link>
 
-                    <div className={`navbar-dropdown ${isDropdownOpen ? 'active' : ''}`}>
-                        <span className="navbar-link dropdown-trigger" onClick={toggleDropdown}>
-                            Products
-                            <span className="dropdown-arrow">▼</span>
-                        </span>
-                        <div className="dropdown-content">
-                            <Link to="/health-insurance" onClick={closeMenu}>🏥 Health Insurance</Link>
-                            <Link to="/car-insurance" onClick={closeMenu}>🚗 Car Insurance</Link>
-                            <Link to="/bike-insurance" onClick={closeMenu}>🏍️ Bike Insurance</Link>
-                            <Link to="/travel-insurance" onClick={closeMenu}>✈️ Travel Insurance</Link>
-                        </div>
-                    </div>
-
-                    <Link to="/claims" className="navbar-link" onClick={closeMenu}>Claims</Link>
-                    <Link to="/renewals" className="navbar-link" onClick={closeMenu}>Renewals</Link>
-                    <Link to="/become-agent" className="navbar-link highlight-link" onClick={closeMenu}>Become a Partner</Link>
-                    <Link to="/login" className="navbar-link" onClick={closeMenu}>Login</Link>
-
-                    <Link to="/contact-us" className="navbar-btn" onClick={closeMenu}>
-                        Get Quote
+                    {/* Exclusive Cattle Insurance Link */}
+                    <Link to="/animal-insurance" className="navbar-link highlight-link" onClick={closeMenu}>
+                        🐮 Cattle Insurance
                     </Link>
+
+                    {customer ? (
+                        <>
+                            <div className={`navbar-dropdown profile-dropdown ${isProfileOpen ? 'active' : ''}`}>
+                                <span className="navbar-link dropdown-trigger profile-trigger" onClick={toggleProfile}>
+                                    <div className="nav-avatar">
+                                        {customer.fullName.charAt(0)}
+                                    </div>
+                                    <span className="dropdown-arrow">▼</span>
+                                </span>
+                                <div className="dropdown-content right-aligned">
+                                    <div className="dropdown-header">
+                                        <strong>{customer.fullName}</strong>
+                                        <small>{customer.email}</small>
+                                    </div>
+                                    <Link to="/profile" onClick={closeMenu}>👤 My Profile</Link>
+                                    <Link to="/profile" state={{ activeTab: 'policies' }} onClick={closeMenu}>📄 My Policies</Link>
+                                    <div className="dropdown-divider"></div>
+                                    <button className="dropdown-item logout" onClick={handleLogout}>
+                                        🚪 Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/become-agent" className="navbar-link" onClick={closeMenu}>Become a Partner</Link>
+                            <Link to="/login" className="navbar-link" onClick={closeMenu}>Login</Link>
+                            <Link to="/register" className="navbar-btn" onClick={closeMenu}>
+                                Sign Up (Farmer)
+                            </Link>
+                        </>
+                    )}
+
+                    {!customer && (
+                        <Link to="/contact-us" className="navbar-btn-outline" onClick={closeMenu}>
+                            Contact Us
+                        </Link>
+                    )}
                 </div>
 
                 <div className="navbar-toggle" onClick={toggleMenu}>

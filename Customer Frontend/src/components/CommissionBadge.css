@@ -1,0 +1,45 @@
+/* CommissionBadge.css */
+.commission-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.commission-badge.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.commission-badge.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.commission-badge.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-icon {
+    font-size: 0.9rem;
+}
+
+.badge-text {
+    font-size: 0.75rem;
+}
+
+.badge-amount {
+    font-size: 0.85rem;
+    margin-left: 4px;
+    font-weight: 700;
+}

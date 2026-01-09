@@ -358,3 +358,160 @@
     border-radius: 6px;
     cursor: pointer;
 }
+
+/* Agent Code Display Card */
+.agent-code-display-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+}
+
+.code-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.code-header p {
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.code-value {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.code-text {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Filter Buttons */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.table-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary-color);
+}
+
+.filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Withdraw Modal Specific */
+.withdraw-info {
+    background: var(--background-body);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+}
+
+.info-value {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+}
+
+.info-value.pending {
+    color: #f59e0b;
+}
+
+/* Level Badges */
+.level-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.level-badge.level-1 {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.level-badge.level-2 {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.level-badge.level-3 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+/* Text Utilities */
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-error {
+    color: #ef4444 !important;
+}
+
+/* Animations */
+.animate-scale-in {
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

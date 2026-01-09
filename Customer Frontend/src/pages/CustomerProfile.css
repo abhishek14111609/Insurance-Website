@@ -1,0 +1,324 @@
+/* CustomerProfile.css */
+
+.profile-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 100px 20px 40px;
+}
+
+.profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+}
+
+/* Sidebar */
+.profile-sidebar {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.user-brief {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #0f4c75 0%, #3282b8 100%);
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+}
+
+.user-brief h3 {
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+}
+
+.user-brief p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.profile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.profile-nav button:hover {
+    background: #f1f5f9;
+    color: var(--primary-color);
+}
+
+.profile-nav button.active {
+    background: #e0f2fe;
+    color: #a82e0e;
+    /* Updated to brand color or similar prominent color */
+    font-weight: 700;
+    border-left: 4px solid #f97316;
+    /* Orange accent */
+}
+
+.profile-nav button .icon {
+    font-size: 1.2rem;
+}
+
+.logout-btn {
+    margin-top: 1rem;
+    color: #ef4444 !important;
+}
+
+.logout-btn:hover {
+    background: #fee2e2 !important;
+}
+
+/* Content Area */
+.profile-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    min-height: 600px;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.content-header h2 {
+    font-size: 1.75rem;
+    color: var(--primary-dark);
+    margin: 0;
+}
+
+/* Forms */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled {
+    background: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.disabled-input {
+    background: #f1f5f9;
+    cursor: not-allowed;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Policy Cards */
+.policy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.policy-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    background: white;
+}
+
+.policy-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #94a3b8;
+}
+
+.policy-header {
+    background: #f8fafc;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.policy-type {
+    font-weight: 700;
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.policy-status {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+
+.policy-status.active {
+    background: #d1fae5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.2);
+}
+
+.policy-body {
+    padding: 1.25rem;
+}
+
+.policy-body p {
+    margin: 0.75rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-bottom: 0.25rem;
+}
+
+.policy-body p:last-child {
+    border-bottom: none;
+}
+
+.policy-body p strong {
+    color: var(--text-primary);
+}
+
+.policy-footer {
+    padding: 1rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    color: var(--text-secondary);
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-state h3 {
+    margin: 1rem 0;
+    color: var(--text-primary);
+}
+
+/* Alerts */
+.alert-success,
+.alert-error {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .profile-container {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-sidebar {
+        position: static;
+        margin-bottom: 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-content {
+        padding: 1.5rem;
+    }
+}

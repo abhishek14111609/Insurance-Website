@@ -34,6 +34,7 @@
     line-height: 1.1;
     letter-spacing: -1.5px;
     background: linear-gradient(to right, #ffffff, #e2e8f0);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -82,6 +83,95 @@
     color: #cbd5e1;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Product Showcase - Single Featured Card */
+.product-showcase-single {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.featured-card-large {
+    background: white;
+    border-radius: 24px;
+    padding: 48px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    border: 2px solid #f1f5f9;
+    transition: all 0.4s ease;
+}
+
+.featured-card-large:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+}
+
+.featured-card-large .card-content {
+    text-align: center;
+}
+
+.featured-card-large .icon-large {
+    font-size: 5rem;
+    margin-bottom: 24px;
+}
+
+.featured-card-large h3 {
+    font-size: 2rem;
+    color: var(--primary-dark);
+    font-weight: 800;
+    margin-bottom: 16px;
+}
+
+.featured-card-large>.card-content>p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    line-height: 1.7;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin: 32px 0;
+    text-align: left;
+}
+
+.features-grid .feature {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.features-grid .feature .check {
+    color: var(--accent-color);
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.features-grid .feature strong {
+    display: block;
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.features-grid .feature p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.card-actions {
+    margin-top: 32px;
+}
+
+.btn-large {
+    padding: 16px 48px;
+    font-size: 1.1rem;
 }
 
 /* Product Cards */
@@ -199,6 +289,11 @@
     box-shadow: var(--shadow-md);
 }
 
+.icon-box {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
 .feature-card h3 {
     font-size: 1.25rem;
     color: var(--primary-dark);
@@ -304,6 +399,9 @@
 .cta-buttons {
     position: relative;
     z-index: 1;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
 }
 
 /* Responsive Design */
@@ -338,5 +436,17 @@
 
     .cta-section h2 {
         font-size: 2rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .featured-card-large {
+        padding: 32px 24px;
+    }
+
+    .featured-card-large h3 {
+        font-size: 1.5rem;
     }
 }

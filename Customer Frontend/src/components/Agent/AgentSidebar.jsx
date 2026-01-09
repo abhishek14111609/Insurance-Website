@@ -22,6 +22,12 @@ const AgentSidebar = () => {
                     <NavLink to="/agent/customers" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">👥</span> Customers
                     </NavLink>
+                    <NavLink to="/agent/wallet" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+                        <span className="icon">💰</span> Wallet
+                    </NavLink>
+                    <NavLink to="/agent/team" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+                        <span className="icon">🌳</span> My Team
+                    </NavLink>
                 </div>
 
                 <div className="nav-group">
@@ -36,8 +42,8 @@ const AgentSidebar = () => {
 
                 <div className="nav-group">
                     <h3>Support</h3>
-                    <NavLink to="/agent/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-                        <span className="icon">⚙️</span> Settings
+                    <NavLink to="/agent/profile" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+                        <span className="icon">👤</span> My Profile
                     </NavLink>
                     <NavLink to="/login" className="nav-item logout">
                         <span className="icon">🚪</span> Logout

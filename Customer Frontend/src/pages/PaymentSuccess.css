@@ -1,0 +1,299 @@
+/* PaymentSuccess.css */
+
+.payment-success-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 100px 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-container {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Success Animation */
+.success-animation {
+    margin-bottom: 2rem;
+}
+
+.checkmark-circle {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 50%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+.checkmark {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #10b981;
+    position: relative;
+    animation: pulse 1.5s ease infinite;
+}
+
+.checkmark::after {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 10px;
+    width: 15px;
+    height: 30px;
+    border: solid white;
+    border-width: 0 4px 4px 0;
+    transform: rotate(45deg);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.success-title {
+    font-size: 3rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+}
+
+.success-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2rem;
+}
+
+/* Policy Details Card */
+.policy-details-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: left;
+}
+
+.policy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.policy-header h2 {
+    font-size: 1.5rem;
+    color: var(--primary-dark);
+    margin: 0;
+}
+
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.policy-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row .label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-row .value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.policy-number {
+    font-family: 'Courier New', monospace;
+    background: #f0f9ff;
+    padding: 4px 12px;
+    border-radius: 6px;
+    color: var(--primary-color);
+}
+
+.info-row .premium {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+}
+
+/* Next Steps */
+.next-steps {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.next-steps h3 {
+    font-size: 1.5rem;
+    color: var(--primary-dark);
+    margin-bottom: 1.5rem;
+}
+
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.step-card {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: transform 0.3s;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+}
+
+.step-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.step-card h4 {
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.step-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.action-buttons .btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+.btn-outline:hover {
+    background: white;
+    color: var(--primary-color);
+}
+
+/* Download Section */
+.download-section {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.download-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+}
+
+.download-btn:hover {
+    background: white;
+    color: var(--primary-color);
+    border-color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .success-title {
+        font-size: 2rem;
+    }
+
+    .success-subtitle {
+        font-size: 1rem;
+    }
+
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+
+    .download-section {
+        flex-direction: column;
+    }
+
+    .download-btn {
+        width: 100%;
+    }
+}

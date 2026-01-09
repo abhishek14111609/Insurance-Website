@@ -1,57 +1,58 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { loginCustomer, isCustomerLoggedIn } from '../utils/authUtils';
 import './Login.css';
 
 const Login = () => {
     const navigate = useNavigate();
-    const [userType, setUserType] = useState('Customer');
+    const location = useLocation();
     const [formData, setFormData] = useState({
-        username: '',
-        password: ''
+        email: '',
+        password: '',
+        rememberMe: false
     });
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (isCustomerLoggedIn()) {
+            navigate('/');
+        }
+    }, [navigate]);
 
     const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: type === 'checkbox' ? checked : value
         });
+        setError(''); // Clear error on input change
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setError('');
+        setIsSubmitting(true);
 
-        // Mock Authentication
-        console.log('Logging in as:', userType, formData);
+        // Validate
+        if (!formData.email || !formData.password) {
+            setError('Please enter both email and password');
+            setIsSubmitting(false);
+            return;
+        }
 
-        // Simulate API delay
-        setTimeout(() => {
-            // Note: In a real environment, you would receive a JWT token here and store it.
-            // For cross-project usage (since these are on different ports), you should use HTTP-only cookies
-            // or pass the token via URL (less secure) or assume shared local storage if on same domain.
+        // Attempt login
+        const result = loginCustomer(formData.email, formData.password);
 
-            // Redirect Logic based on User Type
-            // Ports are configured in vite.config.js:
-            // Customer: 5173
-            // Admin: 5174
-            // Agent: 5175
-
-            switch (userType) {
-                case 'Admin':
-                    // Redirect to Admin Portal
-                    window.location.href = 'http://localhost:5175';
-                    break;
-                case 'Agent':
-                    // Redirect to Agent Portal (Internal)
-                    navigate('/agent/dashboard');
-                    break;
-                case 'Customer':
-                    // Navigate internally
-                    navigate('/');
-                    break;
-                default:
-                    alert('Invalid User Type');
-            }
-        }, 1000);
+        if (result.success) {
+            // Get the return URL from location state, or default to home
+            const from = location.state?.from || '/';
+            navigate(from);
+        } else {
+            setError(result.message);
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -59,34 +60,27 @@ const Login = () => {
             <div className="login-container">
                 <div className="login-header">
                     <h2>Welcome Back</h2>
-                    <p>Please login to your account</p>
+                    <p>Login to access your account</p>
                 </div>
 
-                <form className="login-form" onSubmit={handleSubmit}>
-                    {/* <div className="form-group">
-                        <label htmlFor="userType">Login As</label>
-                        <select
-                            id="userType"
-                            value={userType}
-                            onChange={(e) => setUserType(e.target.value)}
-                            className="form-select"
-                        >
-                            <option value="Customer">Customer</option>
-                            <option value="Agent">Agent</option>
-                         
-                        </select> 
-                    </div> */}
+                {error && (
+                    <div className="alert-error">
+                        {error}
+                    </div>
+                )}
 
+                <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="username">Username / Email</label>
+                        <label htmlFor="email">Email Address</label>
                         <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value={formData.username}
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
                             onChange={handleInputChange}
-                            placeholder="Enter your username"
+                            placeholder="your.email@example.com"
                             required
+                            autoFocus
                         />
                     </div>
 
@@ -103,18 +97,39 @@ const Login = () => {
                         />
                     </div>
 
-                    <div className="form-actions">
-                        <a href="#" className="forgot-password">Forgot Password?</a>
+                    <div className="form-options">
+                        <label className="checkbox-label">
+                            <input
+                                type="checkbox"
+                                name="rememberMe"
+                                checked={formData.rememberMe}
+                                onChange={handleInputChange}
+                            />
+                            <span>Remember me</span>
+                        </label>
+                        <Link to="/forgot-password" className="forgot-password">
+                            Forgot Password?
+                        </Link>
                     </div>
 
-                    <button type="submit" className="login-btn">
-                        Login
+                    <button type="submit" className="login-btn" disabled={isSubmitting}>
+                        {isSubmitting ? 'Logging in...' : 'Login'}
                     </button>
 
                     <div className="login-footer">
-                        <p>Don't have an account? <a href="#">Sign up</a></p>
+                        <p>Don't have an account? <Link to="/register">Sign up</Link></p>
                     </div>
                 </form>
+
+                <div className="divider">
+                    <span>OR</span>
+                </div>
+
+                <div className="other-logins">
+                    <Link to="/become-agent" className="agent-login-link">
+                        Are you an agent? <strong>Login here</strong>
+                    </Link>
+                </div>
             </div>
         </div>
     );
