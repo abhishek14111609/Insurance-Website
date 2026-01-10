@@ -1,0 +1,76 @@
+/* Modern Add/Edit Policy Plan - Redesigned */
+
+.add-policy-plan-page {
+    padding: 0;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.plan-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.feature-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: stretch;
+}
+
+.feature-row input {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+
+.feature-row input:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-remove {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.125rem;
+}
+
+.btn-remove:hover {
+    background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%);
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .add-policy-plan-page {
+        padding: 0;
+    }
+
+    .feature-row {
+        flex-direction: column;
+    }
+
+    .btn-remove {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .feature-row input {
+        padding: 0.875rem 1rem;
+        font-size: 0.9375rem;
+    }
+}
