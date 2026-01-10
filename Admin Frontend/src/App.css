@@ -85,6 +85,18 @@ body {
   font-size: 1.25rem;
 }
 
+.nav-section {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0 1rem;
+}
+
+
 /* Main Content */
 .admin-main {
   margin-left: 260px;

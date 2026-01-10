@@ -13,6 +13,7 @@ const Login = () => {
     });
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Redirect if already logged in
     useEffect(() => {
@@ -46,6 +47,9 @@ const Login = () => {
         const result = loginCustomer(formData.email, formData.password);
 
         if (result.success) {
+            // Dispatch custom event to notify navbar
+            window.dispatchEvent(new Event('customerLogin'));
+
             // Get the return URL from location state, or default to home
             const from = location.state?.from || '/';
             navigate(from);
@@ -65,7 +69,8 @@ const Login = () => {
 
                 {error && (
                     <div className="alert-error">
-                        {error}
+                        <span className="error-icon">⚠️</span>
+                        <span>{error}</span>
                     </div>
                 )}
 
@@ -86,15 +91,25 @@ const Login = () => {
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            placeholder="Enter your password"
-                            required
-                        />
+                        <div className="password-input-wrapper">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                placeholder="Enter your password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? "👁️" : "👁️‍🗨️"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="form-options">

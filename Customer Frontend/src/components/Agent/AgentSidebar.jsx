@@ -30,7 +30,7 @@ const AgentSidebar = () => {
                     </NavLink>
                 </div>
 
-                <div className="nav-group">
+                {/* <div className="nav-group">
                     <h3>Analytics</h3>
                     <NavLink to="/agent/reports" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">📈</span> Sales Reports
@@ -38,7 +38,7 @@ const AgentSidebar = () => {
                     <NavLink to="/agent/commissions" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">💰</span> Commissions
                     </NavLink>
-                </div>
+                </div> */}
 
                 <div className="nav-group">
                     <h3>Support</h3>

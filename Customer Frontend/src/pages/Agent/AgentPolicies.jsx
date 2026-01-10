@@ -60,9 +60,9 @@ const AgentPolicies = () => {
                     <h1>Policy Management</h1>
                     <p>Track and manage insurance policies sold</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                {/* <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                     + New Policy
-                </button>
+                </button> */}
             </div>
 
             <div className="table-controls">

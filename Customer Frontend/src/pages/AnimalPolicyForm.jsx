@@ -120,19 +120,57 @@ const AnimalPolicyForm = () => {
             return;
         }
 
+        // Calculate dates
+        const startDate = new Date();
+        const duration = selectedPlan.duration;
+        const years = parseInt(duration.split(' ')[0]);
+        const endDate = new Date(startDate);
+        endDate.setFullYear(endDate.getFullYear() + years);
+
         // Create policy data
         const policyData = {
             id: Date.now(),
             policyNumber: `POL-${Date.now()}`,
+            customerId: currentUser.id,
+            customerEmail: currentUser.email,
+            customerName: currentUser.fullName,
+
+            // Form data
             ...formData,
+
+            // Cattle details (map to both naming conventions)
+            cattleType: formData.cattleType,
+            petType: formData.cattleType,
+            tagId: formData.tagId,
+            petName: formData.tagId,
+            petAge: formData.age,
+            petBreed: formData.breed,
+
+            // Plan details
             selectedPlan,
-            photos: photoPreviews, // For now, store base64 (will be uploaded to server later)
-            photoFiles, // Actual files for upload
             coverageAmount: selectedPlan.coverage,
             premium: selectedPlan.premium,
-            status: 'PENDING',
-            submittedAt: new Date().toISOString()
+            duration: duration,
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0],
+
+            // Photos
+            photos: photoPreviews,
+            photoFiles,
+
+            // Status
+            status: 'PENDING', // Pending until payment
+            paymentStatus: 'PENDING',
+
+            // Timestamps
+            submittedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
         };
+
+        // Save PENDING policy to localStorage
+        const existingPolicies = JSON.parse(localStorage.getItem('customer_policies') || '[]');
+        existingPolicies.push(policyData);
+        localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
 
         // Navigate to payment
         navigate('/payment', {

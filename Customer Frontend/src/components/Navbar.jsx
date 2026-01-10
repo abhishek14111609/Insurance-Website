@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { isCustomerLoggedIn, getCurrentCustomer, logoutCustomer } from '../utils/authUtils';
 import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [customer, setCustomer] = useState(null);
 
-    // Check login status on mount and when navigating
+    // Check login status on mount, location change, and custom events
     useEffect(() => {
         const checkLogin = () => {
             const loggedIn = isCustomerLoggedIn();
@@ -25,8 +26,15 @@ const Navbar = () => {
 
         // Listen for storage events (multi-tab support)
         window.addEventListener('storage', checkLogin);
-        return () => window.removeEventListener('storage', checkLogin);
-    }, [isMenuOpen]);
+
+        // Listen for custom login event
+        window.addEventListener('customerLogin', checkLogin);
+
+        return () => {
+            window.removeEventListener('storage', checkLogin);
+            window.removeEventListener('customerLogin', checkLogin);
+        };
+    }, [location]); // Re-run when location changes
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -70,6 +78,12 @@ const Navbar = () => {
                             </Link>
                             <Link to="/renewals" className="navbar-link" onClick={closeMenu}>
                                 Renewals
+                            </Link>
+                            <Link to="/about-us" className="navbar-link" onClick={closeMenu}>
+                                About Us
+                            </Link>
+                            <Link to="/contact-us" className="navbar-link" onClick={closeMenu}>
+                                Contact Us
                             </Link>
 
                             {/* Profile Dropdown - simplified */}

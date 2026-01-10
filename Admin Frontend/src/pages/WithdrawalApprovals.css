@@ -1,0 +1,79 @@
+/* Withdrawal Approvals Page */
+
+.withdrawal-approvals-page {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.withdrawals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.withdrawal-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.withdrawal-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.withdrawal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.withdrawal-header h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #10b981;
+    margin: 0 0 0.5rem 0;
+}
+
+.withdrawal-date {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.withdrawal-details {
+    margin-bottom: 1rem;
+}
+
+.withdrawal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.withdrawal-summary {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.withdrawal-summary p {
+    margin: 0.5rem 0;
+    color: #1e293b;
+}
+
+@media (max-width: 768px) {
+    .withdrawal-approvals-page {
+        padding: 1rem;
+    }
+
+    .withdrawals-grid {
+        grid-template-columns: 1fr;
+    }
+}

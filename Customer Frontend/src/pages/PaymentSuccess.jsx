@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { getCurrentCustomer } from '../utils/authUtils';
 import './PaymentSuccess.css';
 
 const PaymentSuccess = () => {
@@ -10,12 +11,103 @@ const PaymentSuccess = () => {
     useEffect(() => {
         if (!policyNumber) {
             navigate('/profile');
+            return;
         }
-    }, [policyNumber, navigate]);
 
-    if (!policyNumber) {
-        return null;
-    }
+        // Save policy to localStorage
+        const customer = getCurrentCustomer();
+        if (customer && policyData) {
+            // Calculate dates
+            const startDate = new Date();
+            const duration = policyData.selectedPlan?.duration || '1 Year';
+            const years = parseInt(duration.split(' ')[0]);
+            const endDate = new Date(startDate);
+            endDate.setFullYear(endDate.getFullYear() + years);
+
+            // Create complete policy object
+            const completePolicy = {
+                id: policyData.id || Date.now(),
+                policyNumber: policyNumber,
+                customerId: customer.id,
+                customerEmail: customer.email,
+                customerName: customer.fullName,
+
+                // Cattle details
+                cattleType: policyData.cattleType || policyData.petType,
+                tagId: policyData.tagId || policyData.petName,
+                petName: policyData.tagId || policyData.petName,
+                petType: policyData.cattleType || policyData.petType,
+                petAge: policyData.age,
+                petBreed: policyData.breed,
+                age: policyData.age,
+                breed: policyData.breed,
+                gender: policyData.gender,
+                milkYield: policyData.milkYield,
+                healthStatus: policyData.healthStatus,
+
+                // Policy details
+                coverageAmount: policyData.coverageAmount || policyData.selectedPlan?.coverage,
+                premium: premium || policyData.premium,
+                duration: duration,
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+
+                // Status
+                status: 'APPROVED', // Approved after payment
+                paymentStatus: 'PAID',
+
+                // Photos
+                photos: policyData.photos,
+
+                // Owner details
+                ownerName: policyData.ownerName,
+                email: policyData.email,
+                phone: policyData.phone,
+                address: policyData.address,
+                city: policyData.city,
+                state: policyData.state,
+                pincode: policyData.pincode,
+
+                // Agent
+                agentCode: policyData.agentCode,
+
+                // Timestamps
+                createdAt: policyData.submittedAt || new Date().toISOString(),
+                approvedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString()
+            };
+
+            // Get existing policies
+            const existingPolicies = JSON.parse(localStorage.getItem('customer_policies') || '[]');
+
+            // Find if this policy already exists (by ID, not policyNumber)
+            const existingPolicyIndex = existingPolicies.findIndex(p => p.id === policyData.id);
+
+            if (existingPolicyIndex !== -1) {
+                // Update existing PENDING policy to APPROVED
+                existingPolicies[existingPolicyIndex] = {
+                    ...existingPolicies[existingPolicyIndex],
+                    policyNumber: policyNumber,
+                    status: 'APPROVED',
+                    paymentStatus: 'PAID',
+                    approvedAt: new Date().toISOString(),
+                    paidAt: new Date().toISOString()
+                };
+
+                localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
+                console.log('Policy updated to APPROVED:', existingPolicies[existingPolicyIndex]);
+            } else {
+                // Create new policy if not found (fallback)
+                const policyExists = existingPolicies.some(p => p.policyNumber === policyNumber);
+
+                if (!policyExists) {
+                    existingPolicies.push(completePolicy);
+                    localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
+                    console.log('Policy created as APPROVED:', completePolicy);
+                }
+            }
+        }
+    }, [policyNumber, navigate, policyData, premium]);
 
     return (
         <div className="payment-success-page">

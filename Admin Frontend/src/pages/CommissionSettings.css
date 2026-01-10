@@ -1,0 +1,184 @@
+/* Commission Settings Page */
+
+.commission-settings-page {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    color: #64748b;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-info {
+    background: #eff6ff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.settings-info h3 {
+    font-size: 1.1rem;
+    color: #1e40af;
+    margin-bottom: 0.5rem;
+}
+
+.settings-info p {
+    color: #1e40af;
+    margin: 0;
+}
+
+.settings-form {
+    margin-bottom: 2rem;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+}
+
+.setting-label h4 {
+    font-size: 1.1rem;
+    color: #1e293b;
+    margin: 0 0 0.25rem 0;
+}
+
+.setting-label p {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.setting-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.setting-input input {
+    width: 100px;
+    padding: 0.75rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.setting-input input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.setting-input span {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.settings-actions {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.btn-large {
+    padding: 1rem 3rem;
+    font-size: 1.1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.settings-preview {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.settings-preview h4 {
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.preview-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+}
+
+.preview-item span {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.preview-item strong {
+    font-size: 1.5rem;
+    color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .commission-settings-page {
+        padding: 1rem;
+    }
+
+    .settings-card {
+        padding: 1.5rem;
+    }
+
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .preview-grid {
+        grid-template-columns: 1fr;
+    }
+}

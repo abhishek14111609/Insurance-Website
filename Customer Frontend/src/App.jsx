@@ -29,6 +29,9 @@ import Dashboard from './pages/Dashboard';
 import MyPolicies from './pages/MyPolicies';
 import Claims from './pages/Claims';
 import Renewals from './pages/Renewals';
+import RenewalForm from './pages/RenewalForm';
+import ClaimForm from './pages/ClaimForm';
+
 
 
 // Agent Pages
@@ -78,6 +81,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/become-partner" element={<AgentLanding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -131,6 +135,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Renewals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renew"
+            element={
+              <ProtectedRoute>
+                <RenewalForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/claims/new"
+            element={
+              <ProtectedRoute>
+                <ClaimForm />
               </ProtectedRoute>
             }
           />
