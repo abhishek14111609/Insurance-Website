@@ -24,6 +24,13 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import PolicyDetails from './pages/PolicyDetails';
 
+// Customer Dashboard Pages
+import Dashboard from './pages/Dashboard';
+import MyPolicies from './pages/MyPolicies';
+import Claims from './pages/Claims';
+import Renewals from './pages/Renewals';
+
+
 // Agent Pages
 import AgentDashboard from './pages/Agent/AgentDashboard';
 import AgentPolicies from './pages/Agent/AgentPolicies';
@@ -81,7 +88,9 @@ function App() {
           {/* <Route path="/bike-insurance" element={<BikeInsurance />} /> */}
           {/* <Route path="/travel-insurance" element={<TravelInsurance />} /> */}
 
-          {/* Renamed Animal -> Cattle Insurance */}
+          {/* Cattle Insurance - Main route */}
+          <Route path="/policies" element={<AnimalInsurance />} />
+          {/* Backward compatibility */}
           <Route path="/animal-insurance" element={<AnimalInsurance />} />
 
           {/* Protected Customer Routes */}
@@ -90,6 +99,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <CustomerProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-policies"
+            element={
+              <ProtectedRoute>
+                <MyPolicies />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/claims"
+            element={
+              <ProtectedRoute>
+                <Claims />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renewals"
+            element={
+              <ProtectedRoute>
+                <Renewals />
               </ProtectedRoute>
             }
           />

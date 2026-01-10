@@ -1,58 +1,82 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getCurrentCustomer, isCustomerLoggedIn } from '../utils/authUtils';
+import PhotoUpload from '../components/PhotoUpload';
+import AgentCodeInput from '../components/AgentCodeInput';
+import { formatCurrency } from '../constants/policyPlans';
 import './AnimalPolicyForm.css';
 
 const AnimalPolicyForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { calculatorData, agentCode } = location.state || {};
+    const { selectedPlan } = location.state || {};
+
+    // Redirect if no plan selected
+    useEffect(() => {
+        if (!selectedPlan) {
+            navigate('/policies');
+        }
+    }, [selectedPlan, navigate]);
 
     const [formData, setFormData] = useState({
-        // Pet Details
-        petName: '',
-        petType: calculatorData?.petType || 'cow',
-        petAge: calculatorData?.petAge || '',
-        petBreed: calculatorData?.petBreed || '',
-        tagId: calculatorData?.tagId || '', // Added
-        milkYield: calculatorData?.milkYield || '', // Added
-        petGender: 'female',
-        petWeight: '',
+        // Cattle Details
+        cattleType: 'cow',
+        tagId: '',
+        age: '',
+        breed: '',
+        gender: 'female',
+        milkYield: '',
+        healthStatus: 'healthy',
 
-        // Owner Details
+        // Owner Details (will be pre-filled)
         ownerName: '',
         email: '',
         phone: '',
         address: '',
         city: '',
+        state: '',
         pincode: '',
 
-        // Policy Details
-        coverageAmount: calculatorData?.coverageAmount || '50000',
-        startDate: '',
+        // Agent Code
+        agentCode: '',
 
-        // Agent
-        agentCode: agentCode || '',
-
-        // Payment
-        paymentMethod: 'card',
+        // Terms
         agreeTerms: false
     });
 
-    const [petPhoto, setPetPhoto] = useState(null);
+    const [photos, setPhotos] = useState({
+        front: null,
+        back: null,
+        left: null,
+        right: null
+    });
+
+    const [photoPreviews, setPhotoPreviews] = useState({
+        front: null,
+        back: null,
+        left: null,
+        right: null
+    });
+
+    const [photoFiles, setPhotoFiles] = useState({
+        front: null,
+        back: null,
+        left: null,
+        right: null
+    });
+
     const [currentUser, setCurrentUser] = useState(null);
 
-    // Initial Login Check and Data Pre-fill
+    // Login check and pre-fill
     useEffect(() => {
         if (!isCustomerLoggedIn()) {
-            navigate('/login', { state: { from: '/animal-policy-form' } });
+            navigate('/login', { state: { from: '/animal-policy-form', selectedPlan } });
             return;
         }
 
         const user = getCurrentCustomer();
         setCurrentUser(user);
 
-        // Pre-fill owner details from current user session
         if (user) {
             setFormData(prev => ({
                 ...prev,
@@ -60,11 +84,12 @@ const AnimalPolicyForm = () => {
                 email: user.email || '',
                 phone: user.phone || '',
                 city: user.city || '',
+                state: user.state || '',
                 address: user.address || '',
                 pincode: user.pincode || ''
             }));
         }
-    }, [navigate]);
+    }, [navigate, selectedPlan]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -74,91 +99,81 @@ const AnimalPolicyForm = () => {
         });
     };
 
-    const handlePhotoUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPetPhoto(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const calculatePremium = () => {
-        const baseRates = {
-            cow: 2500,
-            buffalo: 3000
-        };
-
-        const ageMultiplier = formData.petAge > 5 ? 1.2 : 1;
-        const coverageMultiplier = parseInt(formData.coverageAmount) / 50000;
-        const yieldFactor = formData.milkYield > 10 ? 1.1 : 1;
-
-        return Math.round((baseRates[formData.petType] || 2500) * ageMultiplier * coverageMultiplier * yieldFactor);
+    const handlePhotoChange = (side, file, preview) => {
+        setPhotoFiles(prev => ({ ...prev, [side]: file }));
+        setPhotoPreviews(prev => ({ ...prev, [side]: preview }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const premium = calculatePremium();
+        // Validate all 4 photos uploaded
+        const allPhotosUploaded = Object.values(photoFiles).every(file => file !== null);
 
-        // Create policy data (without saving yet)
+        if (!allPhotosUploaded) {
+            alert('Please upload all 4 cattle photos (Front, Back, Left, Right)');
+            return;
+        }
+
+        if (!formData.agreeTerms) {
+            alert('Please agree to terms and conditions');
+            return;
+        }
+
+        // Create policy data
         const policyData = {
             id: Date.now(),
+            policyNumber: `POL-${Date.now()}`,
             ...formData,
-            petPhoto,
-            marketValue: formData.coverageAmount
+            selectedPlan,
+            photos: photoPreviews, // For now, store base64 (will be uploaded to server later)
+            photoFiles, // Actual files for upload
+            coverageAmount: selectedPlan.coverage,
+            premium: selectedPlan.premium,
+            status: 'PENDING',
+            submittedAt: new Date().toISOString()
         };
 
-        // Navigate to payment page with policy data
+        // Navigate to payment
         navigate('/payment', {
             state: {
                 policyData,
-                premium
+                premium: selectedPlan.premium
             }
         });
     };
 
-    if (!currentUser) return null; // Wait for redirect
+    if (!currentUser || !selectedPlan) return null;
 
     return (
         <div className="animal-policy-form">
             <div className="form-container">
                 <div className="form-header">
-                    <h1>Complete Cattle Insurance Application</h1>
-                    <p>Secure your livestock against unforeseen risks</p>
+                    <h1>Cattle Insurance Application</h1>
+                    <p>Complete the form to secure your livestock</p>
+
+                    {/* Selected Plan Summary */}
+                    <div className="selected-plan-summary">
+                        <div className="plan-info">
+                            <span className="plan-label">Selected Plan:</span>
+                            <span className="plan-name">{selectedPlan.duration}</span>
+                        </div>
+                        <div className="plan-details">
+                            <div>Coverage: <strong>{formatCurrency(selectedPlan.coverage)}</strong></div>
+                            <div>Premium: <strong>{formatCurrency(selectedPlan.premium)}</strong></div>
+                        </div>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="policy-form">
-                    {/* Cattle Details Section */}
+                    {/* Cattle Details */}
                     <div className="form-section">
                         <h2 className="section-title">🐄 Cattle Details</h2>
-
-                        <div className="photo-upload">
-                            <label className="photo-label">Cattle Photo (Optional)</label>
-                            <div className="photo-preview">
-                                {petPhoto ? (
-                                    <img src={petPhoto} alt="Cattle" />
-                                ) : (
-                                    <div className="photo-placeholder">
-                                        <span className="placeholder-icon">📷</span>
-                                        <span className="placeholder-text">Upload Photo with Tag</span>
-                                    </div>
-                                )}
-                            </div>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoUpload}
-                                className="photo-input"
-                            />
-                        </div>
 
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Cattle Type *</label>
-                                <select name="petType" value={formData.petType} onChange={handleInputChange} required>
+                                <select name="cattleType" value={formData.cattleType} onChange={handleInputChange} required>
                                     <option value="cow">🐄 Cow</option>
                                     <option value="buffalo">🐃 Buffalo</option>
                                 </select>
@@ -170,7 +185,7 @@ const AnimalPolicyForm = () => {
                                     name="tagId"
                                     value={formData.tagId}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Ear Tag No."
+                                    placeholder="Enter Ear Tag Number"
                                     required
                                 />
                             </div>
@@ -181,11 +196,12 @@ const AnimalPolicyForm = () => {
                                 <label>Age (Years) *</label>
                                 <input
                                     type="number"
-                                    name="petAge"
-                                    value={formData.petAge}
+                                    name="age"
+                                    value={formData.age}
                                     onChange={handleInputChange}
                                     min="1"
                                     max="15"
+                                    placeholder="e.g., 4"
                                     required
                                 />
                             </div>
@@ -193,15 +209,22 @@ const AnimalPolicyForm = () => {
                                 <label>Breed</label>
                                 <input
                                     type="text"
-                                    name="petBreed"
-                                    value={formData.petBreed}
+                                    name="breed"
+                                    value={formData.breed}
                                     onChange={handleInputChange}
-                                    placeholder="e.g., Gir, Jersey"
+                                    placeholder="e.g., Gir, Jersey, Murrah"
                                 />
                             </div>
                         </div>
 
                         <div className="form-row">
+                            <div className="form-group">
+                                <label>Gender *</label>
+                                <select name="gender" value={formData.gender} onChange={handleInputChange} required>
+                                    <option value="female">Female</option>
+                                    <option value="male">Male</option>
+                                </select>
+                            </div>
                             <div className="form-group">
                                 <label>Milk Yield (Liters/Day)</label>
                                 <input
@@ -209,27 +232,61 @@ const AnimalPolicyForm = () => {
                                     name="milkYield"
                                     value={formData.milkYield}
                                     onChange={handleInputChange}
-                                    placeholder="e.g., 12"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Approx Weight (kg) *</label>
-                                <input
-                                    type="number"
-                                    name="petWeight"
-                                    value={formData.petWeight}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., 350"
-                                    required
+                                    placeholder="e.g., 10"
                                 />
                             </div>
                         </div>
+
+                        <div className="form-group">
+                            <label>Health Status *</label>
+                            <select name="healthStatus" value={formData.healthStatus} onChange={handleInputChange} required>
+                                <option value="healthy">Healthy</option>
+                                <option value="under_treatment">Under Treatment</option>
+                            </select>
+                        </div>
                     </div>
 
-                    {/* Owner Details Section */}
+                    {/* 4 Photos Section */}
+                    <div className="photo-upload-section">
+                        <h3>Cattle Photos (Required)</h3>
+                        <p className="section-hint">Upload clear photos from all 4 sides. Maximum 1MB per photo.</p>
+
+                        <div className="photos-grid">
+                            <PhotoUpload
+                                side="front"
+                                label="Front View"
+                                value={photoPreviews.front}
+                                onChange={handlePhotoChange}
+                                required
+                            />
+                            <PhotoUpload
+                                side="back"
+                                label="Back View"
+                                value={photoPreviews.back}
+                                onChange={handlePhotoChange}
+                                required
+                            />
+                            <PhotoUpload
+                                side="left"
+                                label="Left Side"
+                                value={photoPreviews.left}
+                                onChange={handlePhotoChange}
+                                required
+                            />
+                            <PhotoUpload
+                                side="right"
+                                label="Right Side"
+                                value={photoPreviews.right}
+                                onChange={handlePhotoChange}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Owner Details */}
                     <div className="form-section">
-                        <h2 className="section-title">👤 Farmer / Owner Details</h2>
-                        <div className="alert-info" style={{ marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', color: '#1e40af' }}>
+                        <h2 className="section-title">👤 Owner Details</h2>
+                        <div className="alert-info">
                             ℹ️ Details pre-filled from your profile
                         </div>
 
@@ -241,8 +298,7 @@ const AnimalPolicyForm = () => {
                                     name="ownerName"
                                     value={formData.ownerName}
                                     onChange={handleInputChange}
-                                    readOnly={!!currentUser}
-                                    style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
+                                    readOnly
                                     required
                                 />
                             </div>
@@ -253,8 +309,7 @@ const AnimalPolicyForm = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    readOnly={!!currentUser}
-                                    style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
+                                    readOnly
                                     required
                                 />
                             </div>
@@ -268,8 +323,7 @@ const AnimalPolicyForm = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
-                                    readOnly={!!currentUser}
-                                    style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
+                                    readOnly
                                     required
                                 />
                             </div>
@@ -280,8 +334,33 @@ const AnimalPolicyForm = () => {
                                     name="city"
                                     value={formData.city}
                                     onChange={handleInputChange}
-                                    readOnly={!!currentUser}
-                                    style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
+                                    readOnly
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>State *</label>
+                                <input
+                                    type="text"
+                                    name="state"
+                                    value={formData.state}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., Maharashtra"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Pincode *</label>
+                                <input
+                                    type="text"
+                                    name="pincode"
+                                    value={formData.pincode}
+                                    onChange={handleInputChange}
+                                    maxLength="6"
+                                    readOnly
                                     required
                                 />
                             </div>
@@ -294,87 +373,67 @@ const AnimalPolicyForm = () => {
                                 value={formData.address}
                                 onChange={handleInputChange}
                                 rows="3"
-                                readOnly={!!currentUser}
-                                style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Pincode *</label>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                maxLength="6"
-                                readOnly={!!currentUser}
-                                style={currentUser ? { backgroundColor: '#f1f5f9' } : {}}
+                                readOnly
                                 required
                             />
                         </div>
                     </div>
 
-                    {/* Policy Details Section */}
+                    {/* Agent Code */}
                     <div className="form-section">
-                        <h2 className="section-title">📋 Policy Coverage</h2>
+                        <h2 className="section-title">🤝 Agent Referral (Optional)</h2>
+                        <AgentCodeInput
+                            value={formData.agentCode}
+                            onChange={(code) => setFormData({ ...formData, agentCode: code })}
+                            label="Agent Code"
+                        />
+                    </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Sum Insured (Market Value) *</label>
-                                <select name="coverageAmount" value={formData.coverageAmount} onChange={handleInputChange} required>
-                                    <option value="25000">₹25,000</option>
-                                    <option value="50000">₹50,000</option>
-                                    <option value="75000">₹75,000</option>
-                                    <option value="100000">₹1,00,000</option>
-                                    <option value="150000">₹1,50,000</option>
-                                    <option value="200000">₹2,00,000</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>Policy Start Date *</label>
-                                <input
-                                    type="date"
-                                    name="startDate"
-                                    value={formData.startDate}
-                                    onChange={handleInputChange}
-                                    min={new Date().toISOString().split('T')[0]}
-                                    required
-                                />
-                            </div>
+                    {/* Terms & Conditions */}
+                    <div className="form-section">
+                        <div className="checkbox-group">
+                            <input
+                                type="checkbox"
+                                id="agreeTerms"
+                                name="agreeTerms"
+                                checked={formData.agreeTerms}
+                                onChange={handleInputChange}
+                                required
+                            />
+                            <label htmlFor="agreeTerms">
+                                I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+                            </label>
                         </div>
-
-                        {formData.agentCode && (
-                            <div className="agent-info-display">
-                                <span className="info-icon">👤</span>
-                                <span>Referred by Agent: <strong>{formData.agentCode}</strong></span>
-                            </div>
-                        )}
                     </div>
 
                     {/* Premium Summary */}
                     <div className="premium-summary">
+                        <h3>Payment Summary</h3>
                         <div className="summary-row">
-                            <span>Annual Premium:</span>
-                            <span className="premium-amount">₹{calculatePremium().toLocaleString('en-IN')}</span>
+                            <span>Plan Duration:</span>
+                            <span>{selectedPlan.duration}</span>
                         </div>
                         <div className="summary-row">
-                            <span>GST (18%):</span>
-                            <span>₹{Math.round(calculatePremium() * 0.18).toLocaleString('en-IN')}</span>
+                            <span>Coverage Amount:</span>
+                            <span>{formatCurrency(selectedPlan.coverage)}</span>
+                        </div>
+                        <div className="summary-row">
+                            <span>Premium:</span>
+                            <span>{formatCurrency(selectedPlan.premium)}</span>
                         </div>
                         <div className="summary-row total">
-                            <span>Total Amount:</span>
-                            <span>₹{Math.round(calculatePremium() * 1.18).toLocaleString('en-IN')}</span>
+                            <span>Total Payable:</span>
+                            <span>{formatCurrency(selectedPlan.premium)}</span>
                         </div>
                     </div>
 
                     {/* Submit Button */}
                     <button type="submit" className="btn btn-primary btn-block btn-large">
-                        Proceed to Payment - ₹{Math.round(calculatePremium() * 1.18).toLocaleString('en-IN')}
+                        Proceed to Payment - {formatCurrency(selectedPlan.premium)}
                     </button>
 
                     <div className="secure-badge">
-                        🔒 100% Secure Payment
+                        🔒 100% Secure Payment via Razorpay
                     </div>
                 </form>
             </div>
