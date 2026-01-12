@@ -1,133 +1,71 @@
-// Authentication Utility Functions
+// Authentication Utility Functions - Backend API Version
+// Only stores JWT token in localStorage, all data comes from backend
 
-// Initialize customer users if not exists
-export const initializeCustomerUsers = () => {
-    const users = localStorage.getItem('customer_users');
-    if (!users) {
-        localStorage.setItem('customer_users', JSON.stringify([]));
-    }
+// Check if user is logged in (has valid token)
+export const isCustomerLoggedIn = () => {
+    const token = localStorage.getItem('token');
+    return token !== null && token !== undefined && token !== '';
 };
 
-// Register new customer
-export const registerCustomer = (userData) => {
-    initializeCustomerUsers();
-    const users = JSON.parse(localStorage.getItem('customer_users') || '[]');
-
-    // Check if email already exists
-    const existingUser = users.find(u => u.email === userData.email);
-    if (existingUser) {
-        return { success: false, message: 'Email already registered!' };
-    }
-
-    const newUser = {
-        id: `customer-${Date.now()}`,
-        ...userData,
-        createdAt: new Date().toISOString(),
-        policies: []
-    };
-
-    users.push(newUser);
-    localStorage.setItem('customer_users', JSON.stringify(users));
-
-    return { success: true, user: newUser };
+// Get JWT token
+export const getAuthToken = () => {
+    return localStorage.getItem('token');
 };
 
-// Login customer
-export const loginCustomer = (email, password) => {
-    const users = JSON.parse(localStorage.getItem('customer_users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
+// Get current user from localStorage (temporary until page refresh)
+export const getCurrentCustomer = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
 
-    if (user) {
-        // Store current session
-        const sessionUser = { ...user };
-        delete sessionUser.password; // Don't store password in session
-        localStorage.setItem('current_customer', JSON.stringify(sessionUser));
-        return { success: true, user: sessionUser };
+    try {
+        return JSON.parse(userStr);
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+        return null;
     }
-
-    return { success: false, message: 'Invalid email or password!' };
 };
 
 // Logout customer
 export const logoutCustomer = () => {
-    localStorage.removeItem('current_customer');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('agentProfile');
+    window.location.href = '/login';
 };
 
-// Get current logged-in customer
-export const getCurrentCustomer = () => {
-    const customer = localStorage.getItem('current_customer');
-    return customer ? JSON.parse(customer) : null;
+// These functions are kept for backward compatibility but should not be used
+// All authentication should go through api.service.js
+
+export const initializeCustomerUsers = () => {
+    console.warn('initializeCustomerUsers is deprecated. Use backend API.');
 };
 
-// Check if customer is logged in
-export const isCustomerLoggedIn = () => {
-    return getCurrentCustomer() !== null;
+export const registerCustomer = () => {
+    console.warn('registerCustomer is deprecated. Use authAPI.register() from api.service.js');
+    return { success: false, message: 'Please use API service' };
 };
 
-// Update customer profile
-export const updateCustomerProfile = (updatedData) => {
-    const currentCustomer = getCurrentCustomer();
-    if (!currentCustomer) return { success: false, message: 'Not logged in!' };
-
-    const users = JSON.parse(localStorage.getItem('customer_users') || '[]');
-    const userIndex = users.findIndex(u => u.id === currentCustomer.id);
-
-    if (userIndex !== -1) {
-        users[userIndex] = { ...users[userIndex], ...updatedData };
-        localStorage.setItem('customer_users', JSON.stringify(users));
-
-        // Update session
-        const updatedUser = { ...users[userIndex] };
-        delete updatedUser.password;
-        localStorage.setItem('current_customer', JSON.stringify(updatedUser));
-
-        return { success: true, user: updatedUser };
-    }
-
-    return { success: false, message: 'User not found!' };
+export const loginCustomer = () => {
+    console.warn('loginCustomer is deprecated. Use authAPI.login() from api.service.js');
+    return { success: false, message: 'Please use API service' };
 };
 
-// Change password
-export const changePassword = (currentPassword, newPassword) => {
-    const currentCustomer = getCurrentCustomer();
-    if (!currentCustomer) return { success: false, message: 'Not logged in!' };
-
-    const users = JSON.parse(localStorage.getItem('customer_users') || '[]');
-    const user = users.find(u => u.id === currentCustomer.id);
-
-    if (user && user.password === currentPassword) {
-        user.password = newPassword;
-        localStorage.setItem('customer_users', JSON.stringify(users));
-        return { success: true, message: 'Password changed successfully!' };
-    }
-
-    return { success: false, message: 'Current password is incorrect!' };
+export const updateCustomerProfile = () => {
+    console.warn('updateCustomerProfile is deprecated. Use authAPI.updateProfile() from api.service.js');
+    return { success: false, message: 'Please use API service' };
 };
 
-// Get customer policies
+export const changePassword = () => {
+    console.warn('changePassword is deprecated. Use authAPI.changePassword() from api.service.js');
+    return { success: false, message: 'Please use API service' };
+};
+
 export const getCustomerPolicies = () => {
-    const currentCustomer = getCurrentCustomer();
-    if (!currentCustomer) return [];
-
-    const allPolicies = JSON.parse(localStorage.getItem('my_animal_policies') || '[]');
-    return allPolicies.filter(p => p.customerId === currentCustomer.id);
+    console.warn('getCustomerPolicies is deprecated. Use policyAPI.getAll() from api.service.js');
+    return [];
 };
 
-// Add policy to customer
-export const addPolicyToCustomer = (policyData) => {
-    const currentCustomer = getCurrentCustomer();
-    if (!currentCustomer) return { success: false, message: 'Not logged in!' };
-
-    const policy = {
-        ...policyData,
-        customerId: currentCustomer.id,
-        customerEmail: currentCustomer.email,
-        customerName: currentCustomer.fullName
-    };
-
-    const allPolicies = JSON.parse(localStorage.getItem('my_animal_policies') || '[]');
-    allPolicies.push(policy);
-    localStorage.setItem('my_animal_policies', JSON.stringify(allPolicies));
-
-    return { success: true, policy };
+export const addPolicyToCustomer = () => {
+    console.warn('addPolicyToCustomer is deprecated. Use policyAPI.create() from api.service.js');
+    return { success: false, message: 'Please use API service' };
 };

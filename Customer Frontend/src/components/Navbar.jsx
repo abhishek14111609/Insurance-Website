@@ -1,40 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { isCustomerLoggedIn, getCurrentCustomer, logoutCustomer } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user, logout } = useAuth();
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [customer, setCustomer] = useState(null);
-
-    // Check login status on mount, location change, and custom events
-    useEffect(() => {
-        const checkLogin = () => {
-            const loggedIn = isCustomerLoggedIn();
-            if (loggedIn) {
-                setCustomer(getCurrentCustomer());
-            } else {
-                setCustomer(null);
-            }
-        };
-
-        checkLogin();
-
-        // Listen for storage events (multi-tab support)
-        window.addEventListener('storage', checkLogin);
-
-        // Listen for custom login event
-        window.addEventListener('customerLogin', checkLogin);
-
-        return () => {
-            window.removeEventListener('storage', checkLogin);
-            window.removeEventListener('customerLogin', checkLogin);
-        };
-    }, [location]); // Re-run when location changes
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -50,8 +26,7 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
-        logoutCustomer();
-        setCustomer(null);
+        logout();
         closeMenu();
         navigate('/');
     };
@@ -60,14 +35,14 @@ const Navbar = () => {
         <nav className="navbar">
             <div className="navbar-container">
                 <Link to="/" className="navbar-logo" onClick={closeMenu}>
-                    🛡️ SecureLife
+                    Pashudhan Suraksha
                 </Link>
 
                 <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
                     <Link to="/" className="navbar-link" onClick={closeMenu}>Home</Link>
                     <Link to="/policies" className="navbar-link" onClick={closeMenu}>Policies</Link>
 
-                    {customer ? (
+                    {user ? (
                         <>
                             {/* Top-level navigation items for logged-in users */}
                             <Link to="/my-policies" className="navbar-link" onClick={closeMenu}>
@@ -90,14 +65,14 @@ const Navbar = () => {
                             <div className={`navbar-dropdown profile-dropdown ${isProfileOpen ? 'active' : ''}`}>
                                 <span className="navbar-link dropdown-trigger profile-trigger" onClick={toggleProfile}>
                                     <div className="nav-avatar">
-                                        {customer.fullName.charAt(0)}
+                                        {user.fullName?.charAt(0) || 'U'}
                                     </div>
                                     <span className="dropdown-arrow">▼</span>
                                 </span>
                                 <div className="dropdown-content right-aligned">
                                     <div className="dropdown-header">
-                                        <strong>{customer.fullName}</strong>
-                                        <small>{customer.email}</small>
+                                        <strong>{user.fullName}</strong>
+                                        <small>{user.email}</small>
                                     </div>
                                     <Link to="/dashboard" onClick={closeMenu}>📊 Dashboard</Link>
                                     <Link to="/profile" onClick={closeMenu}>⚙️ Profile Settings</Link>

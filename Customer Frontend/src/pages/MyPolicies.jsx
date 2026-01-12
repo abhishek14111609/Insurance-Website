@@ -1,21 +1,38 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { getCustomerPolicies } from '../utils/authUtils';
+import { useNavigate } from 'react-router-dom';
+import { policyAPI } from '../services/api.service';
 import './MyPolicies.css';
 
 const MyPolicies = () => {
     const navigate = useNavigate();
     const [policies, setPolicies] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [filter, setFilter] = useState('ALL');
 
     useEffect(() => {
-        const customerPolicies = getCustomerPolicies();
-        setPolicies(customerPolicies);
+        const fetchPolicies = async () => {
+            try {
+                setIsLoading(true);
+                const response = await policyAPI.getAll();
+                if (response.success) {
+                    setPolicies(response.data.policies);
+                }
+            } catch (err) {
+                console.error('Error fetching policies:', err);
+                setError('Failed to load policies. Please try again later.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPolicies();
     }, []);
 
     const getStatusBadge = (status) => {
         const badges = {
-            PENDING: { class: 'status-pending', icon: '🟡', text: 'Pending Approval' },
+            PENDING: { class: 'status-pending', icon: '🟡', text: 'Payment Pending' },
+            PENDING_APPROVAL: { class: 'status-pending', icon: '⏳', text: 'Pending Approval' },
             APPROVED: { class: 'status-approved', icon: '🟢', text: 'Active' },
             REJECTED: { class: 'status-rejected', icon: '🔴', text: 'Rejected' },
             EXPIRED: { class: 'status-expired', icon: '⚪', text: 'Expired' }
@@ -25,7 +42,36 @@ const MyPolicies = () => {
 
     const filteredPolicies = filter === 'ALL'
         ? policies
-        : policies.filter(p => p.status === filter);
+        : policies.filter(p => {
+            if (filter === 'PENDING') return p.status === 'PENDING' || p.status === 'PENDING_APPROVAL';
+            return p.status === filter;
+        });
+
+    if (isLoading) {
+        return (
+            <div className="my-policies-page">
+                <div className="container">
+                    <div className="loading-state">
+                        <div className="spinner"></div>
+                        <p>Loading your policies...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="my-policies-page">
+                <div className="container">
+                    <div className="error-state">
+                        <p>{error}</p>
+                        <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="my-policies-page">
@@ -48,7 +94,7 @@ const MyPolicies = () => {
                         className={filter === 'PENDING' ? 'active' : ''}
                         onClick={() => setFilter('PENDING')}
                     >
-                        Pending ({policies.filter(p => p.status === 'PENDING').length})
+                        Pending ({policies.filter(p => p.status === 'PENDING' || p.status === 'PENDING_APPROVAL').length})
                     </button>
                     <button
                         className={filter === 'APPROVED' ? 'active' : ''}
@@ -71,7 +117,7 @@ const MyPolicies = () => {
                             return (
                                 <div key={policy.id} className="policy-card">
                                     <div className="policy-card-header">
-                                        <span className="policy-number">{policy.policyNumber}</span>
+                                        <span className="policy-number">{policy.policyNumber || 'Processing...'}</span>
                                         <span className={`status-badge ${badge.class}`}>
                                             {badge.icon} {badge.text}
                                         </span>
@@ -80,11 +126,11 @@ const MyPolicies = () => {
                                     <div className="policy-card-body">
                                         <div className="cattle-info">
                                             <span className="cattle-icon">
-                                                {policy.petType === 'cow' ? '🐄' : '🐃'}
+                                                {policy.cattleType === 'cow' ? '🐄' : '🐃'}
                                             </span>
                                             <div>
-                                                <strong>{policy.tagId || policy.petName}</strong>
-                                                <p>{policy.petBreed} • {policy.petAge} years</p>
+                                                <strong>{policy.tagId}</strong>
+                                                <p>{policy.breed} • {policy.age} years</p>
                                             </div>
                                         </div>
 
@@ -99,7 +145,7 @@ const MyPolicies = () => {
                                             </div>
                                             <div className="detail-row">
                                                 <span>Period:</span>
-                                                <span>{policy.startDate} to {policy.endDate}</span>
+                                                <span>{new Date(policy.startDate).toLocaleDateString()} to {new Date(policy.endDate).toLocaleDateString()}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -124,6 +170,14 @@ const MyPolicies = () => {
                                                     File Claim
                                                 </button>
                                             </>
+                                        )}
+                                        {policy.status === 'PENDING' && (
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() => navigate('/payment', { state: { policyId: policy.id } })}
+                                            >
+                                                Complete Payment
+                                            </button>
                                         )}
                                     </div>
                                 </div>

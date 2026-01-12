@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -48,13 +49,19 @@ import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
 
 import './App.css';
-import { isCustomerLoggedIn } from './utils/authUtils';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  if (!isCustomerLoggedIn()) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return children;
 };
 

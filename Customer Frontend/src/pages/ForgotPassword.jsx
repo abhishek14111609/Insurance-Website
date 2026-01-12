@@ -1,33 +1,35 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { authAPI } from '../services/api.service';
 import './ForgotPassword.css';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         // Validate email
         if (!email || !/\S+@\S+\.\S+/.test(email)) {
             setError('Please enter a valid email address');
+            setLoading(false);
             return;
         }
 
-        // Check if email exists
-        const users = JSON.parse(localStorage.getItem('customer_users') || '[]');
-        const userExists = users.find(u => u.email === email);
-
-        if (!userExists) {
-            setError('No account found with this email address');
-            return;
+        try {
+            // Call backend API
+            await authAPI.forgotPassword(email);
+            setIsSubmitted(true);
+        } catch (err) {
+            setError(err.message || 'Failed to send reset email. Please try again.');
+        } finally {
+            setLoading(false);
         }
-
-        // Simulate sending reset email
-        setIsSubmitted(true);
     };
 
     if (isSubmitted) {
@@ -79,8 +81,8 @@ const ForgotPassword = () => {
                         />
                     </div>
 
-                    <button type="submit" className="btn btn-primary btn-block">
-                        Send Reset Instructions
+                    <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                        {loading ? 'Sending...' : 'Send Reset Instructions'}
                     </button>
 
                     <div className="form-footer">

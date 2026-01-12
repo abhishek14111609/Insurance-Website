@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { loginCustomer, isCustomerLoggedIn } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { login, isAuthenticated } = useAuth();
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -17,10 +19,10 @@ const Login = () => {
 
     // Redirect if already logged in
     useEffect(() => {
-        if (isCustomerLoggedIn()) {
+        if (isAuthenticated) {
             navigate('/');
         }
-    }, [navigate]);
+    }, [isAuthenticated, navigate]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -31,7 +33,7 @@ const Login = () => {
         setError(''); // Clear error on input change
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
@@ -43,18 +45,21 @@ const Login = () => {
             return;
         }
 
-        // Attempt login
-        const result = loginCustomer(formData.email, formData.password);
+        try {
+            // Use login from AuthContext
+            await login({
+                email: formData.email,
+                password: formData.password
+            });
 
-        if (result.success) {
             // Dispatch custom event to notify navbar
             window.dispatchEvent(new Event('customerLogin'));
 
-            // Get the return URL from location state, or default to home
-            const from = location.state?.from || '/';
+            // Get the return URL from location state, or default to dashboard
+            const from = location.state?.from || '/dashboard';
             navigate(from);
-        } else {
-            setError(result.message);
+        } catch (error) {
+            setError(error.message || 'Login failed. Please check your credentials.');
             setIsSubmitting(false);
         }
     };

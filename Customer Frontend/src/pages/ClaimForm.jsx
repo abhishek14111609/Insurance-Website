@@ -1,162 +1,209 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCustomerPolicies } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
+import { policyAPI, claimAPI } from '../services/api.service';
 import PhotoUpload from '../components/PhotoUpload';
 import './ClaimForm.css';
 
 const ClaimForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { policy: selectedPolicy } = location.state || {};
+    const { user } = useAuth();
+    const preSelectedPolicy = location.state?.policy;
 
     const [policies, setPolicies] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [loadingPolicies, setLoadingPolicies] = useState(true);
+
     const [formData, setFormData] = useState({
-        policyId: selectedPolicy?.id || '',
-        claimType: 'death_disease',
+        policyId: preSelectedPolicy?.id || '',
+        claimType: 'death',
         incidentDate: '',
-        incidentDescription: '',
-        veterinaryCertificate: '',
-        bankAccountNumber: '',
-        bankIFSC: '',
-        bankAccountHolder: '',
-        agreeTerms: false
+        incidentLocation: '',
+        claimAmount: '',
+        description: ''
     });
 
-    const [photos, setPhotos] = useState({
+    const [documents, setDocuments] = useState({
         incident: null,
-        certificate: null,
-        additional: null
+        postmortem: null,
+        veterinary: null,
+        other: null
     });
 
-    const [photoPreviews, setPhotoPreviews] = useState({
+    const [documentPreviews, setDocumentPreviews] = useState({
         incident: null,
-        certificate: null,
-        additional: null
+        postmortem: null,
+        veterinary: null,
+        other: null
     });
 
+    // Fetch user's approved policies
     useEffect(() => {
-        const customerPolicies = getCustomerPolicies();
-        const activePolicies = customerPolicies.filter(p => p.status === 'APPROVED');
-        setPolicies(activePolicies);
+        const fetchPolicies = async () => {
+            try {
+                setLoadingPolicies(true);
+                const response = await policyAPI.getAll({ status: 'APPROVED' });
+                if (response.success) {
+                    setPolicies(response.data.policies || []);
+                }
+            } catch (error) {
+                console.error('Error fetching policies:', error);
+            } finally {
+                setLoadingPolicies(false);
+            }
+        };
 
-        if (selectedPolicy) {
-            setFormData(prev => ({ ...prev, policyId: selectedPolicy.id }));
-        }
-    }, [selectedPolicy]);
+        fetchPolicies();
+    }, []);
 
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value } = e.target;
         setFormData({
             ...formData,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: value
         });
     };
 
     const handlePhotoChange = (side, file, preview) => {
-        setPhotos(prev => ({ ...prev, [side]: file }));
-        setPhotoPreviews(prev => ({ ...prev, [side]: preview }));
+        setDocuments(prev => ({ ...prev, [side]: file }));
+        setDocumentPreviews(prev => ({ ...prev, [side]: preview }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
-        // Validate photos
-        if (!photoPreviews.incident || !photoPreviews.certificate) {
-            alert('Please upload incident photo and veterinary certificate');
-            return;
+        try {
+            // Validate
+            if (!formData.policyId) {
+                alert('Please select a policy');
+                setLoading(false);
+                return;
+            }
+
+            if (!documentPreviews.incident) {
+                alert('Please upload at least one incident photo');
+                setLoading(false);
+                return;
+            }
+
+            // Prepare documents array
+            const uploadedDocuments = [];
+            Object.entries(documentPreviews).forEach(([key, value]) => {
+                if (value) {
+                    uploadedDocuments.push(value);
+                }
+            });
+
+            // Submit claim
+            const claimData = {
+                policyId: parseInt(formData.policyId),
+                claimType: formData.claimType,
+                incidentDate: formData.incidentDate,
+                incidentLocation: formData.incidentLocation,
+                claimAmount: parseFloat(formData.claimAmount),
+                description: formData.description,
+                documents: uploadedDocuments
+            };
+
+            const response = await claimAPI.create(claimData);
+
+            if (response.success) {
+                alert('Claim submitted successfully! Our team will review it shortly.');
+                navigate('/claims');
+            } else {
+                throw new Error(response.message || 'Failed to submit claim');
+            }
+        } catch (error) {
+            console.error('Claim submission error:', error);
+            alert(error.message || 'Failed to submit claim. Please try again.');
+        } finally {
+            setLoading(false);
         }
-
-        if (!formData.agreeTerms) {
-            alert('Please agree to terms and conditions');
-            return;
-        }
-
-        const selectedPolicyData = policies.find(p => p.id === parseInt(formData.policyId));
-
-        const claimData = {
-            id: Date.now(),
-            claimNumber: `CLM-${Date.now()}`,
-            policyId: formData.policyId,
-            policyNumber: selectedPolicyData?.policyNumber,
-            claimType: formData.claimType,
-            incidentDate: formData.incidentDate,
-            incidentDescription: formData.incidentDescription,
-            photos: photoPreviews,
-            bankDetails: {
-                accountNumber: formData.bankAccountNumber,
-                ifsc: formData.bankIFSC,
-                accountHolder: formData.bankAccountHolder
-            },
-            claimedAmount: selectedPolicyData?.coverageAmount,
-            status: 'SUBMITTED',
-            createdAt: new Date().toISOString()
-        };
-
-        // Save to localStorage
-        const existingClaims = JSON.parse(localStorage.getItem('customer_claims') || '[]');
-        existingClaims.push(claimData);
-        localStorage.setItem('customer_claims', JSON.stringify(existingClaims));
-
-        // Show success and redirect
-        alert('Claim submitted successfully! You will receive updates via email.');
-        navigate('/claims');
     };
+
+    if (loadingPolicies) {
+        return (
+            <div className="claim-form-page">
+                <div className="container">
+                    <div className="loading-state">
+                        <div className="spinner"></div>
+                        <p>Loading your policies...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (policies.length === 0) {
+        return (
+            <div className="claim-form-page">
+                <div className="container">
+                    <div className="empty-state">
+                        <h3>No Approved Policies Found</h3>
+                        <p>You need an approved policy to file a claim.</p>
+                        <button className="btn btn-primary" onClick={() => navigate('/policies')}>
+                            Buy a Policy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="claim-form-page">
             <div className="container">
-                <div className="form-container">
-                    <div className="form-header">
-                        <h1>File Insurance Claim</h1>
-                        <p>Submit your claim for quick processing</p>
+                <div className="form-header">
+                    <h1>File Insurance Claim</h1>
+                    <p>Submit your claim for review. Our team will process it within 3-5 business days.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="claim-form">
+                    {/* Policy Selection */}
+                    <div className="form-section">
+                        <h2>Select Policy</h2>
+                        <div className="form-group">
+                            <label>Policy *</label>
+                            <select
+                                name="policyId"
+                                value={formData.policyId}
+                                onChange={handleInputChange}
+                                required
+                                disabled={!!preSelectedPolicy}
+                            >
+                                <option value="">Select a policy</option>
+                                {policies.map(policy => (
+                                    <option key={policy.id} value={policy.id}>
+                                        {policy.policyNumber} - {policy.cattleType} ({policy.tagId})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="claim-form">
-                        {/* Policy Selection */}
-                        <div className="form-section">
-                            <h2 className="section-title">Select Policy</h2>
+                    {/* Claim Details */}
+                    <div className="form-section">
+                        <h2>Claim Details</h2>
 
-                            {policies.length > 0 ? (
-                                <div className="form-group">
-                                    <label>Active Policy *</label>
-                                    <select
-                                        name="policyId"
-                                        value={formData.policyId}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">-- Select Policy --</option>
-                                        {policies.map(policy => (
-                                            <option key={policy.id} value={policy.id}>
-                                                {policy.policyNumber} - {policy.tagId || policy.petName} (Coverage: ₹{policy.coverageAmount?.toLocaleString()})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            ) : (
-                                <div className="alert-warning">
-                                    ⚠️ You don't have any active policies. Please purchase a policy first.
-                                </div>
-                            )}
+                        <div className="form-group">
+                            <label>Claim Type *</label>
+                            <select
+                                name="claimType"
+                                value={formData.claimType}
+                                onChange={handleInputChange}
+                                required
+                            >
+                                <option value="death">Death</option>
+                                <option value="accident">Accident</option>
+                                <option value="disease">Disease</option>
+                                <option value="disability">Permanent Disability</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
 
-                        {/* Claim Details */}
-                        <div className="form-section">
-                            <h2 className="section-title">Claim Details</h2>
-
-                            <div className="form-group">
-                                <label>Claim Type *</label>
-                                <select
-                                    name="claimType"
-                                    value={formData.claimType}
-                                    onChange={handleInputChange}
-                                    required
-                                >
-                                    <option value="death_disease">Death due to Disease (HS, BQ, FMD)</option>
-                                    <option value="death_accident">Accidental Death</option>
-                                </select>
-                            </div>
-
+                        <div className="form-row">
                             <div className="form-group">
                                 <label>Incident Date *</label>
                                 <input
@@ -170,121 +217,113 @@ const ClaimForm = () => {
                             </div>
 
                             <div className="form-group">
-                                <label>Incident Description *</label>
-                                <textarea
-                                    name="incidentDescription"
-                                    value={formData.incidentDescription}
-                                    onChange={handleInputChange}
-                                    rows="4"
-                                    placeholder="Describe what happened in detail..."
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Document Upload */}
-                        <div className="photo-upload-section">
-                            <h3>Upload Documents</h3>
-                            <p className="section-hint">Upload clear photos of required documents. Maximum 1MB per photo.</p>
-
-                            <div className="photos-grid">
-                                <PhotoUpload
-                                    side="incident"
-                                    label="Incident Photo *"
-                                    value={photoPreviews.incident}
-                                    onChange={handlePhotoChange}
-                                    required
-                                />
-                                <PhotoUpload
-                                    side="certificate"
-                                    label="Veterinary Certificate *"
-                                    value={photoPreviews.certificate}
-                                    onChange={handlePhotoChange}
-                                    required
-                                />
-                                <PhotoUpload
-                                    side="additional"
-                                    label="Additional Document (Optional)"
-                                    value={photoPreviews.additional}
-                                    onChange={handlePhotoChange}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Bank Details */}
-                        <div className="form-section">
-                            <h2 className="section-title">Bank Details for Settlement</h2>
-
-                            <div className="form-group">
-                                <label>Account Holder Name *</label>
+                                <label>Incident Location *</label>
                                 <input
                                     type="text"
-                                    name="bankAccountHolder"
-                                    value={formData.bankAccountHolder}
+                                    name="incidentLocation"
+                                    value={formData.incidentLocation}
                                     onChange={handleInputChange}
-                                    placeholder="As per bank records"
+                                    placeholder="Enter location"
                                     required
                                 />
                             </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Account Number *</label>
-                                    <input
-                                        type="text"
-                                        name="bankAccountNumber"
-                                        value={formData.bankAccountNumber}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter account number"
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>IFSC Code *</label>
-                                    <input
-                                        type="text"
-                                        name="bankIFSC"
-                                        value={formData.bankIFSC}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., SBIN0001234"
-                                        pattern="[A-Z]{4}0[A-Z0-9]{6}"
-                                        required
-                                    />
-                                </div>
-                            </div>
                         </div>
 
-                        {/* Terms */}
-                        <div className="form-section">
-                            <div className="checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    id="agreeTerms"
-                                    name="agreeTerms"
-                                    checked={formData.agreeTerms}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                                <label htmlFor="agreeTerms">
-                                    I declare that the information provided is true and accurate. I understand that false claims may result in policy cancellation and legal action.
-                                </label>
-                            </div>
+                        <div className="form-group">
+                            <label>Claim Amount (₹) *</label>
+                            <input
+                                type="number"
+                                name="claimAmount"
+                                value={formData.claimAmount}
+                                onChange={handleInputChange}
+                                placeholder="Enter claim amount"
+                                min="1"
+                                required
+                            />
+                            <small className="form-hint">
+                                Maximum claim amount is the coverage amount of your policy
+                            </small>
                         </div>
 
-                        {/* Submit Button */}
+                        <div className="form-group">
+                            <label>Description *</label>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                rows="5"
+                                placeholder="Provide detailed description of the incident..."
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Document Upload */}
+                    <div className="form-section">
+                        <h2>Upload Documents</h2>
+                        <p className="section-hint">
+                            Upload clear photos of relevant documents. At least one incident photo is required.
+                        </p>
+
+                        <div className="documents-grid">
+                            <PhotoUpload
+                                side="incident"
+                                label="Incident Photo *"
+                                value={documentPreviews.incident}
+                                onChange={handlePhotoChange}
+                                required
+                            />
+                            <PhotoUpload
+                                side="postmortem"
+                                label="Post-mortem Report"
+                                value={documentPreviews.postmortem}
+                                onChange={handlePhotoChange}
+                            />
+                            <PhotoUpload
+                                side="veterinary"
+                                label="Veterinary Certificate"
+                                value={documentPreviews.veterinary}
+                                onChange={handlePhotoChange}
+                            />
+                            <PhotoUpload
+                                side="other"
+                                label="Other Documents"
+                                value={documentPreviews.other}
+                                onChange={handlePhotoChange}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Important Notes */}
+                    <div className="info-box">
+                        <h4>📋 Important Notes</h4>
+                        <ul>
+                            <li>Claims must be filed within 24 hours of the incident</li>
+                            <li>Post-mortem report is mandatory for death claims</li>
+                            <li>Veterinary certificate is required for disease/disability claims</li>
+                            <li>All documents should be clear and legible</li>
+                            <li>False claims may result in policy cancellation</li>
+                        </ul>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="form-actions">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate('/claims')}
+                        >
+                            Cancel
+                        </button>
                         <button
                             type="submit"
-                            className="btn btn-primary btn-block btn-large"
-                            disabled={policies.length === 0}
+                            className="btn btn-primary"
+                            disabled={loading}
                         >
-                            Submit Claim
+                            {loading ? 'Submitting...' : 'Submit Claim'}
                         </button>
-
-                        <div className="info-note">
-                            📋 Claims are typically processed within 7 working days. You will receive updates via email.
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     );

@@ -1,113 +1,29 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { getCurrentCustomer } from '../utils/authUtils';
 import './PaymentSuccess.css';
 
 const PaymentSuccess = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { policyNumber, premium, policyData } = location.state || {};
+    const { policyNumber, premium, policyData, paymentId, pendingApproval } = location.state || {};
 
     useEffect(() => {
         if (!policyNumber) {
             navigate('/profile');
             return;
         }
+        // Backend handles policy creation and status updates.
+        // No local storage synchronization needed.
+    }, [policyNumber, navigate]);
 
-        // Save policy to localStorage
-        const customer = getCurrentCustomer();
-        if (customer && policyData) {
-            // Calculate dates
-            const startDate = new Date();
-            const duration = policyData.selectedPlan?.duration || '1 Year';
-            const years = parseInt(duration.split(' ')[0]);
-            const endDate = new Date(startDate);
-            endDate.setFullYear(endDate.getFullYear() + years);
-
-            // Create complete policy object
-            const completePolicy = {
-                id: policyData.id || Date.now(),
-                policyNumber: policyNumber,
-                customerId: customer.id,
-                customerEmail: customer.email,
-                customerName: customer.fullName,
-
-                // Cattle details
-                cattleType: policyData.cattleType || policyData.petType,
-                tagId: policyData.tagId || policyData.petName,
-                petName: policyData.tagId || policyData.petName,
-                petType: policyData.cattleType || policyData.petType,
-                petAge: policyData.age,
-                petBreed: policyData.breed,
-                age: policyData.age,
-                breed: policyData.breed,
-                gender: policyData.gender,
-                milkYield: policyData.milkYield,
-                healthStatus: policyData.healthStatus,
-
-                // Policy details
-                coverageAmount: policyData.coverageAmount || policyData.selectedPlan?.coverage,
-                premium: premium || policyData.premium,
-                duration: duration,
-                startDate: startDate.toISOString().split('T')[0],
-                endDate: endDate.toISOString().split('T')[0],
-
-                // Status
-                status: 'APPROVED', // Approved after payment
-                paymentStatus: 'PAID',
-
-                // Photos
-                photos: policyData.photos,
-
-                // Owner details
-                ownerName: policyData.ownerName,
-                email: policyData.email,
-                phone: policyData.phone,
-                address: policyData.address,
-                city: policyData.city,
-                state: policyData.state,
-                pincode: policyData.pincode,
-
-                // Agent
-                agentCode: policyData.agentCode,
-
-                // Timestamps
-                createdAt: policyData.submittedAt || new Date().toISOString(),
-                approvedAt: new Date().toISOString(),
-                paidAt: new Date().toISOString()
-            };
-
-            // Get existing policies
-            const existingPolicies = JSON.parse(localStorage.getItem('customer_policies') || '[]');
-
-            // Find if this policy already exists (by ID, not policyNumber)
-            const existingPolicyIndex = existingPolicies.findIndex(p => p.id === policyData.id);
-
-            if (existingPolicyIndex !== -1) {
-                // Update existing PENDING policy to APPROVED
-                existingPolicies[existingPolicyIndex] = {
-                    ...existingPolicies[existingPolicyIndex],
-                    policyNumber: policyNumber,
-                    status: 'APPROVED',
-                    paymentStatus: 'PAID',
-                    approvedAt: new Date().toISOString(),
-                    paidAt: new Date().toISOString()
-                };
-
-                localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
-                console.log('Policy updated to APPROVED:', existingPolicies[existingPolicyIndex]);
-            } else {
-                // Create new policy if not found (fallback)
-                const policyExists = existingPolicies.some(p => p.policyNumber === policyNumber);
-
-                if (!policyExists) {
-                    existingPolicies.push(completePolicy);
-                    localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
-                    console.log('Policy created as APPROVED:', completePolicy);
-                }
-            }
+    // Helper to format date safely
+    const formatDate = (dateString, fallback = new Date()) => {
+        try {
+            return new Date(dateString || fallback).toLocaleDateString('en-IN');
+        } catch (e) {
+            return new Date().toLocaleDateString('en-IN');
         }
-    }, [policyNumber, navigate, policyData, premium]);
+    };
 
     return (
         <div className="payment-success-page">
@@ -120,13 +36,36 @@ const PaymentSuccess = () => {
 
                 <h1 className="success-title">Payment Successful!</h1>
                 <p className="success-subtitle">
-                    Your cattle insurance policy has been activated
+                    {pendingApproval
+                        ? 'Your payment has been received. Policy is pending admin approval.'
+                        : 'Your cattle insurance policy has been activated'
+                    }
                 </p>
+
+                {pendingApproval && (
+                    <div className="approval-notice" style={{
+                        background: '#fff3cd',
+                        border: '1px solid #ffc107',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        margin: '20px 0',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '48px', marginBottom: '10px' }}>⏳</div>
+                        <h3 style={{ color: '#856404', margin: '0 0 8px 0' }}>Awaiting Admin Approval</h3>
+                        <p style={{ color: '#856404', margin: 0, fontSize: '14px' }}>
+                            Your policy will be activated once approved by our admin team.
+                            You will receive an email notification upon approval.
+                        </p>
+                    </div>
+                )}
 
                 <div className="policy-details-card">
                     <div className="policy-header">
                         <h2>Policy Details</h2>
-                        <span className="status-badge active">Active</span>
+                        <span className={`status-badge ${pendingApproval ? 'pending' : 'active'}`}>
+                            {pendingApproval ? 'Pending Approval' : 'Active'}
+                        </span>
                     </div>
 
                     <div className="policy-info">
@@ -137,7 +76,7 @@ const PaymentSuccess = () => {
                         <div className="info-row">
                             <span className="label">Cattle Type</span>
                             <span className="value">
-                                {policyData?.petType === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}
+                                {String(policyData?.cattleType || policyData?.petType).toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}
                             </span>
                         </div>
                         <div className="info-row">
@@ -154,14 +93,20 @@ const PaymentSuccess = () => {
                         </div>
                         <div className="info-row">
                             <span className="label">Policy Start Date</span>
-                            <span className="value">{new Date().toLocaleDateString('en-IN')}</span>
+                            <span className="value">{formatDate(policyData?.startDate)}</span>
                         </div>
                         <div className="info-row">
                             <span className="label">Policy End Date</span>
-                            <span className="value">
-                                {new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString('en-IN')}
-                            </span>
+                            <span className="value">{formatDate(policyData?.endDate)}</span>
                         </div>
+                        {paymentId && (
+                            <div className="info-row">
+                                <span className="label">Payment ID</span>
+                                <span className="value" style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
+                                    {paymentId}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -171,13 +116,22 @@ const PaymentSuccess = () => {
                         <div className="step-card">
                             <div className="step-icon">📧</div>
                             <h4>Check Your Email</h4>
-                            <p>Policy documents sent to {policyData?.email}</p>
+                            <p>{pendingApproval ? 'Approval notification will be sent to' : 'Policy documents sent to'} {policyData?.ownerEmail || policyData?.email || 'your email'}</p>
                         </div>
-                        <div className="step-card">
-                            <div className="step-icon">📱</div>
-                            <h4>Download Policy</h4>
-                            <p>Access your policy from dashboard</p>
-                        </div>
+                        {!pendingApproval && (
+                            <div className="step-card">
+                                <div className="step-icon">📱</div>
+                                <h4>Download Policy</h4>
+                                <p>Access your policy from dashboard</p>
+                            </div>
+                        )}
+                        {pendingApproval && (
+                            <div className="step-card">
+                                <div className="step-icon">⏰</div>
+                                <h4>Approval Timeline</h4>
+                                <p>Usually processed within 24-48 hours</p>
+                            </div>
+                        )}
                         <div className="step-card">
                             <div className="step-icon">🏥</div>
                             <h4>Emergency Support</h4>
@@ -187,7 +141,7 @@ const PaymentSuccess = () => {
                 </div>
 
                 <div className="action-buttons">
-                    <Link to="/profile" state={{ activeTab: 'policies' }} className="btn btn-primary">
+                    <Link to="/my-policies" className="btn btn-primary">
                         View My Policies
                     </Link>
                     <Link to="/" className="btn btn-outline">
@@ -195,14 +149,16 @@ const PaymentSuccess = () => {
                     </Link>
                 </div>
 
-                <div className="download-section">
-                    <button className="download-btn">
-                        📄 Download Policy Document
-                    </button>
-                    <button className="download-btn">
-                        🖨️ Print Policy
-                    </button>
-                </div>
+                {!pendingApproval && (
+                    <div className="download-section">
+                        <button className="download-btn">
+                            📄 Download Policy Document
+                        </button>
+                        <button className="download-btn">
+                            🖨️ Print Policy
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

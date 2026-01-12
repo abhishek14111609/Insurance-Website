@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginAdmin } from '../../utils/authUtils';
+import { authAPI } from '../../services/api.service';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
@@ -21,7 +21,7 @@ const AdminLogin = () => {
         setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
@@ -32,12 +32,30 @@ const AdminLogin = () => {
             return;
         }
 
-        const result = loginAdmin(formData.username, formData.password);
+        try {
+            // Note: Backend expects 'email' not 'username', but we can check if username is email
+            // If user enters 'admin', we might need to map it to 'admin@securelife.com' or modify backend to accept username.
+            // For now, let's assume username field accepts email.
+            // If the user enters 'admin', and backend only takes email, it will fail.
+            // The seeds created 'admin@securelife.com'.
+            // I'll assume the user enters the email or I'll handle simple 'admin' alias here.
 
-        if (result.success) {
-            navigate('/');
-        } else {
-            setError(result.message);
+            let loginIdentifier = formData.username;
+            if (loginIdentifier === 'admin') {
+                loginIdentifier = 'admin@securelife.com';
+            }
+
+            const result = await authAPI.login({
+                email: loginIdentifier,
+                password: formData.password
+            });
+
+            if (result.success) {
+                navigate('/');
+            }
+        } catch (err) {
+            setError(err.message || 'Login failed. Please check credentials.');
+        } finally {
             setIsSubmitting(false);
         }
     };
@@ -60,14 +78,14 @@ const AdminLogin = () => {
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="username">Username</label>
+                        <label htmlFor="username">Email or Username</label>
                         <input
                             type="text"
                             id="username"
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            placeholder="Enter your username"
+                            placeholder="Enter email (admin@securelife.com)"
                             autoFocus
                         />
                     </div>
@@ -105,7 +123,7 @@ const AdminLogin = () => {
                 <div className="login-footer">
                     <p className="demo-credentials">
                         <strong>Demo Credentials:</strong><br />
-                        Username: admin<br />
+                        Email: admin@securelife.com (or admin)<br />
                         Password: admin123
                     </p>
                 </div>

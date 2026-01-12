@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCurrentCustomer, isCustomerLoggedIn } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
+import { policyAPI, paymentAPI } from '../services/api.service';
 import PhotoUpload from '../components/PhotoUpload';
 import AgentCodeInput from '../components/AgentCodeInput';
 import { formatCurrency } from '../constants/policyPlans';
@@ -9,6 +10,7 @@ import './AnimalPolicyForm.css';
 const AnimalPolicyForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
     const { selectedPlan } = location.state || {};
 
     // Redirect if no plan selected
@@ -65,17 +67,12 @@ const AnimalPolicyForm = () => {
         right: null
     });
 
-    const [currentUser, setCurrentUser] = useState(null);
-
-    // Login check and pre-fill
+    // Login check and pre-fill from AuthContext
     useEffect(() => {
-        if (!isCustomerLoggedIn()) {
+        if (!isAuthenticated) {
             navigate('/login', { state: { from: '/animal-policy-form', selectedPlan } });
             return;
         }
-
-        const user = getCurrentCustomer();
-        setCurrentUser(user);
 
         if (user) {
             setFormData(prev => ({
@@ -89,7 +86,7 @@ const AnimalPolicyForm = () => {
                 pincode: user.pincode || ''
             }));
         }
-    }, [navigate, selectedPlan]);
+    }, [user, isAuthenticated, navigate, selectedPlan]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -104,14 +101,12 @@ const AnimalPolicyForm = () => {
         setPhotoPreviews(prev => ({ ...prev, [side]: preview }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate all 4 photos uploaded
-        const allPhotosUploaded = Object.values(photoFiles).every(file => file !== null);
-
-        if (!allPhotosUploaded) {
-            alert('Please upload all 4 cattle photos (Front, Back, Left, Right)');
+        // Validate photos
+        if (!photoPreviews.front || !photoPreviews.back || !photoPreviews.left || !photoPreviews.right) {
+            alert('Please upload all 4 required photos of the cattle.');
             return;
         }
 
@@ -120,34 +115,33 @@ const AnimalPolicyForm = () => {
             return;
         }
 
-        // Calculate dates
+        // Calculate usage duration
         const startDate = new Date();
         const duration = selectedPlan.duration;
         const years = parseInt(duration.split(' ')[0]);
         const endDate = new Date(startDate);
         endDate.setFullYear(endDate.getFullYear() + years);
 
-        // Create policy data
-        const policyData = {
-            id: Date.now(),
-            policyNumber: `POL-${Date.now()}`,
-            customerId: currentUser.id,
-            customerEmail: currentUser.email,
-            customerName: currentUser.fullName,
-
-            // Form data
-            ...formData,
-
-            // Cattle details (map to both naming conventions)
+        const policyPayload = {
+            // Cattle Details
             cattleType: formData.cattleType,
-            petType: formData.cattleType,
             tagId: formData.tagId,
-            petName: formData.tagId,
-            petAge: formData.age,
-            petBreed: formData.breed,
+            age: parseInt(formData.age),
+            breed: formData.breed,
+            gender: formData.gender,
+            milkYield: parseFloat(formData.milkYield || 0),
+            healthStatus: formData.healthStatus,
+
+            // Owner Details
+            ownerName: formData.ownerName,
+            ownerEmail: formData.email,
+            ownerPhone: formData.phone,
+            ownerAddress: formData.address,
+            ownerCity: formData.city,
+            ownerState: formData.state,
+            ownerPincode: formData.pincode,
 
             // Plan details
-            selectedPlan,
             coverageAmount: selectedPlan.coverage,
             premium: selectedPlan.premium,
             duration: duration,
@@ -156,32 +150,107 @@ const AnimalPolicyForm = () => {
 
             // Photos
             photos: photoPreviews,
-            photoFiles,
 
-            // Status
-            status: 'PENDING', // Pending until payment
-            paymentStatus: 'PENDING',
-
-            // Timestamps
-            submittedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString()
+            // Agent Code
+            agentCode: formData.agentCode
         };
 
-        // Save PENDING policy to localStorage
-        const existingPolicies = JSON.parse(localStorage.getItem('customer_policies') || '[]');
-        existingPolicies.push(policyData);
-        localStorage.setItem('customer_policies', JSON.stringify(existingPolicies));
+        try {
+            // 1. Create Policy in Backend
+            const policyResponse = await policyAPI.create(policyPayload);
 
-        // Navigate to payment
-        navigate('/payment', {
-            state: {
-                policyData,
-                premium: selectedPlan.premium
+            if (!policyResponse.success) {
+                throw new Error(policyResponse.message || 'Failed to create policy');
             }
-        });
+
+            const policy = policyResponse.data.policy;
+            console.log('Policy created:', policy);
+
+            // 2. Create Razorpay Order
+            const orderResponse = await paymentAPI.createOrder({
+                policyId: policy.id,
+                amount: selectedPlan.premium
+            });
+
+            if (!orderResponse.success) {
+                throw new Error(orderResponse.message || 'Failed to create payment order');
+            }
+
+            const { orderId, keyId, amount: orderAmount, currency } = orderResponse.data;
+
+            // 3. Open Razorpay Checkout
+            const options = {
+                key: keyId,
+                amount: orderAmount,
+                currency: currency,
+                name: "SecureLife Insurance",
+                description: `Premium for Policy #${policy.policyNumber}`,
+                order_id: orderId,
+                prefill: {
+                    name: formData.ownerName,
+                    email: formData.email,
+                    contact: formData.phone
+                },
+                theme: {
+                    color: "#2C3E50"
+                },
+                handler: async function (response) {
+                    try {
+                        // 4. Verify Payment in Backend
+                        const verifyResponse = await paymentAPI.verifyPayment({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            policyId: policy.id
+                        });
+
+                        if (verifyResponse.success) {
+                            // 5. Success - Navigate
+                            navigate('/payment-success', {
+                                state: {
+                                    policyNumber: policy.policyNumber,
+                                    premium: selectedPlan.premium,
+                                    paymentId: response.razorpay_payment_id,
+                                    pendingApproval: true,
+                                    policyData: verifyResponse.data.policy
+                                }
+                            });
+                        } else {
+                            throw new Error('Payment verification failed');
+                        }
+                    } catch (err) {
+                        console.error('Verification Error:', err);
+                        alert('Payment verification failed. Please contact support.');
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        alert('Payment cancelled by user');
+                    }
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error('Payment Failed:', response.error);
+                navigate('/payment-failure', {
+                    state: {
+                        reason: response.error.description,
+                        premium: selectedPlan.premium,
+                        errorCode: response.error.code
+                    }
+                });
+            });
+
+            rzp.open();
+
+        } catch (error) {
+            console.error('Submission Error:', error);
+            alert(error.message || 'An error occurred while processing your request.');
+        }
     };
 
-    if (!currentUser || !selectedPlan) return null;
+    if (!user || !selectedPlan) return <div className="loading">Loading...</div>;
 
     return (
         <div className="animal-policy-form">

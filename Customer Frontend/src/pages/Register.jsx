@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerCustomer, loginCustomer } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 import './Register.css';
 
 const Register = () => {
     const navigate = useNavigate();
+    const { register } = useAuth();
+
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -75,27 +77,34 @@ const Register = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) return;
 
         setIsSubmitting(true);
 
-        // Register user
-        const result = registerCustomer(formData);
-
-        if (result.success) {
-            // Auto-login after registration
-            loginCustomer(formData.email, formData.password);
+        try {
+            // Register user via AuthContext
+            await register({
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                password: formData.password,
+                address: formData.address,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode,
+                role: 'customer'
+            });
 
             // Dispatch custom event to notify navbar
             window.dispatchEvent(new Event('customerLogin'));
 
             alert('Registration successful! Welcome to SecureLife!');
-            navigate('/');
-        } else {
-            setErrors({ email: result.message });
+            navigate('/dashboard');
+        } catch (error) {
+            setErrors({ email: error.message || 'Registration failed. Please try again.' });
             setIsSubmitting(false);
         }
     };

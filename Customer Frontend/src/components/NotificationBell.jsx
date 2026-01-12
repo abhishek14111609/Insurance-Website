@@ -1,51 +1,74 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import { notificationAPI } from '../services/api.service';
 import './NotificationBell.css';
 
 const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Load notifications from localStorage (will be from API later)
-        const loadNotifications = () => {
-            const saved = JSON.parse(localStorage.getItem('customer_notifications') || '[]');
-            setNotifications(saved);
-            setUnreadCount(saved.filter(n => !n.isRead).length);
-        };
-
         loadNotifications();
 
-        // Listen for new notifications
-        window.addEventListener('storage', loadNotifications);
-        return () => window.removeEventListener('storage', loadNotifications);
+        // Poll for new notifications every 30 seconds
+        const interval = setInterval(loadNotifications, 30000);
+        return () => clearInterval(interval);
     }, []);
 
-    const markAsRead = (id) => {
-        const updated = notifications.map(n =>
-            n.id === id ? { ...n, isRead: true } : n
-        );
-        setNotifications(updated);
-        localStorage.setItem('customer_notifications', JSON.stringify(updated));
-        setUnreadCount(updated.filter(n => !n.isRead).length);
+    const loadNotifications = async () => {
+        try {
+            setLoading(true);
+            const response = await notificationAPI.getAll({ limit: 10 });
+            if (response.success) {
+                setNotifications(response.data.notifications || []);
+                setUnreadCount(response.data.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const markAllAsRead = () => {
-        const updated = notifications.map(n => ({ ...n, isRead: true }));
-        setNotifications(updated);
-        localStorage.setItem('customer_notifications', JSON.stringify(updated));
-        setUnreadCount(0);
+    const markAsRead = async (id) => {
+        try {
+            await notificationAPI.markAsRead(id);
+            // Update local state
+            const updated = notifications.map(n =>
+                n.id === id ? { ...n, isRead: true } : n
+            );
+            setNotifications(updated);
+            setUnreadCount(Math.max(0, unreadCount - 1));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            await notificationAPI.markAllAsRead();
+            // Update local state
+            const updated = notifications.map(n => ({ ...n, isRead: true }));
+            setNotifications(updated);
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
     };
 
     const getNotificationIcon = (type) => {
         const icons = {
-            POLICY: '📄',
-            PAYMENT: '💳',
-            CLAIM: '🏥',
-            RENEWAL: '🔄',
-            ADMIN: '⚙️'
+            policy_approved: '✅',
+            policy_rejected: '❌',
+            commission_earned: '💰',
+            withdrawal_approved: '✅',
+            withdrawal_rejected: '❌',
+            claim_status: '🏥',
+            agent_approved: '🤝',
+            payment_success: '💳',
+            broadcast: '📢'
         };
         return icons[type] || '📢';
     };
@@ -98,14 +121,21 @@ const NotificationBell = () => {
                         </div>
 
                         <div className="notification-list">
-                            {notifications.length > 0 ? (
+                            {loading ? (
+                                <div className="notification-loading">
+                                    <div className="spinner-small"></div>
+                                    <p>Loading...</p>
+                                </div>
+                            ) : notifications.length > 0 ? (
                                 notifications.slice(0, 5).map(notification => (
-                                    <Link
+                                    <div
                                         key={notification.id}
-                                        to={notification.link || '#'}
                                         className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
                                         onClick={() => {
                                             markAsRead(notification.id);
+                                            if (notification.actionUrl) {
+                                                window.location.href = notification.actionUrl;
+                                            }
                                             setIsOpen(false);
                                         }}
                                     >
@@ -120,7 +150,7 @@ const NotificationBell = () => {
                                             </span>
                                         </div>
                                         {!notification.isRead && <span className="unread-dot"></span>}
-                                    </Link>
+                                    </div>
                                 ))
                             ) : (
                                 <div className="notification-empty">
@@ -145,7 +175,5 @@ const NotificationBell = () => {
         </div>
     );
 };
-
-NotificationBell.propTypes = {};
 
 export default NotificationBell;

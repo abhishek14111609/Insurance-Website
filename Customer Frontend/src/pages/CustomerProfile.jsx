@@ -1,154 +1,180 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    getCurrentCustomer,
-    updateCustomerProfile,
-    changePassword,
-    getCustomerPolicies,
-    logoutCustomer
-} from '../utils/authUtils';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { policyAPI } from '../services/api.service';
 import './CustomerProfile.css';
 
 const CustomerProfile = () => {
     const navigate = useNavigate();
-    const [customer, setCustomer] = useState(null);
-    const location = useLocation();
-    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'profile'); // profile, policies, claims, renewals, password
-    const [isEditing, setIsEditing] = useState(false);
+    const { user, updateUser, logout, refreshUser } = useAuth();
 
-    // Forms State
-    const [profileForm, setProfileForm] = useState({});
-    const [passwordForm, setPasswordForm] = useState({
+    const [activeTab, setActiveTab] = useState('profile');
+    const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [policies, setPolicies] = useState([]);
+    const [policiesLoading, setPoliciesLoading] = useState(true);
+
+    const [profileData, setProfileData] = useState({
+        fullName: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: ''
+    });
+
+    const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
 
-    // Feedback State
-    const [successMsg, setSuccessMsg] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
+    const [message, setMessage] = useState({ type: '', text: '' });
 
+    // Load user data
     useEffect(() => {
-        const current = getCurrentCustomer();
-        if (!current) {
-            navigate('/login');
+        if (user) {
+            setProfileData({
+                fullName: user.fullName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                address: user.address || '',
+                city: user.city || '',
+                state: user.state || '',
+                pincode: user.pincode || ''
+            });
+        }
+    }, [user]);
+
+    // Fetch policies
+    useEffect(() => {
+        fetchPolicies();
+    }, []);
+
+    const fetchPolicies = async () => {
+        try {
+            setPoliciesLoading(true);
+            const response = await policyAPI.getAll();
+            if (response.success) {
+                setPolicies(response.data.policies || []);
+            }
+        } catch (error) {
+            console.error('Error fetching policies:', error);
+        } finally {
+            setPoliciesLoading(false);
+        }
+    };
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage({ type: '', text: '' });
+
+        try {
+            await updateUser(profileData);
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setIsEditing(false);
+            await refreshUser();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage({ type: '', text: '' });
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setMessage({ type: 'error', text: 'New passwords do not match' });
+            setLoading(false);
             return;
         }
-        setCustomer(current);
-        setProfileForm(current);
-    }, [navigate]);
+
+        if (passwordData.newPassword.length < 6) {
+            setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const { authAPI } = await import('../services/api.service');
+            await authAPI.changePassword({
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+
+            setMessage({ type: 'success', text: 'Password changed successfully!' });
+            setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message || 'Failed to change password' });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogout = () => {
-        logoutCustomer();
-        navigate('/');
+        logout();
     };
 
-    const handleProfileUpdate = (e) => {
-        e.preventDefault();
-        setErrorMsg('');
-        setSuccessMsg('');
-
-        const result = updateCustomerProfile(profileForm);
-        if (result.success) {
-            setCustomer(result.user);
-            setIsEditing(false);
-            setSuccessMsg('Profile updated successfully!');
-            setTimeout(() => setSuccessMsg(''), 3000);
-        } else {
-            setErrorMsg(result.message);
-        }
-    };
-
-    const handlePasswordChange = (e) => {
-        e.preventDefault();
-        setErrorMsg('');
-        setSuccessMsg('');
-
-        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            setErrorMsg('New passwords do not match');
-            return;
-        }
-
-        if (passwordForm.newPassword.length < 6) {
-            setErrorMsg('New password must be at least 6 characters');
-            return;
-        }
-
-        const result = changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-        if (result.success) {
-            setSuccessMsg(result.message);
-            setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            setTimeout(() => setSuccessMsg(''), 3000);
-        } else {
-            setErrorMsg(result.message);
-        }
-    };
-
-    if (!customer) return null;
-
-    const policies = getCustomerPolicies();
+    if (!user) {
+        return <div className="loading">Loading...</div>;
+    }
 
     return (
-        <div className="profile-page">
+        <div className="customer-profile-page">
             <div className="profile-container">
-                <div className="profile-sidebar">
-                    <div className="user-brief">
-                        <div className="avatar-circle">
-                            {customer.fullName.charAt(0)}
-                        </div>
-                        <h3>{customer.fullName}</h3>
-                        <p>{customer.email}</p>
-                    </div>
-
-                    <nav className="profile-nav">
-                        <button
-                            className={activeTab === 'profile' ? 'active' : ''}
-                            onClick={() => setActiveTab('profile')}
-                        >
-                            <span className="icon">👤</span> My Profile
-                        </button>
-                        <button
-                            className={activeTab === 'policies' ? 'active' : ''}
-                            onClick={() => setActiveTab('policies')}
-                        >
-                            <span className="icon">📄</span> My Policies
-                        </button>
-                        <button
-                            className={activeTab === 'claims' ? 'active' : ''}
-                            onClick={() => setActiveTab('claims')}
-                        >
-                            <span className="icon">🏥</span> My Claims
-                        </button>
-                        <button
-                            className={activeTab === 'renewals' ? 'active' : ''}
-                            onClick={() => setActiveTab('renewals')}
-                        >
-                            <span className="icon">🔄</span> Renewals
-                        </button>
-                        <button
-                            className={activeTab === 'password' ? 'active' : ''}
-                            onClick={() => setActiveTab('password')}
-                        >
-                            <span className="icon">🔒</span> Change Password
-                        </button>
-                        <button className="logout-btn" onClick={handleLogout}>
-                            <span className="icon">🚪</span> Logout
-                        </button>
-                    </nav>
+                <div className="profile-header">
+                    <h1>My Account</h1>
+                    <p>Manage your profile and view your policies</p>
                 </div>
 
-                <div className="profile-content">
-                    {successMsg && <div className="alert-success">{successMsg}</div>}
-                    {errorMsg && <div className="alert-error">{errorMsg}</div>}
+                {message.text && (
+                    <div className={`alert alert-${message.type}`}>
+                        {message.text}
+                    </div>
+                )}
 
-                    {/* Profile Tab */}
+                <div className="profile-tabs">
+                    <button
+                        className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('profile')}
+                    >
+                        Profile Information
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('security')}
+                    >
+                        Security
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'policies' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('policies')}
+                    >
+                        My Policies
+                    </button>
+                </div>
+
+                <div className="tab-content">
                     {activeTab === 'profile' && (
-                        <div className="tab-content animate-fade-in">
-                            <div className="content-header">
-                                <h2>Personal Information</h2>
-                                {!isEditing && (
-                                    <button className="btn btn-outline" onClick={() => setIsEditing(true)}>
-                                        ✏️ Edit Profile
+                        <div className="profile-section">
+                            <div className="section-header">
+                                <h2>Profile Information</h2>
+                                {!isEditing ? (
+                                    <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
+                                        Edit Profile
+                                    </button>
+                                ) : (
+                                    <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
+                                        Cancel
                                     </button>
                                 )}
                             </div>
@@ -159,205 +185,173 @@ const CustomerProfile = () => {
                                         <label>Full Name</label>
                                         <input
                                             type="text"
-                                            value={profileForm.fullName || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                                            value={profileData.fullName}
+                                            onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
                                             disabled={!isEditing}
                                             required
                                         />
                                     </div>
+
                                     <div className="form-group">
-                                        <label>Email Address</label>
+                                        <label>Email</label>
                                         <input
                                             type="email"
-                                            value={profileForm.email || ''}
-                                            disabled={true}
-                                            className="disabled-input"
+                                            value={profileData.email}
+                                            disabled
                                         />
                                     </div>
+
                                     <div className="form-group">
-                                        <label>Phone Number</label>
+                                        <label>Phone</label>
                                         <input
                                             type="tel"
-                                            value={profileForm.phone || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                                            value={profileData.phone}
+                                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                                             disabled={!isEditing}
                                             required
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label>Date of Birth</label>
-                                        <input
-                                            type="date"
-                                            value={profileForm.dateOfBirth || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
-                                            disabled={!isEditing}
-                                            required
-                                        />
-                                    </div>
+
                                     <div className="form-group full-width">
                                         <label>Address</label>
                                         <textarea
-                                            value={profileForm.address || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                                            value={profileData.address}
+                                            onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
                                             disabled={!isEditing}
-                                            rows="2"
+                                            rows="3"
                                         />
                                     </div>
+
                                     <div className="form-group">
                                         <label>City</label>
                                         <input
                                             type="text"
-                                            value={profileForm.city || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                                            value={profileData.city}
+                                            onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
                                             disabled={!isEditing}
-                                            required
                                         />
                                     </div>
+
                                     <div className="form-group">
                                         <label>State</label>
                                         <input
                                             type="text"
-                                            value={profileForm.state || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
+                                            value={profileData.state}
+                                            onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
                                             disabled={!isEditing}
-                                            required
                                         />
                                     </div>
+
                                     <div className="form-group">
                                         <label>Pincode</label>
                                         <input
                                             type="text"
-                                            value={profileForm.pincode || ''}
-                                            onChange={(e) => setProfileForm({ ...profileForm, pincode: e.target.value })}
+                                            value={profileData.pincode}
+                                            onChange={(e) => setProfileData({ ...profileData, pincode: e.target.value })}
                                             disabled={!isEditing}
-                                            required
+                                            maxLength="6"
                                         />
                                     </div>
                                 </div>
 
                                 {isEditing && (
-                                    <div className="form-actions">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
-                                        <button type="submit" className="btn btn-primary">Save Changes</button>
-                                    </div>
+                                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                                        {loading ? 'Saving...' : 'Save Changes'}
+                                    </button>
                                 )}
                             </form>
                         </div>
                     )}
 
-                    {/* Policies Tab */}
-                    {activeTab === 'policies' && (
-                        <div className="tab-content animate-fade-in">
-                            <div className="content-header">
-                                <h2>My Policies</h2>
-                                <button className="btn btn-primary" onClick={() => navigate('/')}>+ Buy New Policy</button>
-                            </div>
-
-                            {policies.length > 0 ? (
-                                <div className="policy-grid">
-                                    {policies.map((policy, index) => (
-                                        <div key={index} className="policy-card">
-                                            <div className="policy-header">
-                                                <span className="policy-type">🐾 Cattle Insurance</span>
-                                                <span className="policy-status active">Active</span>
-                                            </div>
-                                            <div className="policy-body">
-                                                <p><strong>Cattle Type:</strong> {policy.petType}</p>
-                                                <p><strong>Tag/Name:</strong> {policy.tagId || policy.petName}</p>
-                                                <p><strong>Value:</strong> ₹{policy.marketValue}</p>
-                                                <p><strong>Premium:</strong> ₹{policy.premium}</p>
-                                            </div>
-                                            <div className="policy-footer">
-                                                <button
-                                                    className="btn btn-sm btn-outline"
-                                                    onClick={() => navigate(`/policy/${policy.id}`)}
-                                                >
-                                                    View Details
-                                                </button>
-                                                <button className="btn btn-sm btn-outline">Download PDF</button>
-                                                <button className="btn btn-sm btn-primary">File Claim</button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <span style={{ fontSize: '4rem' }}>📄</span>
-                                    <h3>No Policies Found</h3>
-                                    <p>You haven't purchased any insurance policies yet.</p>
-                                    <button className="btn btn-primary" onClick={() => navigate('/animal-insurance')}>
-                                        Get Protected Now
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Claims Tab */}
-                    {activeTab === 'claims' && (
-                        <div className="tab-content animate-fade-in">
-                            <div className="content-header">
-                                <h2>My Claims</h2>
-                                <button className="btn btn-primary">File New Claim</button>
-                            </div>
-                            <div className="empty-state">
-                                <span style={{ fontSize: '4rem' }}>🏥</span>
-                                <h3>No Claims Found</h3>
-                                <p>You have no active or past claims.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Renewals Tab */}
-                    {activeTab === 'renewals' && (
-                        <div className="tab-content animate-fade-in">
-                            <div className="content-header">
-                                <h2>Upcoming Renewals</h2>
-                            </div>
-                            <div className="empty-state">
-                                <span style={{ fontSize: '4rem' }}>🔄</span>
-                                <h3>No Renewals Due</h3>
-                                <p>All your policies are up to date! Check back later.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Password Tab */}
-                    {activeTab === 'password' && (
-                        <div className="tab-content animate-fade-in">
-                            <div className="content-header">
-                                <h2>Change Password</h2>
-                            </div>
-                            <form onSubmit={handlePasswordChange} style={{ maxWidth: '500px' }}>
-                                <div className="form-group mb-3">
+                    {activeTab === 'security' && (
+                        <div className="security-section">
+                            <h2>Change Password</h2>
+                            <form onSubmit={handlePasswordChange}>
+                                <div className="form-group">
                                     <label>Current Password</label>
                                     <input
                                         type="password"
-                                        value={passwordForm.currentPassword}
-                                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                                        value={passwordData.currentPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                                         required
                                     />
                                 </div>
-                                <div className="form-group mb-3">
+
+                                <div className="form-group">
                                     <label>New Password</label>
                                     <input
                                         type="password"
-                                        value={passwordForm.newPassword}
-                                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                        value={passwordData.newPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                         required
+                                        minLength="6"
                                     />
                                 </div>
-                                <div className="form-group mb-4">
+
+                                <div className="form-group">
                                     <label>Confirm New Password</label>
                                     <input
                                         type="password"
-                                        value={passwordForm.confirmPassword}
-                                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                                        value={passwordData.confirmPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                         required
                                     />
                                 </div>
-                                <button type="submit" className="btn btn-primary">Update Password</button>
+
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? 'Changing...' : 'Change Password'}
+                                </button>
                             </form>
+
+                            <div className="logout-section">
+                                <h3>Logout</h3>
+                                <p>Sign out of your account</p>
+                                <button className="btn btn-danger" onClick={handleLogout}>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'policies' && (
+                        <div className="policies-section">
+                            <h2>My Policies</h2>
+                            {policiesLoading ? (
+                                <div className="loading">Loading policies...</div>
+                            ) : policies.length === 0 ? (
+                                <div className="no-policies">
+                                    <p>You don't have any policies yet.</p>
+                                    <button className="btn btn-primary" onClick={() => navigate('/animal-policy-form')}>
+                                        Buy Your First Policy
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="policies-grid">
+                                    {policies.map((policy) => (
+                                        <div key={policy.id} className="policy-card">
+                                            <div className="policy-header">
+                                                <h3>{policy.policyNumber}</h3>
+                                                <span className={`status-badge status-${policy.status.toLowerCase()}`}>
+                                                    {policy.status}
+                                                </span>
+                                            </div>
+                                            <div className="policy-details">
+                                                <p><strong>Cattle Type:</strong> {policy.cattleType}</p>
+                                                <p><strong>Tag ID:</strong> {policy.tagId}</p>
+                                                <p><strong>Coverage:</strong> ₹{policy.coverageAmount?.toLocaleString()}</p>
+                                                <p><strong>Premium:</strong> ₹{policy.premium?.toLocaleString()}</p>
+                                                <p><strong>Duration:</strong> {policy.duration}</p>
+                                            </div>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() => navigate(`/policy/${policy.id}`)}
+                                            >
+                                                View Details
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
