@@ -32,7 +32,7 @@ const Claim = sequelize.define('Claim', {
         }
     },
     claimType: {
-        type: DataTypes.ENUM('death', 'injury', 'theft', 'disease', 'accident', 'natural_disaster'),
+        type: DataTypes.ENUM('death', 'injury', 'theft', 'disease', 'accident', 'natural_disaster', 'disability', 'other'),
         allowNull: false,
         field: 'claim_type'
     },

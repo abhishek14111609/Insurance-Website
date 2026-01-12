@@ -8,7 +8,13 @@ import './ClaimForm.css';
 const ClaimForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+        }
+    }, [isAgent, navigate]);
     const preSelectedPolicy = location.state?.policy;
 
     const [policies, setPolicies] = useState([]);

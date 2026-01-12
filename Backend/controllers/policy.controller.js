@@ -10,7 +10,7 @@ export const createPolicy = async (req, res) => {
             cattleType, tagId, age, breed, gender, milkYield, healthStatus,
             coverageAmount, premium, duration, startDate, endDate,
             ownerName, ownerEmail, ownerPhone, ownerAddress, ownerCity, ownerState, ownerPincode,
-            agentCode, photos
+            agentCode, photos, planId
         } = req.body;
 
         // Generate policy number
@@ -30,6 +30,7 @@ export const createPolicy = async (req, res) => {
             policyNumber,
             customerId: req.user.id,
             agentId,
+            planId,
             cattleType,
             tagId,
             age,

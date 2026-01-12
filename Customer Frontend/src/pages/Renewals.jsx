@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { getCustomerPolicies } from '../utils/authUtils';
 import './Renewals.css';
 
 const Renewals = () => {
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
     const [expiringPolicies, setExpiringPolicies] = useState([]);
 
     useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+            return;
+        }
         const policies = getCustomerPolicies();
         const today = new Date();
         const thirtyDaysLater = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);

@@ -75,10 +75,14 @@ const AgentLanding = () => {
         setLoading(true);
 
         try {
-            const result = await login(loginCredentials.email, loginCredentials.password);
+            const result = await login({
+                email: loginCredentials.email,
+                password: loginCredentials.password
+            });
 
             if (result.success) {
-                if (result.user.role === 'agent') {
+                const user = result.data.user;
+                if (user && user.role === 'agent') {
                     navigate('/agent/dashboard');
                 } else {
                     setLoginError('This account is not registered as an agent.');

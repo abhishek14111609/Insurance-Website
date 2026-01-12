@@ -1,8 +1,18 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './AgentSidebar.css';
 
 const AgentSidebar = () => {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = (e) => {
+        e.preventDefault();
+        logout();
+        navigate('/login');
+    };
+
     return (
         <aside className="agent-sidebar">
             <div className="sidebar-header">
@@ -30,24 +40,14 @@ const AgentSidebar = () => {
                     </NavLink>
                 </div>
 
-                {/* <div className="nav-group">
-                    <h3>Analytics</h3>
-                    <NavLink to="/agent/reports" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-                        <span className="icon">📈</span> Sales Reports
-                    </NavLink>
-                    <NavLink to="/agent/commissions" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-                        <span className="icon">💰</span> Commissions
-                    </NavLink>
-                </div> */}
-
                 <div className="nav-group">
                     <h3>Support</h3>
                     <NavLink to="/agent/profile" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">👤</span> My Profile
                     </NavLink>
-                    <NavLink to="/login" className="nav-item logout">
+                    <button onClick={handleLogout} className="nav-item logout" style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
                         <span className="icon">🚪</span> Logout
-                    </NavLink>
+                    </button>
                 </div>
             </nav>
         </aside>

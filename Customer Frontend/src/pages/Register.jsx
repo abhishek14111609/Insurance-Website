@@ -5,7 +5,17 @@ import './Register.css';
 
 const Register = () => {
     const navigate = useNavigate();
-    const { register } = useAuth();
+    const { register, isAuthenticated, isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            if (isAgent) {
+                navigate('/agent/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        }
+    }, [isAuthenticated, isAgent, navigate]);
 
     const [formData, setFormData] = useState({
         fullName: '',

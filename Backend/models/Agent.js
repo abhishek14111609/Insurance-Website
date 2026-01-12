@@ -128,6 +128,22 @@ const Agent = sequelize.define('Agent', {
         type: DataTypes.TEXT,
         allowNull: true,
         field: 'admin_notes'
+    },
+    commissionRate: {
+        type: DataTypes.DECIMAL(5, 2),
+        allowNull: true,
+        field: 'commission_rate',
+        comment: 'Custom commission rate override for this agent'
+    },
+    trainingStatus: {
+        type: DataTypes.ENUM('not_started', 'in_progress', 'completed'),
+        defaultValue: 'not_started',
+        field: 'training_status'
+    },
+    trainingProgress: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        field: 'training_progress'
     }
 }, {
     tableName: 'agents',

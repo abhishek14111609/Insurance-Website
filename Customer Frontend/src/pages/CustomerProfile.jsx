@@ -6,7 +6,13 @@ import './CustomerProfile.css';
 
 const CustomerProfile = () => {
     const navigate = useNavigate();
-    const { user, updateUser, logout, refreshUser } = useAuth();
+    const { user, isAgent, updateUser, logout, refreshUser } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/profile');
+        }
+    }, [isAgent, navigate]);
 
     const [activeTab, setActiveTab] = useState('profile');
     const [isEditing, setIsEditing] = useState(false);

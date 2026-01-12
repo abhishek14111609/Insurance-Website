@@ -142,6 +142,47 @@ const AgentDashboard = () => {
                 </div>
             </div>
 
+            {/* Maintenance & Performance Grid */}
+            <div className="performance-grid-new">
+                {/* Upcoming Renewals Card */}
+                <div className="maintenance-card">
+                    <div className="card-header">
+                        <h2>♻️ Expiring Soon</h2>
+                        <span className="count-badge warning">{stats?.upcomingRenewalsCount || 0}</span>
+                    </div>
+                    <p>Policies expiring in the next 30 days. Contact these customers for renewals to maintain your commissions.</p>
+                    <Link to="/agent/policies?filter=EXPIRING" className="btn btn-sm btn-primary">
+                        View Expiries
+                    </Link>
+                </div>
+
+                {/* Top Performers Card */}
+                <div className="maintenance-card">
+                    <div className="card-header">
+                        <h2>🏆 Team Leaders</h2>
+                    </div>
+                    {stats?.topPerformers && stats.topPerformers.length > 0 ? (
+                        <div className="performers-list">
+                            {stats.topPerformers.map((performer, idx) => (
+                                <div key={idx} className="performer-item">
+                                    <span className="rank">#{idx + 1}</span>
+                                    <div className="performer-info">
+                                        <strong>{performer.name}</strong>
+                                        <small>{performer.agentCode}</small>
+                                    </div>
+                                    <div className="performer-stat">
+                                        <strong>₹{performer.totalEarnings?.toLocaleString()}</strong>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="empty-msg">No team members yet. Build your network to see leaders!</p>
+                    )}
+                    <Link to="/agent/team" className="view-link">View Full Team →</Link>
+                </div>
+            </div>
+
             {/* Recent Activity */}
             <div className="recent-activity">
                 <div className="section-header">

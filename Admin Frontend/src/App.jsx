@@ -18,15 +18,15 @@ import AgentApprovals from './pages/AgentApprovals';
 // Policies
 import AllPolicyPlans from './pages/Policies/AllPolicyPlans';
 import AddPolicyPlan from './pages/Policies/AddPolicyPlan';
+import EditPolicyPlan from './pages/Policies/EditPolicyPlan';
 import PolicyApprovals from './pages/PolicyApprovals';
 
-// Commission & Wallet
+// Financial
 import CommissionSettings from './pages/CommissionSettings';
 import WithdrawalApprovals from './pages/WithdrawalApprovals';
-
-// Existing
-import CommissionApprovals from './pages/CommissionApprovals';
-import AgentManagement from './pages/AgentManagement';
+import ClaimApprovals from './pages/ClaimApprovals';
+import AllCustomers from './pages/AllCustomers';
+import CommissionHistory from './pages/CommissionHistory';
 
 import './App.css';
 
@@ -81,6 +81,14 @@ const AdminLayout = ({ children }) => {
             Agent Approvals
           </NavLink>
 
+          <NavLink
+            to="/customers"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">👤</span>
+            All Customers
+          </NavLink>
+
           <div className="nav-section">Policy Management</div>
 
           <NavLink
@@ -99,6 +107,14 @@ const AdminLayout = ({ children }) => {
             Policy Approvals
           </NavLink>
 
+          <NavLink
+            to="/claim-approvals"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">🩺</span>
+            Claim Approvals
+          </NavLink>
+
           <div className="nav-section">Financial</div>
 
           <NavLink
@@ -107,6 +123,14 @@ const AdminLayout = ({ children }) => {
           >
             <span className="icon">⚙️</span>
             Commission Settings
+          </NavLink>
+
+          <NavLink
+            to="/commission-history"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">📜</span>
+            Commission History
           </NavLink>
 
           <NavLink
@@ -162,19 +186,19 @@ const App = () => {
                   <Route path="/agents/edit/:id" element={<EditAgent />} />
                   <Route path="/agents/details/:id" element={<AgentDetails />} />
                   <Route path="/agent-approvals" element={<AgentApprovals />} />
+                  <Route path="/customers" element={<AllCustomers />} />
 
                   {/* Policies */}
                   <Route path="/policy-plans" element={<AllPolicyPlans />} />
                   <Route path="/policy-plans/add" element={<AddPolicyPlan />} />
+                  <Route path="/policy-plans/edit/:id" element={<EditPolicyPlan />} />
                   <Route path="/policy-approvals" element={<PolicyApprovals />} />
 
                   {/* Financial */}
                   <Route path="/commission-settings" element={<CommissionSettings />} />
+                  <Route path="/commission-history" element={<CommissionHistory />} />
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
-
-                  {/* Existing */}
-                  <Route path="/commissions" element={<CommissionApprovals />} />
-                  <Route path="/agent-management" element={<AgentManagement />} />
+                  <Route path="/claim-approvals" element={<ClaimApprovals />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>

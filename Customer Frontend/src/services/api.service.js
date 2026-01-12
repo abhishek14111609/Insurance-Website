@@ -35,9 +35,15 @@ export const authAPI = {
         });
         const data = await handleResponse(response);
 
-        // Save only token
+        // Save token and user data
         if (data.success && data.data.token) {
             localStorage.setItem('token', data.data.token);
+            if (data.data.user) {
+                localStorage.setItem('user', JSON.stringify(data.data.user));
+            }
+            if (data.data.agentProfile) {
+                localStorage.setItem('agentProfile', JSON.stringify(data.data.agentProfile));
+            }
         }
 
         return data;
@@ -54,9 +60,15 @@ export const authAPI = {
         });
         const data = await handleResponse(response);
 
-        // Save only token
+        // Save token and user data
         if (data.success && data.data.token) {
             localStorage.setItem('token', data.data.token);
+            if (data.data.user) {
+                localStorage.setItem('user', JSON.stringify(data.data.user));
+            }
+            if (data.data.agentProfile) {
+                localStorage.setItem('agentProfile', JSON.stringify(data.data.agentProfile));
+            }
         }
 
         return data;
@@ -128,6 +140,8 @@ export const authAPI = {
     // Logout
     logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('agentProfile');
         window.location.href = '/login';
     }
 };
@@ -234,12 +248,10 @@ export const paymentAPI = {
 export const agentAPI = {
     // Register as agent
     register: async (agentData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/agents/register`, {
+        const response = await fetch(`${API_BASE_URL}/auth/register-agent`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(agentData)
         });
@@ -316,15 +328,18 @@ export const agentAPI = {
     },
 
     // Request withdrawal
-    requestWithdrawal: async (amount) => {
+    requestWithdrawal: async (withdrawalData) => {
         const token = getToken();
+        // Handle both simple amount and object with amount
+        const body = typeof withdrawalData === 'object' ? withdrawalData : { amount: withdrawalData };
+
         const response = await fetch(`${API_BASE_URL}/agents/withdraw`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ amount })
+            body: JSON.stringify(body)
         });
         return handleResponse(response);
     },
@@ -378,6 +393,34 @@ export const agentAPI = {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
+        });
+        return handleResponse(response);
+    },
+
+    // Update customer follow-up notes
+    updateCustomerNotes: async (customerId, notes) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/agents/customers/${customerId}/notes`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ notes })
+        });
+        return handleResponse(response);
+    },
+
+    // Update sub-agent training progress
+    updateSubAgentTraining: async (agentId, trainingData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/agents/team/${agentId}/training`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(trainingData)
         });
         return handleResponse(response);
     }
@@ -492,6 +535,21 @@ export const notificationAPI = {
     }
 };
 
+// Policy Plan API
+export const policyPlanAPI = {
+    // Get all plans
+    getAll: async () => {
+        const response = await fetch(`${API_BASE_URL}/plans`);
+        return handleResponse(response);
+    },
+
+    // Get plan by ID
+    getById: async (id) => {
+        const response = await fetch(`${API_BASE_URL}/plans/${id}`);
+        return handleResponse(response);
+    }
+};
+
 // Export all APIs
 export default {
     auth: authAPI,
@@ -499,5 +557,6 @@ export default {
     payment: paymentAPI,
     agent: agentAPI,
     claim: claimAPI,
-    notification: notificationAPI
+    notification: notificationAPI,
+    policyPlan: policyPlanAPI
 };

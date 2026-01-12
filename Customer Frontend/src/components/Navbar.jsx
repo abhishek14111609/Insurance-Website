@@ -7,7 +7,7 @@ import './Navbar.css';
 const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, logout } = useAuth();
+    const { user, isAgent, logout } = useAuth();
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -44,16 +44,24 @@ const Navbar = () => {
 
                     {user ? (
                         <>
-                            {/* Top-level navigation items for logged-in users */}
-                            <Link to="/my-policies" className="navbar-link" onClick={closeMenu}>
-                                My Policies
-                            </Link>
-                            <Link to="/claims" className="navbar-link" onClick={closeMenu}>
-                                Claims
-                            </Link>
-                            <Link to="/renewals" className="navbar-link" onClick={closeMenu}>
-                                Renewals
-                            </Link>
+                            {isAgent ? (
+                                <Link to="/agent/dashboard" className="navbar-link portal-link" onClick={closeMenu}>
+                                    💼 Agent Portal
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link to="/my-policies" className="navbar-link" onClick={closeMenu}>
+                                        My Policies
+                                    </Link>
+                                    <Link to="/claims" className="navbar-link" onClick={closeMenu}>
+                                        Claims
+                                    </Link>
+                                    <Link to="/renewals" className="navbar-link" onClick={closeMenu}>
+                                        Renewals
+                                    </Link>
+                                </>
+                            )}
+
                             <Link to="/about-us" className="navbar-link" onClick={closeMenu}>
                                 About Us
                             </Link>
@@ -73,9 +81,14 @@ const Navbar = () => {
                                     <div className="dropdown-header">
                                         <strong>{user.fullName}</strong>
                                         <small>{user.email}</small>
+                                        {isAgent && <span className="role-tag" style={{ background: 'var(--primary-color)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', marginLeft: '5px' }}>Agent</span>}
                                     </div>
-                                    <Link to="/dashboard" onClick={closeMenu}>📊 Dashboard</Link>
-                                    <Link to="/profile" onClick={closeMenu}>⚙️ Profile Settings</Link>
+                                    {isAgent ? (
+                                        <Link to="/agent/dashboard" onClick={closeMenu}>📊 Agent Dashboard</Link>
+                                    ) : (
+                                        <Link to="/dashboard" onClick={closeMenu}>📊 My Dashboard</Link>
+                                    )}
+                                    <Link to={isAgent ? "/agent/profile" : "/profile"} onClick={closeMenu}>⚙️ Profile Settings</Link>
                                     <div className="dropdown-divider"></div>
                                     <button className="dropdown-item logout" onClick={handleLogout}>
                                         🚪 Logout

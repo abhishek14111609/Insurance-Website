@@ -11,6 +11,21 @@ const AgentCustomers = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingNotes, setEditingNotes] = useState(null);
+    const [tempNotes, setTempNotes] = useState('');
+
+    const handleSaveNotes = async (customerId) => {
+        try {
+            const response = await agentAPI.updateCustomerNotes(customerId, tempNotes);
+            if (response.success) {
+                setEditingNotes(null);
+                fetchCustomers(); // Refresh list
+            }
+        } catch (error) {
+            console.error('Error saving notes:', error);
+            alert('Failed to save notes');
+        }
+    };
 
     useEffect(() => {
         if (!isAgent) {
@@ -18,53 +33,31 @@ const AgentCustomers = () => {
             return;
         }
 
-        fetchCustomersFromPolicies();
+        fetchCustomers();
     }, [isAgent, navigate]);
 
-    const fetchCustomersFromPolicies = async () => {
+    const fetchCustomers = async () => {
         try {
             setLoading(true);
-            // We get customers by fetching all policies sold by this agent
-            const response = await agentAPI.getPolicies();
+            const response = await agentAPI.getCustomers();
 
             if (response.success) {
-                const policies = response.data.policies || [];
+                const customerData = response.data.customers || [];
 
-                // Extract unique customers from policies
-                const uniqueCustomers = [];
-                const seenEmails = new Set();
+                // Process for table display
+                const processedCustomers = customerData.map(c => ({
+                    id: c.id,
+                    name: c.fullName || 'Unknown',
+                    email: c.email,
+                    phone: c.phone || 'N/A',
+                    city: c.city || 'N/A',
+                    state: c.state || 'N/A',
+                    status: 'Active',
+                    totalPolicies: c.policyCount || 0,
+                    lastPurchaseDate: c.lastPurchaseDate
+                }));
 
-                policies.forEach(policy => {
-                    // Assuming policy object contains customer details
-                    // If the API structure puts user details in a 'user' object or directly on policy
-                    // Based on previous files, it seemed to be direct fields like ownerName
-
-                    if (policy.email && !seenEmails.has(policy.email)) {
-                        seenEmails.add(policy.email);
-                        uniqueCustomers.push({
-                            id: policy.userId || Date.now() + Math.random(), // fallback ID
-                            name: policy.ownerName,
-                            email: policy.email,
-                            phone: policy.phone,
-                            city: policy.city,
-                            state: policy.state,
-                            status: 'Active', // Default status for someone with a policy
-                            totalPolicies: 1,
-                            lastPurchaseDate: policy.createdAt
-                        });
-                    } else if (policy.email && seenEmails.has(policy.email)) {
-                        // Update existing customer stats
-                        const customer = uniqueCustomers.find(c => c.email === policy.email);
-                        if (customer) {
-                            customer.totalPolicies += 1;
-                            if (new Date(policy.createdAt) > new Date(customer.lastPurchaseDate)) {
-                                customer.lastPurchaseDate = policy.createdAt;
-                            }
-                        }
-                    }
-                });
-
-                setCustomers(uniqueCustomers);
+                setCustomers(processedCustomers);
             }
         } catch (error) {
             console.error('Error fetching customers:', error);
@@ -120,6 +113,7 @@ const AgentCustomers = () => {
                             <th>City</th>
                             <th>Policies</th>
                             <th>Last Active</th>
+                            <th>Follow-up Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,6 +138,33 @@ const AgentCustomers = () => {
                                     </td>
                                     <td>
                                         {new Date(customer.lastPurchaseDate).toLocaleDateString()}
+                                    </td>
+                                    <td>
+                                        <div className="notes-cell">
+                                            {editingNotes === customer.id ? (
+                                                <div className="notes-edit">
+                                                    <textarea
+                                                        value={tempNotes}
+                                                        onChange={(e) => setTempNotes(e.target.value)}
+                                                        placeholder="Add follow-up notes..."
+                                                    />
+                                                    <div className="notes-actions">
+                                                        <button className="btn btn-sm btn-success" onClick={() => handleSaveNotes(customer.id)}>Save</button>
+                                                        <button className="btn btn-sm btn-outline" onClick={() => setEditingNotes(null)}>Cancel</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="notes-display" onClick={() => {
+                                                    setEditingNotes(customer.id);
+                                                    setTempNotes(customer.followUpNotes || '');
+                                                }}>
+                                                    <p className={customer.followUpNotes ? '' : 'text-muted'}>
+                                                        {customer.followUpNotes || 'Click to add notes...'}
+                                                    </p>
+                                                    <span className="edit-icon">✏️</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))

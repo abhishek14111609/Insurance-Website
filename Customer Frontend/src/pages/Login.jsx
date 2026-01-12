@@ -47,13 +47,19 @@ const Login = () => {
 
         try {
             // Use login from AuthContext
-            await login({
+            const response = await login({
                 email: formData.email,
                 password: formData.password
             });
 
             // Dispatch custom event to notify navbar
             window.dispatchEvent(new Event('customerLogin'));
+
+            // Check if user is agent
+            if (response.data?.user?.role === 'agent') {
+                navigate('/agent/dashboard');
+                return;
+            }
 
             // Get the return URL from location state, or default to dashboard
             const from = location.state?.from || '/dashboard';

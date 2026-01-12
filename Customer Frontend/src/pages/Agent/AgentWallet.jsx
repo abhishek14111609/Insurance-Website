@@ -55,8 +55,8 @@ const AgentWallet = () => {
             return;
         }
 
-        if (amount < 100) {
-            setMessage({ type: 'error', text: 'Minimum withdrawal amount is ₹100' });
+        if (amount < 500) {
+            setMessage({ type: 'error', text: 'Minimum withdrawal amount is ₹500' });
             return;
         }
 
@@ -130,7 +130,7 @@ const AgentWallet = () => {
                 <button
                     className="btn btn-primary"
                     onClick={() => setShowWithdrawModal(true)}
-                    disabled={!walletData?.balance || walletData.balance < 100}
+                    disabled={!walletData?.balance || walletData.balance < 500}
                 >
                     Request Withdrawal
                 </button>
@@ -210,11 +210,11 @@ const AgentWallet = () => {
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
                                         placeholder="Enter amount"
-                                        min="100"
+                                        min="500"
                                         max={walletData?.balance}
                                         required
                                     />
-                                    <small>Minimum: ₹100 | Maximum: ₹{walletData?.balance?.toLocaleString()}</small>
+                                    <small>Minimum: ₹500 | Maximum: ₹{walletData?.balance?.toLocaleString()}</small>
                                 </div>
                                 <div className="info-box">
                                     <p>📌 Withdrawal requests are processed within 3-5 business days</p>

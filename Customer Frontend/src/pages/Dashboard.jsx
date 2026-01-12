@@ -6,7 +6,13 @@ import './Dashboard.css';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+        }
+    }, [isAgent, navigate]);
 
     const [policies, setPolicies] = useState([]);
     const [claims, setClaims] = useState([]);

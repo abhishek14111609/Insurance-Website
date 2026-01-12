@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { claimAPI } from '../services/api.service';
+import { useAuth } from '../context/AuthContext';
 import './Claims.css';
 
 const Claims = () => {
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
     const [claims, setClaims] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all');
 
     useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+            return;
+        }
         fetchClaims();
     }, []);
 

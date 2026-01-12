@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../constants/policyPlans';
 import './RenewalForm.css';
 
 const RenewalForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
     const { policy } = location.state || {};
 
     const [formData, setFormData] = useState({
@@ -15,6 +17,10 @@ const RenewalForm = () => {
     });
 
     useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+            return;
+        }
         if (!policy) {
             navigate('/renewals');
         }

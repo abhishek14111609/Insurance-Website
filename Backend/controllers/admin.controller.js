@@ -296,7 +296,10 @@ export const getAllAgents = async (req, res) => {
         const where = {};
         if (status) where.status = status;
 
-        const include = [{ model: User, as: 'user' }];
+        const include = [
+            { model: User, as: 'user' },
+            { model: Agent, as: 'parentAgent', include: [{ model: User, as: 'user' }] }
+        ];
         if (search) {
             include[0].where = {
                 [Op.or]: [
@@ -328,6 +331,83 @@ export const getAllAgents = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching agents',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Create new agent
+// @route   POST /api/admin/agents
+// @access  Private (admin)
+export const createAgent = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { fullName, email, phone, password, address, city, state, pincode, parentId, commissionRate, status, agentCode } = req.body;
+
+        // Check if user exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Create User
+        const user = await User.create({
+            fullName,
+            email,
+            phone,
+            password,
+            address,
+            city,
+            state,
+            pincode,
+            role: 'agent',
+            status: status === 'active' ? 'active' : 'inactive'
+        }, { transaction });
+
+        // Calculate level if parentId exists
+        let level = 1;
+        if (parentId) {
+            const parent = await Agent.findByPk(parentId);
+            if (parent) {
+                level = parent.level + 1;
+            }
+        }
+
+        // Create Agent Profile
+        const agent = await Agent.create({
+            userId: user.id,
+            agentCode,
+            parentAgentId: parentId || null,
+            level,
+            status: status || 'active',
+            commissionRate: commissionRate || 15,
+            walletBalance: 0,
+            totalEarnings: 0,
+            totalWithdrawals: 0,
+            approvedAt: status === 'active' ? new Date() : null,
+            approvedBy: status === 'active' ? req.user.id : null
+        }, { transaction });
+
+        await transaction.commit();
+
+        res.status(201).json({
+            success: true,
+            message: 'Agent created successfully',
+            data: {
+                user: user.toJSON(),
+                agent
+            }
+        });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        console.error('Create agent error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating agent',
             error: error.message
         });
     }
@@ -426,6 +506,78 @@ export const rejectAgent = async (req, res) => {
     }
 };
 
+// @desc    Update agent profile
+// @route   PUT /api/admin/agents/:id
+// @access  Private (admin)
+export const updateAgent = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { fullName, phone, email, address, city, state, pincode, agentCode, status, commissionRate } = req.body;
+
+        const agent = await Agent.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user' }]
+        });
+
+        if (!agent) {
+            await transaction.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Agent not found'
+            });
+        }
+
+        // Update User details
+        if (fullName || phone || email || address || city || state || pincode) {
+            const userUpdate = {};
+            if (fullName) userUpdate.fullName = fullName;
+            if (phone) userUpdate.phone = phone;
+            if (address) userUpdate.address = address;
+            if (city) userUpdate.city = city;
+            if (state) userUpdate.state = state;
+            if (pincode) userUpdate.pincode = pincode;
+            // Handle email update carefully (uniqueness)
+            if (email && email !== agent.user.email) {
+                const existing = await User.findOne({ where: { email } });
+                if (existing) {
+                    await transaction.rollback();
+                    return res.status(400).json({ success: false, message: 'Email already in use' });
+                }
+                userUpdate.email = email;
+            }
+            await agent.user.update(userUpdate, { transaction });
+        }
+
+        // Update Agent details
+        const agentUpdate = {};
+        if (agentCode) agentUpdate.agentCode = agentCode;
+        if (status) agentUpdate.status = status;
+        if (commissionRate !== undefined) agentUpdate.commissionRate = commissionRate;
+
+        await agent.update(agentUpdate, { transaction });
+
+        await transaction.commit();
+
+        // Reload agent with user
+        const updatedAgent = await Agent.findByPk(req.params.id, {
+            include: [{ model: User, as: 'user' }]
+        });
+
+        res.json({
+            success: true,
+            message: 'Agent profile updated successfully',
+            data: { agent: updatedAgent }
+        });
+    } catch (error) {
+        await transaction.rollback();
+        console.error('Update agent error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating agent',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Get all customers
 // @route   GET /api/admin/customers
 // @access  Private (admin)
@@ -516,7 +668,7 @@ export const processWithdrawal = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     try {
-        const { action, rejectionReason } = req.body; // action: 'approve' or 'reject'
+        const { action, rejectionReason, transactionId, adminNotes } = req.body; // action: 'approve' or 'reject'
 
         if (!action || !['approve', 'reject'].includes(action)) {
             await transaction.rollback();
@@ -567,7 +719,9 @@ export const processWithdrawal = async (req, res) => {
             await withdrawal.update({
                 status: 'approved',
                 processedAt: new Date(),
-                processedBy: req.user.id
+                processedBy: req.user.id,
+                transactionId,
+                adminNotes
             }, { transaction });
 
             // Send notification

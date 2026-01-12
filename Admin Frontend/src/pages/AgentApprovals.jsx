@@ -125,19 +125,19 @@ const AgentApprovals = () => {
                             <div className="agent-details">
                                 <div className="detail-row">
                                     <span className="label">Name:</span>
-                                    <span className="value">{agent.fullName || agent.name}</span>
+                                    <span className="value">{agent.user?.fullName}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Email:</span>
-                                    <span className="value">{agent.email}</span>
+                                    <span className="value">{agent.user?.email}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Phone:</span>
-                                    <span className="value">{agent.phone}</span>
+                                    <span className="value">{agent.user?.phone}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">City:</span>
-                                    <span className="value">{agent.city}</span>
+                                    <span className="value">{agent.user?.city || 'N/A'}</span>
                                 </div>
                                 {agent.role === 'agent' && (
                                     <div className="detail-row">
@@ -147,7 +147,24 @@ const AgentApprovals = () => {
                                 )}
                                 <div className="detail-row">
                                     <span className="label">Parent Code:</span>
-                                    <span className="value">{agent.referredByCode || 'N/A'}</span>
+                                    <span className="value">{agent.parentAgent?.agentCode || 'None'}</span>
+                                </div>
+                                <div className="detail-divider"></div>
+                                <div className="detail-row">
+                                    <span className="label">PAN:</span>
+                                    <span className="value">{agent.panNumber}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">Aadhar:</span>
+                                    <span className="value">{agent.aadharNumber}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">Bank:</span>
+                                    <span className="value">{agent.bankName}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="label">A/C:</span>
+                                    <span className="value">{agent.accountNumber}</span>
                                 </div>
                             </div>
 
@@ -181,7 +198,7 @@ const AgentApprovals = () => {
                         <div className="modal-body">
                             <div className="agent-summary">
                                 <p><strong>Agent Code:</strong> {selectedAgent?.agentCode || 'N/A'}</p>
-                                <p><strong>Name:</strong> {selectedAgent?.fullName || selectedAgent?.name}</p>
+                                <p><strong>Name:</strong> {selectedAgent?.user?.fullName}</p>
                             </div>
 
                             {modalType === 'approve' ? (

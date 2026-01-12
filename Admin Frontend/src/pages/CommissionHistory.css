@@ -1,0 +1,135 @@
+.commissions-history-page {
+    padding: 1.5rem;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.card-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.card-value.success {
+    color: #10b981;
+}
+
+.card-value.warning {
+    color: #f59e0b;
+}
+
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.commissions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.commissions-table th {
+    background: #f8fafc;
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.commissions-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.agent-col,
+.policy-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.agent-name,
+.policy-id {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.agent-code,
+.customer-name {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.amount {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.level-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.level-badge.L1 {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.level-badge.L2 {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.level-badge.L3 {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-pill {
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-pill.paid {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-pill.pending {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.loading-state,
+.no-data {
+    text-align: center;
+    padding: 3rem;
+    color: #64748b;
+}

@@ -25,7 +25,12 @@ const EditAgent = () => {
                     // Map backend keys to form keys if necessary
                     setFormData({
                         ...foundFn,
-                        name: foundFn.fullName || foundFn.name,
+                        name: foundFn.user?.fullName || foundFn.fullName || '',
+                        email: foundFn.user?.email || foundFn.email || '',
+                        phone: foundFn.user?.phone || foundFn.phone || '',
+                        city: foundFn.user?.city || foundFn.city || '',
+                        state: foundFn.user?.state || foundFn.state || '',
+                        address: foundFn.user?.address || foundFn.address || '',
                         code: foundFn.agentCode || foundFn.code
                     });
                 } else {

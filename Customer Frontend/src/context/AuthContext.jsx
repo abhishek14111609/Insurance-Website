@@ -26,7 +26,11 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await authAPI.getProfile();
             if (response.success) {
-                setUser(response.data.user);
+                const userData = response.data.user;
+                if (response.data.agentProfile) {
+                    Object.assign(userData, response.data.agentProfile);
+                }
+                setUser(userData);
             }
         } catch (err) {
             console.error('Failed to load user:', err);
@@ -41,7 +45,11 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             const response = await authAPI.login(credentials);
             if (response.success) {
-                setUser(response.data.user);
+                const userData = response.data.user;
+                if (response.data.agentProfile) {
+                    Object.assign(userData, response.data.agentProfile);
+                }
+                setUser(userData);
                 return response;
             }
         } catch (err) {
@@ -55,7 +63,11 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             const response = await authAPI.register(userData);
             if (response.success) {
-                setUser(response.data.user);
+                const registeredUser = response.data.user;
+                if (response.data.agentProfile) {
+                    Object.assign(registeredUser, response.data.agentProfile);
+                }
+                setUser(registeredUser);
                 return response;
             }
         } catch (err) {
@@ -74,7 +86,11 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             const response = await authAPI.updateProfile(profileData);
             if (response.success) {
-                setUser(response.data.user);
+                const updatedUserData = response.data.user;
+                if (response.data.agentProfile) {
+                    Object.assign(updatedUserData, response.data.agentProfile);
+                }
+                setUser(updatedUserData);
                 return response;
             }
         } catch (err) {

@@ -10,13 +10,20 @@ import './AnimalPolicyForm.css';
 const AnimalPolicyForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useAuth();
-    const { selectedPlan } = location.state || {};
+    const { user, isAuthenticated, isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+        }
+    }, [isAgent, navigate]);
+    const { selectedPlanId, planData } = location.state || {};
+    const selectedPlan = planData;
 
     // Redirect if no plan selected
     useEffect(() => {
         if (!selectedPlan) {
-            navigate('/policies');
+            navigate('/animal-insurance');
         }
     }, [selectedPlan, navigate]);
 
@@ -115,11 +122,13 @@ const AnimalPolicyForm = () => {
             return;
         }
 
-        // Calculate usage duration
+        // Calculate dates
         const startDate = new Date();
-        const duration = selectedPlan.duration;
-        const years = parseInt(duration.split(' ')[0]);
         const endDate = new Date(startDate);
+        // Assuming duration is something like "1 Year" or "2 Years"
+        const durationValue = selectedPlan.duration || "1 Year";
+        const yearsMatch = durationValue.match(/\d+/);
+        const years = yearsMatch ? parseInt(yearsMatch[0]) : 1;
         endDate.setFullYear(endDate.getFullYear() + years);
 
         const policyPayload = {
@@ -142,9 +151,9 @@ const AnimalPolicyForm = () => {
             ownerPincode: formData.pincode,
 
             // Plan details
-            coverageAmount: selectedPlan.coverage,
+            coverageAmount: selectedPlan.coverageAmount,
             premium: selectedPlan.premium,
-            duration: duration,
+            duration: durationValue,
             startDate: startDate.toISOString().split('T')[0],
             endDate: endDate.toISOString().split('T')[0],
 
@@ -152,7 +161,8 @@ const AnimalPolicyForm = () => {
             photos: photoPreviews,
 
             // Agent Code
-            agentCode: formData.agentCode
+            agentCode: formData.agentCode,
+            planId: selectedPlan.id
         };
 
         try {
@@ -263,11 +273,12 @@ const AnimalPolicyForm = () => {
                     <div className="selected-plan-summary">
                         <div className="plan-info">
                             <span className="plan-label">Selected Plan:</span>
-                            <span className="plan-name">{selectedPlan.duration}</span>
+                            <span className="plan-name">{selectedPlan.name}</span>
                         </div>
                         <div className="plan-details">
-                            <div>Coverage: <strong>{formatCurrency(selectedPlan.coverage)}</strong></div>
+                            <div>Coverage: <strong>{formatCurrency(selectedPlan.coverageAmount)}</strong></div>
                             <div>Premium: <strong>{formatCurrency(selectedPlan.premium)}</strong></div>
+                            <div style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.8 }}>Duration: {selectedPlan.duration}</div>
                         </div>
                     </div>
                 </div>
@@ -517,12 +528,12 @@ const AnimalPolicyForm = () => {
                     <div className="premium-summary">
                         <h3>Payment Summary</h3>
                         <div className="summary-row">
-                            <span>Plan Duration:</span>
-                            <span>{selectedPlan.duration}</span>
+                            <span>Plan:</span>
+                            <span>{selectedPlan.name} ({selectedPlan.duration})</span>
                         </div>
                         <div className="summary-row">
                             <span>Coverage Amount:</span>
-                            <span>{formatCurrency(selectedPlan.coverage)}</span>
+                            <span>{formatCurrency(selectedPlan.coverageAmount)}</span>
                         </div>
                         <div className="summary-row">
                             <span>Premium:</span>

@@ -13,7 +13,9 @@ import {
     processWithdrawal,
     getAllCommissions,
     getCommissionSettings,
-    updateCommissionSettings
+    updateCommissionSettings,
+    updateAgent,
+    createAgent
 } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -34,8 +36,10 @@ router.patch('/policies/:id/reject', rejectPolicy);
 
 // Agents
 router.get('/agents', getAllAgents);
+router.post('/agents', createAgent);
 router.patch('/agents/:id/approve', approveAgent);
 router.patch('/agents/:id/reject', rejectAgent);
+router.put('/agents/:id', updateAgent);
 
 // Customers
 router.get('/customers', getAllCustomers);

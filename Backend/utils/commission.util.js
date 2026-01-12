@@ -7,12 +7,13 @@ import sequelize from '../config/database.js';
  * @param {Object} policy - The approved policy
  * @returns {Promise<Array>} Array of created commission records
  */
-export const calculateAndDistributeCommissions = async (policy) => {
+export const calculateAndDistributeCommissions = async (policy, transaction = null) => {
     try {
         // Get commission settings
         const settings = await CommissionSettings.findAll({
             where: { isActive: true },
-            order: [['level', 'ASC']]
+            order: [['level', 'ASC']],
+            transaction
         });
 
         if (!settings || settings.length === 0) {
@@ -27,7 +28,7 @@ export const calculateAndDistributeCommissions = async (policy) => {
         }
 
         const commissions = [];
-        let currentAgent = await Agent.findByPk(policy.agentId);
+        let currentAgent = await Agent.findByPk(policy.agentId, { transaction });
         let level = 1;
 
         // Traverse up the agent hierarchy
@@ -41,7 +42,13 @@ export const calculateAndDistributeCommissions = async (policy) => {
                 const maxAmount = setting.maxPolicyAmount ? parseFloat(setting.maxPolicyAmount) : Infinity;
 
                 if (policyAmount >= minAmount && policyAmount <= maxAmount) {
-                    const commissionAmount = (policyAmount * parseFloat(setting.percentage)) / 100;
+                    // Use agent's custom percentage if level 1 and it exists
+                    let percentage = parseFloat(setting.percentage);
+                    if (level === 1 && currentAgent.commissionRate) {
+                        percentage = parseFloat(currentAgent.commissionRate);
+                    }
+
+                    const commissionAmount = (policyAmount * percentage) / 100;
 
                     // Create commission record
                     const commission = await Commission.create({
@@ -49,18 +56,18 @@ export const calculateAndDistributeCommissions = async (policy) => {
                         agentId: currentAgent.id,
                         level: level,
                         amount: commissionAmount,
-                        percentage: setting.percentage,
+                        percentage: percentage,
                         status: 'pending'
-                    });
+                    }, { transaction });
 
                     commissions.push(commission);
-                    console.log(`Created level ${level} commission: ₹${commissionAmount} for agent ${currentAgent.id}`);
+                    console.log(`Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ${currentAgent.id}`);
                 }
             }
 
             // Move to parent agent
             if (currentAgent.parentAgentId) {
-                currentAgent = await Agent.findByPk(currentAgent.parentAgentId);
+                currentAgent = await Agent.findByPk(currentAgent.parentAgentId, { transaction });
                 level++;
             } else {
                 break;

@@ -35,9 +35,20 @@ const AgentTeam = () => {
         }
     };
 
+    const handleUpdateTraining = async (memberId, trainingData) => {
+        try {
+            const response = await agentAPI.updateSubAgentTraining(memberId, trainingData);
+            if (response.success) {
+                fetchTeamMembers(); // Refresh to see changes
+            }
+        } catch (error) {
+            console.error('Error updating training:', error);
+        }
+    };
+
     const filteredMembers = filter === 'all'
         ? teamMembers
-        : teamMembers.filter(m => m.level === parseInt(filter));
+        : teamMembers.filter(m => m.relativeLevel === parseInt(filter));
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -73,11 +84,11 @@ const AgentTeam = () => {
                     </div>
                     <div className="stat-item">
                         <span>Direct</span>
-                        <strong>{teamMembers.filter(m => m.level === 1).length}</strong>
+                        <strong>{teamMembers.filter(m => m.relativeLevel === 1).length}</strong>
                     </div>
                     <div className="stat-item">
                         <span>Indirect</span>
-                        <strong>{teamMembers.filter(m => m.level > 1).length}</strong>
+                        <strong>{teamMembers.filter(m => m.relativeLevel > 1).length}</strong>
                     </div>
                 </div>
             </div>
@@ -112,19 +123,19 @@ const AgentTeam = () => {
                     className={filter === '1' ? 'active' : ''}
                     onClick={() => setFilter('1')}
                 >
-                    Level 1 ({teamMembers.filter(m => m.level === 1).length})
+                    Level 1 ({teamMembers.filter(m => m.relativeLevel === 1).length})
                 </button>
                 <button
                     className={filter === '2' ? 'active' : ''}
                     onClick={() => setFilter('2')}
                 >
-                    Level 2 ({teamMembers.filter(m => m.level === 2).length})
+                    Level 2 ({teamMembers.filter(m => m.relativeLevel === 2).length})
                 </button>
                 <button
                     className={filter === '3' ? 'active' : ''}
                     onClick={() => setFilter('3')}
                 >
-                    Level 3 ({teamMembers.filter(m => m.level === 3).length})
+                    Level 3 ({teamMembers.filter(m => m.relativeLevel === 3).length})
                 </button>
             </div>
 
@@ -151,7 +162,7 @@ const AgentTeam = () => {
                                 <div className="member-details">
                                     <div className="detail-item">
                                         <span>Level</span>
-                                        <strong>Level {member.level}</strong>
+                                        <strong>Level {member.relativeLevel}</strong>
                                     </div>
                                     <div className="detail-item">
                                         <span>Policies Sold</span>
@@ -171,6 +182,41 @@ const AgentTeam = () => {
                                     <p>📧 {member.user?.email}</p>
                                     <p>📱 {member.user?.phone}</p>
                                 </div>
+
+                                {/* Training Section - Only for Direct Downline (Level 1) */}
+                                {member.relativeLevel === 1 && (
+                                    <div className="training-section">
+                                        <div className="section-label">Training Progress</div>
+                                        <div className="progress-container">
+                                            <div className="progress-bar-bg">
+                                                <div
+                                                    className="progress-bar-fill"
+                                                    style={{ width: `${member.trainingProgress || 0}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="progress-text">{member.trainingProgress || 0}%</span>
+                                        </div>
+                                        <div className="training-controls">
+                                            <select
+                                                value={member.trainingStatus || 'not_started'}
+                                                onChange={(e) => handleUpdateTraining(member.id, { status: e.target.value })}
+                                                className="training-select"
+                                            >
+                                                <option value="not_started">Not Started</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.trainingProgress || 0}
+                                                onChange={(e) => handleUpdateTraining(member.id, { progress: parseInt(e.target.value) })}
+                                                className="training-range"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

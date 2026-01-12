@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addAgent, generateAgentCode, generatePassword, getAllAgents } from '../../utils/agentUtils';
+import { adminAPI } from '../../services/api.service';
 import './AddAgent.css';
 
 const AddAgent = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        name: '',
+        fullName: '',
         email: '',
         phone: '',
         city: '',
@@ -16,9 +16,47 @@ const AddAgent = () => {
         commissionRate: 15,
         status: 'active'
     });
+    const [agents, setAgents] = useState([]);
     const [generatedCode, setGeneratedCode] = useState('');
     const [generatedPassword, setGeneratedPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadAgents();
+    }, []);
+
+    const loadAgents = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getAllAgents();
+            if (response.success) {
+                setAgents((response.data.agents || []).filter(a => a.status === 'active'));
+            }
+        } catch (error) {
+            console.error('Error loading agents:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const generateAgentCode = (parentCode = null) => {
+        const timestamp = Date.now().toString().slice(-4);
+        if (!parentCode) {
+            return `AG${timestamp}`;
+        } else {
+            return `${parentCode}-${timestamp}`;
+        }
+    };
+
+    const generatePassword = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+        let password = '';
+        for (let i = 0; i < 10; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -29,41 +67,48 @@ const AddAgent = () => {
 
         // Generate code when parent changes
         if (name === 'parentId') {
-            const agents = getAllAgents();
-            const parent = agents.find(a => a.id === value);
-            const code = generateAgentCode(parent?.code || null);
-            setGeneratedCode(code);
+            if (value === '') {
+                setGeneratedCode(generateAgentCode(null));
+            } else {
+                const parent = agents.find(a => String(a.id) === String(value));
+                setGeneratedCode(generateAgentCode(parent?.agentCode || null));
+            }
         }
     };
 
     const handleGeneratePassword = () => {
         const password = generatePassword();
         setGeneratedPassword(password);
-        setFormData({ ...formData, password });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const agentData = {
-            ...formData,
-            code: generatedCode,
-            password: generatedPassword || generatePassword()
-        };
+        try {
+            const agentData = {
+                ...formData,
+                agentCode: generatedCode || generateAgentCode(null),
+                password: generatedPassword
+            };
 
-        const result = addAgent(agentData);
+            const response = await adminAPI.createAgent(agentData);
 
-        if (result.success) {
-            alert(`Agent created successfully!\n\nAgent Code: ${result.agent.code}\nPassword: ${result.agent.password}\n\nPlease save these credentials!`);
-            navigate('/agents');
-        } else {
-            alert('Error creating agent');
+            if (response.success) {
+                alert(`Agent created successfully!\n\nAgent Code: ${agentData.agentCode}\nPassword: ${generatedPassword}\n\nPlease save these credentials!`);
+                navigate('/agents');
+            } else {
+                alert(response.message || 'Error creating agent');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to connect to server');
+        } finally {
             setIsSubmitting(false);
         }
     };
 
-    const agents = getAllAgents().filter(a => a.status === 'active');
+    if (loading && agents.length === 0) return <div className="loading">Loading...</div>;
 
     return (
         <div className="add-agent-page">
@@ -81,8 +126,8 @@ const AddAgent = () => {
                             <label>Full Name *</label>
                             <input
                                 type="text"
-                                name="name"
-                                value={formData.name}
+                                name="fullName"
+                                value={formData.fullName}
                                 onChange={handleChange}
                                 required
                             />
@@ -162,7 +207,7 @@ const AddAgent = () => {
                                 <option value="">None (Root Level)</option>
                                 {agents.map(agent => (
                                     <option key={agent.id} value={agent.id}>
-                                        {agent.code} - {agent.name}
+                                        {agent.agentCode} - {agent.user?.fullName}
                                     </option>
                                 ))}
                             </select>

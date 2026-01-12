@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { policyPlanAPI } from '../../services/api.service';
-import './AddPolicyPlan.css';
+import './AddPolicyPlan.css'; // Reuse add styles
 
-const AddPolicyPlan = () => {
+const EditPolicyPlan = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -19,6 +21,38 @@ const AddPolicyPlan = () => {
         isActive: true,
         displayOrder: 0
     });
+
+    useEffect(() => {
+        loadPlan();
+    }, [id]);
+
+    const loadPlan = async () => {
+        try {
+            setLoading(true);
+            const response = await policyPlanAPI.getById(id);
+            if (response.success) {
+                const plan = response.data.plan;
+                setFormData({
+                    name: plan.name || '',
+                    description: plan.description || '',
+                    cattleType: plan.cattleType || 'both',
+                    minAge: plan.minAge || 1,
+                    maxAge: plan.maxAge || 15,
+                    premium: plan.premium || '',
+                    coverageAmount: plan.coverageAmount || '',
+                    duration: plan.duration || '1 Year',
+                    features: Array.isArray(plan.features) ? plan.features : [''],
+                    isActive: plan.isActive !== undefined ? plan.isActive : true,
+                    displayOrder: plan.displayOrder || 0
+                });
+            }
+        } catch (err) {
+            console.error('Error loading plan:', err);
+            alert('Failed to load plan details');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -48,7 +82,7 @@ const AddPolicyPlan = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setSaving(true);
 
         try {
             const planData = {
@@ -61,27 +95,29 @@ const AddPolicyPlan = () => {
                 displayOrder: parseInt(formData.displayOrder)
             };
 
-            const response = await policyPlanAPI.create(planData);
+            const response = await policyPlanAPI.update(id, planData);
 
             if (response.success) {
-                alert('Policy plan created successfully!');
+                alert('Policy plan updated successfully!');
                 navigate('/policy-plans');
             } else {
-                alert('Error creating plan: ' + response.message);
+                alert('Error updating plan: ' + response.message);
             }
         } catch (err) {
             console.error('Error:', err);
             alert('Failed to connect to server');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
+
+    if (loading) return <div className="loading">Loading plan details...</div>;
 
     return (
         <div className="add-policy-plan-page">
             <div className="page-header">
-                <h1>➕ Add Policy Plan</h1>
-                <p>Create a new insurance policy plan for the portal</p>
+                <h1>✏️ Edit Policy Plan</h1>
+                <p>Modify existing insurance policy details</p>
             </div>
 
             <form className="plan-form" onSubmit={handleSubmit}>
@@ -217,8 +253,8 @@ const AddPolicyPlan = () => {
 
                 <div className="form-actions">
                     <button type="button" onClick={() => navigate('/policy-plans')} className="btn btn-secondary">Cancel</button>
-                    <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Policy Plan'}
+                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                        {saving ? 'Saving...' : 'Update Policy Plan'}
                     </button>
                 </div>
             </form>
@@ -226,4 +262,4 @@ const AddPolicyPlan = () => {
     );
 };
 
-export default AddPolicyPlan;
+export default EditPolicyPlan;

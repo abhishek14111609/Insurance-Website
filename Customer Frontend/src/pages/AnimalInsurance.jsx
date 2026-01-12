@@ -1,22 +1,51 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { POLICY_PLANS, formatCurrency } from '../constants/policyPlans';
+import { policyPlanAPI } from '../services/api.service';
 import { isCustomerLoggedIn } from '../utils/authUtils';
 import './AnimalInsurance.css';
 
 const AnimalInsurance = () => {
     const navigate = useNavigate();
+    const [plans, setPlans] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadPlans();
+    }, []);
+
+    const loadPlans = async () => {
+        try {
+            setLoading(true);
+            const response = await policyPlanAPI.getAll();
+            if (response.success) {
+                // Filter only active plans
+                const activePlans = (response.data.plans || []).filter(p => p.isActive);
+                setPlans(activePlans);
+            }
+        } catch (error) {
+            console.error('Error loading plans:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSelectPlan = (plan) => {
-        // Check login before proceeding
         if (!isCustomerLoggedIn()) {
-            navigate('/login', { state: { from: '/policies', selectedPlan: plan } });
+            navigate('/login', { state: { from: '/animal-insurance', selectedPlanId: plan.id } });
             return;
         }
 
-        // Navigate to policy form with selected plan
         navigate('/animal-policy-form', {
-            state: { selectedPlan: plan }
+            state: { selectedPlanId: plan.id, planData: plan }
         });
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount);
     };
 
     return (
@@ -28,7 +57,7 @@ const AnimalInsurance = () => {
                         <span className="hero-badge">🐄 Cattle Insurance Expert</span>
                         <h1>Protect Your Valuable Livestock</h1>
                         <p className="hero-subtitle">
-                            Comprehensive insurance for Cows and Buffaloes. Coverage of ₹50,000
+                            Comprehensive insurance for Cows and Buffaloes. Coverage of up to ₹1,00,000
                             against death due to disease, accidents, and natural calamities.
                         </p>
                         <div className="hero-stats">
@@ -54,63 +83,71 @@ const AnimalInsurance = () => {
                 <div className="container">
                     <div className="section-header">
                         <h2>Choose Your Protection Plan</h2>
-                        <p>All plans provide ₹50,000 coverage. Select the duration that suits you best.</p>
+                        <p>Select from our specially designed livestock protection plans.</p>
                     </div>
 
-                    <div className="plans-grid">
-                        {POLICY_PLANS.map((plan) => (
-                            <div
-                                key={plan.id}
-                                className={`plan-card ${plan.recommended ? 'recommended' : ''}`}
-                            >
-                                {plan.badge && (
-                                    <div className="plan-badge">{plan.badge}</div>
-                                )}
-
-                                <div className="plan-header">
-                                    <h3>{plan.duration}</h3>
-                                    <p className="plan-description">{plan.description}</p>
-                                </div>
-
-                                <div className="plan-pricing">
-                                    <div className="coverage-amount">
-                                        <span className="label">Coverage</span>
-                                        <span className="amount">{formatCurrency(plan.coverage)}</span>
-                                    </div>
-                                    <div className="premium-amount">
-                                        <span className="label">Total Premium</span>
-                                        <span className="amount">{formatCurrency(plan.premium)}</span>
-                                    </div>
-                                    <div className="annual-cost">
-                                        <span>{formatCurrency(plan.annualCost)}/year</span>
-                                    </div>
-                                    {plan.savings && (
-                                        <div className="savings-badge">
-                                            Save {formatCurrency(plan.savings)}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="plan-features">
-                                    <ul>
-                                        {plan.features.map((feature, index) => (
-                                            <li key={index}>
-                                                <span className="check-icon">✓</span>
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                <button
-                                    className={`btn ${plan.recommended ? 'btn-primary' : 'btn-secondary'} btn-block`}
-                                    onClick={() => handleSelectPlan(plan)}
+                    {loading ? (
+                        <div className="loading-state" style={{ textAlign: 'center', padding: '50px' }}>
+                            <div className="spinner"></div>
+                            <p>Loading the best plans for you...</p>
+                        </div>
+                    ) : plans.length === 0 ? (
+                        <div className="empty-state" style={{ textAlign: 'center', padding: '50px' }}>
+                            <p>No active plans available at the moment. Please contact support.</p>
+                        </div>
+                    ) : (
+                        <div className="plans-grid">
+                            {plans.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).map((plan) => (
+                                <div
+                                    key={plan.id}
+                                    className={`plan-card ${plan.displayOrder === 1 ? 'recommended' : ''}`}
                                 >
-                                    Select {plan.duration} Plan
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                                    {plan.displayOrder === 1 && (
+                                        <div className="plan-badge">Most Popular</div>
+                                    )}
+
+                                    <div className="plan-header">
+                                        <h3>{plan.name}</h3>
+                                        <p className="plan-description" style={{ fontSize: '0.9rem', color: '#666', marginTop: '10px' }}>
+                                            {plan.description || `Plan for your livestock protection.`}
+                                        </p>
+                                    </div>
+
+                                    <div className="plan-pricing">
+                                        <div className="coverage-amount">
+                                            <span className="label">Coverage</span>
+                                            <span className="amount">{formatCurrency(plan.coverageAmount)}</span>
+                                        </div>
+                                        <div className="premium-amount">
+                                            <span className="label">Total Premium</span>
+                                            <span className="amount">{formatCurrency(plan.premium)}</span>
+                                        </div>
+                                        <div className="annual-cost" style={{ fontSize: '0.9rem', color: '#888', fontStyle: 'italic' }}>
+                                            Duration: {plan.duration}
+                                        </div>
+                                    </div>
+
+                                    <div className="plan-features">
+                                        <ul>
+                                            {(plan.features || []).map((feature, index) => (
+                                                <li key={index}>
+                                                    <span className="check-icon">✓</span>
+                                                    {feature}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <button
+                                        className={`btn ${plan.displayOrder === 1 ? 'btn-primary' : 'btn-secondary'} btn-block`}
+                                        onClick={() => handleSelectPlan(plan)}
+                                    >
+                                        Select {plan.name}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -175,60 +212,6 @@ const AnimalInsurance = () => {
                             <div className="step-icon">✅</div>
                             <h3>Get Approved</h3>
                             <p>Admin reviews and approves your policy</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Why Choose Us */}
-            <section className="benefits-section">
-                <div className="container">
-                    <h2 className="section-title">Why Insure with SecureLife?</h2>
-                    <div className="benefits-grid">
-                        <div className="benefit-card">
-                            <div className="benefit-icon">🏥</div>
-                            <h3>Pan-India Network</h3>
-                            <p>Tie-up with government and private veterinary hospitals</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">⚡</div>
-                            <h3>Fastest Claims</h3>
-                            <p>Direct bank transfer within 7 days of claim approval</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">🏷️</div>
-                            <h3>Easy Tagging</h3>
-                            <p>RFID tagging support through our authorized agents</p>
-                        </div>
-                        <div className="benefit-card">
-                            <div className="benefit-icon">💰</div>
-                            <h3>Affordable Rates</h3>
-                            <p>Best prices with transparent pricing - no hidden charges</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* FAQ Section */}
-            <section className="faq-section">
-                <div className="container">
-                    <h2 className="section-title">Frequently Asked Questions</h2>
-                    <div className="faq-grid">
-                        <div className="faq-item">
-                            <h4>What documents are required?</h4>
-                            <p>You need 4 clear photos of your cattle (front, back, left, right sides) and basic owner details. Ear tag is mandatory.</p>
-                        </div>
-                        <div className="faq-item">
-                            <h4>How long does approval take?</h4>
-                            <p>Once you submit your application and make payment, our admin team reviews it within 24-48 hours.</p>
-                        </div>
-                        <div className="faq-item">
-                            <h4>When does coverage start?</h4>
-                            <p>Coverage starts 15 days after policy approval to prevent fraudulent claims.</p>
-                        </div>
-                        <div className="faq-item">
-                            <h4>How to file a claim?</h4>
-                            <p>Login to your account, go to Claims section, select the policy, and upload required documents. Claims are settled within 7 days.</p>
                         </div>
                     </div>
                 </div>

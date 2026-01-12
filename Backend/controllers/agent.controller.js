@@ -1,6 +1,8 @@
 import { Agent, User, Policy, Commission, Withdrawal } from '../models/index.js';
+import sequelize from '../config/database.js';
 import { getAgentCommissionSummary } from '../utils/commission.util.js';
 import { notifyAgentApproval } from '../utils/notification.util.js';
+import { Op } from 'sequelize';
 import crypto from 'crypto';
 
 // @desc    Register as agent
@@ -113,10 +115,16 @@ export const getAgentProfile = async (req, res) => {
 // @route   PUT /api/agents/profile
 // @access  Private (agent)
 export const updateAgentProfile = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({
+            where: { userId: req.user.id },
+            include: [{ model: User, as: 'user' }],
+            transaction
+        });
 
         if (!agent) {
+            await transaction.rollback();
             return res.status(404).json({
                 success: false,
                 message: 'Agent profile not found'
@@ -124,6 +132,12 @@ export const updateAgentProfile = async (req, res) => {
         }
 
         const {
+            fullName,
+            phone,
+            address,
+            city,
+            state,
+            pincode,
             bankName,
             accountNumber,
             ifscCode,
@@ -132,6 +146,19 @@ export const updateAgentProfile = async (req, res) => {
             aadharNumber
         } = req.body;
 
+        // Update User fields
+        if (agent.user) {
+            await agent.user.update({
+                fullName: fullName || agent.user.fullName,
+                phone: phone || agent.user.phone,
+                address: address || agent.user.address,
+                city: city || agent.user.city,
+                state: state || agent.user.state,
+                pincode: pincode || agent.user.pincode
+            }, { transaction });
+        }
+
+        // Update Agent fields
         await agent.update({
             bankName: bankName || agent.bankName,
             accountNumber: accountNumber || agent.accountNumber,
@@ -139,14 +166,23 @@ export const updateAgentProfile = async (req, res) => {
             accountHolderName: accountHolderName || agent.accountHolderName,
             panNumber: panNumber || agent.panNumber,
             aadharNumber: aadharNumber || agent.aadharNumber
+        }, { transaction });
+
+        await transaction.commit();
+
+        // Refetch to get updated data
+        const updatedAgent = await Agent.findOne({
+            where: { id: agent.id },
+            include: [{ model: User, as: 'user' }]
         });
 
         res.json({
             success: true,
             message: 'Agent profile updated successfully',
-            data: { agent }
+            data: { agent: updatedAgent }
         });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         console.error('Update agent profile error:', error);
         res.status(500).json({
             success: false,
@@ -204,7 +240,7 @@ export const getAgentHierarchy = async (req, res) => {
     }
 };
 
-// @desc    Get direct sub-agents (team)
+// @desc    Get all downline agents (team)
 // @route   GET /api/agents/team
 // @access  Private (agent)
 export const getTeam = async (req, res) => {
@@ -218,11 +254,34 @@ export const getTeam = async (req, res) => {
             });
         }
 
-        const team = await Agent.findAll({
+        // Logic to get all downline agents (recursively or iterative)
+        // Level 1: Direct sub-agents
+        const level1 = await Agent.findAll({
             where: { parentAgentId: agent.id },
-            include: [{ model: User, as: 'user' }],
-            order: [['createdAt', 'DESC']]
+            include: [{ model: User, as: 'user' }]
         });
+
+        let team = level1.map(a => ({ ...a.toJSON(), relativeLevel: 1 }));
+
+        // Level 2: Sub-agents of Level 1
+        if (level1.length > 0) {
+            const level1Ids = level1.map(a => a.id);
+            const level2 = await Agent.findAll({
+                where: { parentAgentId: level1Ids },
+                include: [{ model: User, as: 'user' }]
+            });
+            team = [...team, ...level2.map(a => ({ ...a.toJSON(), relativeLevel: 2 }))];
+
+            // Level 3: Sub-agents of Level 2
+            if (level2.length > 0) {
+                const level2Ids = level2.map(a => a.id);
+                const level3 = await Agent.findAll({
+                    where: { parentAgentId: level2Ids },
+                    include: [{ model: User, as: 'user' }]
+                });
+                team = [...team, ...level3.map(a => ({ ...a.toJSON(), relativeLevel: 3 }))];
+            }
+        }
 
         res.json({
             success: true,
@@ -255,32 +314,89 @@ export const getAgentStats = async (req, res) => {
 
         // Get policies sold
         const policiesCount = await Policy.count({ where: { agentId: agent.id } });
-        const approvedPolicies = await Policy.count({
-            where: { agentId: agent.id, status: 'APPROVED' }
-        });
 
         // Get team size
         const teamSize = await Agent.count({ where: { parentAgentId: agent.id } });
 
-        // Get commission summary
-        const commissionSummary = await getAgentCommissionSummary(agent.id);
+        // This month stats
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const thisMonthPolicies = await Policy.count({
+            where: {
+                agentId: agent.id,
+                createdAt: { [Op.gte]: startOfMonth }
+            }
+        });
+
+        const thisMonthCommissions = await Commission.sum('amount', {
+            where: {
+                agentId: agent.id,
+                createdAt: { [Op.gte]: startOfMonth }
+            }
+        }) || 0;
+
+        const thisMonthNewMembers = await Agent.count({
+            where: {
+                parentAgentId: agent.id,
+                createdAt: { [Op.gte]: startOfMonth }
+            }
+        });
+
+        // Recent commissions
+        const recentCommissions = await Commission.findAll({
+            where: { agentId: agent.id },
+            include: [{ model: Policy, as: 'policy' }],
+            order: [['createdAt', 'DESC']],
+            limit: 5
+        });
+
+        // Upcoming Renewals (Expiring in next 30 days)
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+        const upcomingRenewalsCount = await Policy.count({
+            where: {
+                agentId: agent.id,
+                status: 'APPROVED',
+                endDate: {
+                    [Op.between]: [new Date(), thirtyDaysFromNow]
+                }
+            }
+        });
+
+        // Top Performing Sub-agents (Direct only)
+        const topPerformers = await Agent.findAll({
+            where: { parentAgentId: agent.id },
+            include: [{ model: User, as: 'user', attributes: ['fullName', 'email'] }],
+            order: [['totalEarnings', 'DESC']],
+            limit: 3
+        });
 
         const stats = {
-            agentCode: agent.agentCode,
-            status: agent.status,
-            level: agent.level,
-            walletBalance: agent.walletBalance,
-            totalEarnings: agent.totalEarnings,
-            totalWithdrawals: agent.totalWithdrawals,
-            policiesSold: policiesCount,
-            approvedPolicies: approvedPolicies,
+            totalEarnings: parseFloat(agent.totalEarnings),
+            totalPolicies: policiesCount,
             teamSize: teamSize,
-            commissions: commissionSummary
+            walletBalance: parseFloat(agent.walletBalance),
+            recentCommissions,
+            upcomingRenewalsCount,
+            topPerformers: topPerformers.map(a => ({
+                name: a.user?.fullName,
+                agentCode: a.agentCode,
+                totalEarnings: parseFloat(a.totalEarnings),
+                policiesSold: 0 // We'd need an extra count if we want this exact value per performer
+            })),
+            thisMonth: {
+                policies: thisMonthPolicies,
+                commissions: parseFloat(thisMonthCommissions),
+                newMembers: thisMonthNewMembers
+            }
         };
 
         res.json({
             success: true,
-            data: { stats }
+            data: stats
         });
     } catch (error) {
         console.error('Get agent stats error:', error);
@@ -306,31 +422,74 @@ export const getWallet = async (req, res) => {
             });
         }
 
+        // Stats for wallet
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const thisMonthEarnings = await Commission.sum('amount', {
+            where: {
+                agentId: agent.id,
+                createdAt: { [Op.gte]: startOfMonth },
+                status: 'approved'
+            }
+        }) || 0;
+
+        const pendingWithdrawalsAmount = await Withdrawal.sum('amount', {
+            where: {
+                agentId: agent.id,
+                status: 'pending'
+            }
+        }) || 0;
+
         // Get recent transactions (commissions and withdrawals)
         const commissions = await Commission.findAll({
             where: { agentId: agent.id },
             include: [{ model: Policy, as: 'policy' }],
             order: [['createdAt', 'DESC']],
-            limit: 10
+            limit: 20
         });
 
         const withdrawals = await Withdrawal.findAll({
             where: { agentId: agent.id },
             order: [['createdAt', 'DESC']],
-            limit: 10
+            limit: 20
         });
 
-        const wallet = {
-            balance: agent.walletBalance,
-            totalEarnings: agent.totalEarnings,
-            totalWithdrawals: agent.totalWithdrawals,
-            recentCommissions: commissions,
-            recentWithdrawals: withdrawals
+        // Combine into transactions for frontend
+        const transactions = [
+            ...commissions.map(c => ({
+                id: `comm_${c.id}`,
+                type: 'commission',
+                amount: parseFloat(c.amount),
+                description: `Commission for Policy #${c.policy?.policyNumber || 'N/A'}`,
+                status: c.status,
+                createdAt: c.createdAt
+            })),
+            ...withdrawals.map(w => ({
+                id: `with_${w.id}`,
+                type: 'withdrawal',
+                amount: parseFloat(w.amount),
+                description: 'Withdrawal Request',
+                status: w.status,
+                createdAt: w.createdAt
+            }))
+        ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const walletData = {
+            balance: parseFloat(agent.walletBalance),
+            totalEarnings: parseFloat(agent.totalEarnings),
+            totalWithdrawn: parseFloat(agent.totalWithdrawals),
+            pendingWithdrawals: parseFloat(pendingWithdrawalsAmount),
+            thisMonthEarnings: parseFloat(thisMonthEarnings)
         };
 
         res.json({
             success: true,
-            data: { wallet }
+            data: {
+                wallet: walletData,
+                transactions
+            }
         });
     } catch (error) {
         console.error('Get wallet error:', error);
@@ -471,10 +630,32 @@ export const getCommissions = async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
+        // Calculate stats for frontend
+        const totalEarned = commissions.reduce((sum, c) => sum + parseFloat(c.amount), 0);
+        const pending = commissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + parseFloat(c.amount), 0);
+        const paid = commissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + parseFloat(c.amount), 0);
+        const approved = commissions.filter(c => c.status === 'approved').reduce((sum, c) => sum + parseFloat(c.amount), 0);
+
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const thisMonth = commissions
+            .filter(c => new Date(c.createdAt) >= startOfMonth)
+            .reduce((sum, c) => sum + parseFloat(c.amount), 0);
+
         res.json({
             success: true,
             count: commissions.length,
-            data: { commissions }
+            data: {
+                commissions,
+                stats: {
+                    totalEarned,
+                    thisMonth,
+                    pending,
+                    paid: paid + approved // Count both paid and approved as 'paid' in stats if desired
+                }
+            }
         });
     } catch (error) {
         console.error('Get commissions error:', error);
@@ -522,6 +703,133 @@ export const getPoliciesSold = async (req, res) => {
             success: false,
             message: 'Error fetching policies',
             error: error.message
+        });
+    }
+};
+
+// @desc    Get customers of an agent
+// @route   GET /api/agents/customers
+// @access  Private (agent)
+export const getAgentCustomers = async (req, res) => {
+    try {
+        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agent profile not found'
+            });
+        }
+
+        // Get all unique users who have a policy sold by this agent with policy count
+        const policies = await Policy.findAll({
+            where: { agentId: agent.id },
+            attributes: [
+                'customerId',
+                [sequelize.fn('COUNT', sequelize.col('Policy.id')), 'policyCount'],
+                [sequelize.fn('MAX', sequelize.col('Policy.createdAt')), 'lastPurchaseDate']
+            ],
+            include: [{ model: User, as: 'customer', attributes: { exclude: ['password'] } }],
+            group: ['customerId', 'customer.id'],
+            raw: true,
+            nest: true
+        });
+
+        const customers = policies.map(p => ({
+            ...p.customer,
+            policyCount: p.policyCount,
+            lastPurchaseDate: p.lastPurchaseDate,
+            followUpNotes: p.customer.followUpNotes
+        }));
+
+        res.json({
+            success: true,
+            count: customers.length,
+            data: { customers }
+        });
+    } catch (error) {
+        console.error('Get agent customers error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching customers',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Update customer follow-up notes
+// @route   PATCH /api/agents/customers/:id/notes
+// @access  Private (agent)
+export const updateCustomerNotes = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+
+        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+
+        // Verify customer belongs to this agent (has sold them a policy)
+        const policy = await Policy.findOne({
+            where: { agentId: agent.id, customerId: id }
+        });
+
+        if (!policy) {
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized: This customer is not in your portfolio'
+            });
+        }
+
+        await User.update({ followUpNotes: notes }, { where: { id } });
+
+        res.json({
+            success: true,
+            message: 'Notes updated successfully'
+        });
+    } catch (error) {
+        console.error('Update notes error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating notes'
+        });
+    }
+};
+
+// @desc    Update sub-agent training progress
+// @route   PATCH /api/agents/team/:id/training
+// @access  Private (agent)
+export const updateSubAgentTraining = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, progress } = req.body;
+
+        const parentAgent = await Agent.findOne({ where: { userId: req.user.id } });
+
+        // Verify sub-agent is a direct downline
+        const subAgent = await Agent.findOne({
+            where: { id, parentAgentId: parentAgent.id }
+        });
+
+        if (!subAgent) {
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized: This agent is not your direct sub-agent'
+            });
+        }
+
+        await subAgent.update({
+            trainingStatus: status || subAgent.trainingStatus,
+            trainingProgress: progress !== undefined ? progress : subAgent.trainingProgress
+        });
+
+        res.json({
+            success: true,
+            message: 'Training progress updated successfully'
+        });
+    } catch (error) {
+        console.error('Update training error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating training progress'
         });
     }
 };

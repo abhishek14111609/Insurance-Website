@@ -19,11 +19,19 @@ const CommissionSettings = () => {
         try {
             setLoading(true);
             const response = await adminAPI.getCommissionSettings();
-            if (response.success && response.data) {
-                // Assuming response.data is the settings object. 
-                // If it's nested (e.g. response.data.settings), adjust here.
-                // Default API typically returns { success: true, data: { level1: 15, ... } }
-                setSettings(prev => ({ ...prev, ...response.data }));
+            if (response.success && response.data && response.data.settings) {
+                const settingsArray = response.data.settings;
+                const newSettings = { ...settings };
+
+                settingsArray.forEach(s => {
+                    if (s.level === 1) newSettings.level1 = parseFloat(s.percentage);
+                    if (s.level === 2) newSettings.level2 = parseFloat(s.percentage);
+                    if (s.level === 3) newSettings.level3 = parseFloat(s.percentage);
+                    // Store the actual record IDs for updating
+                    newSettings[`id${s.level}`] = s.id;
+                });
+
+                setSettings(newSettings);
             }
         } catch (error) {
             console.error('Error loading commission settings:', error);
@@ -42,11 +50,21 @@ const CommissionSettings = () => {
 
     const handleSave = async () => {
         try {
-            const response = await adminAPI.updateCommissionSettings(settings); // Send settings directly
+            // Transform back to array of settings for backend
+            const payload = {
+                settings: [
+                    { id: settings.id1, level: 1, percentage: settings.level1 },
+                    { id: settings.id2, level: 2, percentage: settings.level2 },
+                    { id: settings.id3, level: 3, percentage: settings.level3 }
+                ]
+            };
+
+            const response = await adminAPI.updateCommissionSettings(payload);
             if (response.success) {
                 setSaved(true);
                 alert('Commission settings updated successfully!');
                 setTimeout(() => setSaved(false), 3000);
+                loadSettings(); // Reload to get potential new IDs if created
             } else {
                 alert(response.message || 'Failed to update settings');
             }

@@ -107,11 +107,13 @@ export const getClaims = async (req, res) => {
 // @access  Private
 export const getClaimById = async (req, res) => {
     try {
+        const where = { id: req.params.id };
+        if (req.user.role !== 'admin') {
+            where.customerId = req.user.id;
+        }
+
         const claim = await Claim.findOne({
-            where: {
-                id: req.params.id,
-                customerId: req.user.id
-            },
+            where,
             include: [
                 { model: Policy, as: 'policy' },
                 { model: User, as: 'reviewer' }

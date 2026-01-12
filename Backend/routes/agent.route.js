@@ -9,8 +9,10 @@ import {
     getWallet,
     requestWithdrawal,
     getWithdrawals,
-    getCommissions,
-    getPoliciesSold
+    getPoliciesSold,
+    getAgentCustomers,
+    updateCustomerNotes,
+    updateSubAgentTraining
 } from '../controllers/agent.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -33,5 +35,8 @@ router.post('/withdraw', authorize('agent'), requestWithdrawal);
 router.get('/withdrawals', authorize('agent'), getWithdrawals);
 router.get('/commissions', authorize('agent'), getCommissions);
 router.get('/policies', authorize('agent'), getPoliciesSold);
+router.get('/customers', authorize('agent'), getAgentCustomers);
+router.patch('/customers/:id/notes', authorize('agent'), updateCustomerNotes);
+router.patch('/team/:id/training', authorize('agent'), updateSubAgentTraining);
 
 export default router;

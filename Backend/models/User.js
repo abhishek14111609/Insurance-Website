@@ -74,6 +74,11 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE,
         allowNull: true,
         field: 'reset_password_expires'
+    },
+    followUpNotes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        field: 'follow_up_notes'
     }
 }, {
     tableName: 'users',

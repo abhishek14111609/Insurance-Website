@@ -35,7 +35,21 @@ const Dashboard = () => {
             // 1. Get Dashboard Stats
             const statsResponse = await adminAPI.getDashboardStats();
             if (statsResponse.success) {
-                setStats(statsResponse.data);
+                const s = statsResponse.data.stats;
+                setStats({
+                    totalPolicies: s.policies.total,
+                    pendingPolicies: s.policies.pending,
+                    approvedPolicies: s.policies.active,
+                    totalAgents: s.agents.total,
+                    pendingAgents: s.agents.pending,
+                    activeAgents: s.agents.active,
+                    pendingWithdrawals: s.financial.pendingWithdrawals,
+                    totalWithdrawals: s.financial.totalWithdrawals,
+                    totalCustomers: s.customers.total,
+                    totalRevenue: s.financial.totalPremium,
+                    pendingClaims: s.claims.pending,
+                    totalClaims: s.claims.total
+                });
             }
 
             // 2. Get Pending Policies for the list
@@ -163,6 +177,24 @@ const Dashboard = () => {
                             View All →
                         </Link>
                     </div>
+
+                    {/* Pending Claims */}
+                    <div className="approval-card">
+                        <div className="approval-header">
+                            <h3>🩺 Claim Approvals</h3>
+                            <span className="count-badge">{stats.pendingClaims}</span>
+                        </div>
+                        <div className="approval-list">
+                            {stats.pendingClaims > 0 ? (
+                                <p className="text-warning" style={{ padding: '1rem' }}>{stats.pendingClaims} claims waiting for review</p>
+                            ) : (
+                                <p className="empty-state">No pending claims</p>
+                            )}
+                        </div>
+                        <Link to="/claim-approvals" className="view-all-btn">
+                            View All →
+                        </Link>
+                    </div>
                 </div>
             </div>
 
@@ -186,6 +218,12 @@ const Dashboard = () => {
                         <span className="action-icon">💳</span>
                         <span>Process Withdrawals</span>
                         {stats.pendingWithdrawals > 0 && <span className="action-badge">{stats.pendingWithdrawals}</span>}
+                    </Link>
+
+                    <Link to="/claim-approvals" className="action-btn danger">
+                        <span className="action-icon">🩺</span>
+                        <span>Process Claims</span>
+                        {stats.pendingClaims > 0 && <span className="action-badge">{stats.pendingClaims}</span>}
                     </Link>
 
                     <Link to="/commission-settings" className="action-btn info">

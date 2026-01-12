@@ -184,3 +184,66 @@
         padding: 0.75rem 1rem;
     }
 }
+
+/* Notes Styles */
+.notes-cell {
+    min-width: 250px;
+    position: relative;
+}
+
+.notes-display {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.notes-display:hover {
+    background: #f1f5f9;
+}
+
+.notes-display p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #475569;
+}
+
+.notes-display p.text-muted {
+    font-style: italic;
+    color: #94a3b8;
+}
+
+.edit-icon {
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.notes-display:hover .edit-icon {
+    opacity: 1;
+}
+
+.notes-edit textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    margin-bottom: 0.5rem;
+}
+
+.notes-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}

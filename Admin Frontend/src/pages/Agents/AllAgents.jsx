@@ -38,10 +38,11 @@ const AllAgents = () => {
 
         // Search filter
         if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
             filtered = filtered.filter(agent =>
-                (agent.fullName || agent.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (agent.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (agent.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                (agent.user?.fullName || '').toLowerCase().includes(lowerSearch) ||
+                (agent.agentCode || '').toLowerCase().includes(lowerSearch) ||
+                (agent.user?.email || '').toLowerCase().includes(lowerSearch)
             );
         }
 
@@ -181,9 +182,9 @@ const AllAgents = () => {
                                     <td>
                                         <strong>{agent.agentCode || agent.code || 'N/A'}</strong>
                                     </td>
-                                    <td>{agent.fullName || agent.name}</td>
-                                    <td>{agent.email}</td>
-                                    <td>{agent.phone}</td>
+                                    <td>{agent.user?.fullName}</td>
+                                    <td>{agent.user?.email}</td>
+                                    <td>{agent.user?.phone}</td>
                                     <td>
                                         <span className="level-badge">L{agent.level || 1}</span>
                                     </td>

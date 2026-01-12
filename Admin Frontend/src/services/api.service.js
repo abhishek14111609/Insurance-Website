@@ -77,7 +77,7 @@ export const policyAPI = {
     // Approve policy
     approve: async (policyId, adminNotes) => {
         const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/policies/${policyId}/approve`, {
+        const response = await fetch(`${API_BASE_URL}/admin/policies/${policyId}/approve`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export const policyAPI = {
     // Reject policy
     reject: async (policyId, rejectionReason) => {
         const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/policies/${policyId}/reject`, {
+        const response = await fetch(`${API_BASE_URL}/admin/policies/${policyId}/reject`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -124,6 +124,19 @@ export const adminAPI = {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
+        });
+        return handleResponse(response);
+    },
+
+    createAgent: async (agentData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(agentData)
         });
         return handleResponse(response);
     },
@@ -185,15 +198,23 @@ export const adminAPI = {
         return handleResponse(response);
     },
 
-    processWithdrawal: async (withdrawalId, action, transactionHash = null) => {
+    processWithdrawal: async (withdrawalId, action, reasonOrHash = null) => {
         const token = getToken();
+        const body = { action };
+
+        if (action === 'approve') {
+            body.adminNotes = reasonOrHash;
+        } else {
+            body.rejectionReason = reasonOrHash;
+        }
+
         const response = await fetch(`${API_BASE_URL}/admin/withdrawals/${withdrawalId}`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ status: action, transactionHash })
+            body: JSON.stringify(body)
         });
         return handleResponse(response);
     },
@@ -202,6 +223,16 @@ export const adminAPI = {
     getCommissionSettings: async () => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    getAllCommissions: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/commissions`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -220,11 +251,110 @@ export const adminAPI = {
             body: JSON.stringify(settings)
         });
         return handleResponse(response);
+    },
+
+    // Customer Management
+    getAllCustomers: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/customers`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    }
+};
+
+// Policy Plans API
+export const policyPlanAPI = {
+    getAll: async () => {
+        const response = await fetch(`${API_BASE_URL}/plans`);
+        return handleResponse(response);
+    },
+
+    getById: async (id) => {
+        const response = await fetch(`${API_BASE_URL}/plans/${id}`);
+        return handleResponse(response);
+    },
+
+    create: async (planData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/plans`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(planData)
+        });
+        return handleResponse(response);
+    },
+
+    update: async (id, planData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(planData)
+        });
+        return handleResponse(response);
+    },
+
+    delete: async (id) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    }
+};
+
+// Claims API
+export const claimAPI = {
+    getAllPending: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/claims/admin/all?status=pending`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    updateStatus: async (claimId, statusData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/claims/${claimId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(statusData)
+        });
+        return handleResponse(response);
+    },
+
+    getById: async (id) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/claims/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
     }
 };
 
 export default {
     auth: authAPI,
     policy: policyAPI,
-    admin: adminAPI
+    admin: adminAPI,
+    policyPlan: policyPlanAPI,
+    claim: claimAPI
 };

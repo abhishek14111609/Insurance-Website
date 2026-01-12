@@ -31,6 +31,15 @@ const Policy = sequelize.define('Policy', {
             key: 'id'
         }
     },
+    planId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: 'plan_id',
+        references: {
+            model: 'policy_plans',
+            key: 'id'
+        }
+    },
     // Cattle Details
     cattleType: {
         type: DataTypes.ENUM('cow', 'buffalo'),

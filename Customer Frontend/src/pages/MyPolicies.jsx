@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { policyAPI } from '../services/api.service';
+import { useAuth } from '../context/AuthContext';
 import './MyPolicies.css';
 
 const MyPolicies = () => {
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
     const [policies, setPolicies] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('ALL');
 
     useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/policies');
+            return;
+        }
         const fetchPolicies = async () => {
             try {
                 setIsLoading(true);

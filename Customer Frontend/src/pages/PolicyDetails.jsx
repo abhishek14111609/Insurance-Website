@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { policyAPI } from '../services/api.service';
 import './PolicyDetails.css';
 
 const PolicyDetails = () => {
     const { policyId } = useParams();
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/policies');
+        }
+    }, [isAgent, navigate]);
     const [policy, setPolicy] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

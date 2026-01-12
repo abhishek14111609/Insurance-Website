@@ -14,6 +14,7 @@ import agentRoutes from './routes/agent.route.js';
 import adminRoutes from './routes/admin.route.js';
 import claimRoutes from './routes/claim.route.js';
 import notificationRoutes from './routes/notification.route.js';
+import policyPlanRoutes from './routes/policyPlan.route.js';
 
 // Utilities
 import { initializeCommissionSettings } from './utils/commission.util.js';
@@ -73,6 +74,7 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/plans', policyPlanRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

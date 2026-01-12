@@ -1,6 +1,7 @@
 import { User, Agent } from '../models/index.js';
 import { generateToken, generateRefreshToken } from '../middleware/auth.middleware.js';
 import { Op } from 'sequelize';
+import sequelize from '../config/database.js';
 import crypto from 'crypto';
 
 // @desc    Register new user
@@ -56,12 +57,110 @@ export const register = async (req, res) => {
     }
 };
 
+// @desc    Register as agent (Public)
+// @route   POST /api/auth/register-agent
+// @access  Public
+export const registerAgent = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { email, password, fullName, phone, address, city, state, pincode, referredByCode } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Create user
+        const user = await User.create({
+            email,
+            password,
+            fullName,
+            phone,
+            address: address || '',
+            city: city || '',
+            state: state || '',
+            pincode: pincode || '',
+            role: 'agent',
+            status: 'active'
+        }, { transaction });
+
+        // Generate unique agent code
+        const agentCode = `AG${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+        // Find parent agent if code provided
+        let parentAgentId = null;
+        let level = 1;
+
+        if (referredByCode) {
+            const parentAgent = await Agent.findOne({
+                where: { agentCode: referredByCode },
+                transaction
+            });
+            if (parentAgent) {
+                parentAgentId = parentAgent.id;
+                level = parentAgent.level + 1;
+            }
+        }
+
+        // Create agent profile
+        const agent = await Agent.create({
+            userId: user.id,
+            agentCode,
+            parentAgentId,
+            level,
+            status: 'pending',
+            walletBalance: 0,
+            totalEarnings: 0,
+            totalWithdrawals: 0
+        }, { transaction });
+
+        await transaction.commit();
+
+        // Generate tokens
+        const token = generateToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        res.status(201).json({
+            success: true,
+            message: 'Agent registered successfully. Pending admin approval.',
+            data: {
+                user: user.toJSON(),
+                agentCode: agent.agentCode,
+                token,
+                refreshToken
+            }
+        });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        console.error('Register agent error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error registering agent',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('Login attempt:', { email, hasPassword: !!password });
+
+        if (!email || !password) {
+            console.log('Missing email or password');
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide both email and password'
+            });
+        }
 
         // Find user
         const user = await User.findOne({ where: { email } });

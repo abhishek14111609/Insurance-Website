@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { policyAPI, paymentAPI } from '../services/api.service';
 import './PaymentPage.css';
 
 const PaymentPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAgent) {
+            navigate('/agent/dashboard');
+        }
+    }, [isAgent, navigate]);
+
     const { policyId } = location.state || {};
 
     // Fallback if full data passed (legacy support or direct navigation)

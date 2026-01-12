@@ -37,7 +37,7 @@ const AgentDetails = () => {
                     // Find sub-agents
                     // Assuming agent.code is used for hierarchy or parentId
                     // If we have parentId in response:
-                    const subs = agentsList.filter(a => String(a.parentId) === String(foundAgent.id) || a.referredByCode === foundAgent.code);
+                    const subs = agentsList.filter(a => String(a.parentAgentId) === String(foundAgent.id));
                     setSubAgents(subs);
 
                     // Stats derived from found agent if available, else calc
@@ -57,7 +57,7 @@ const AgentDetails = () => {
                 }
                 // Let's filter here using the found agent ID from the list logic above
                 // To do this properly, we should assume we have the agent ID.
-                const ps = allPolicies.filter(p => String(p.agentId) === String(id) || (p.agent && String(p.agent.id) === String(id)));
+                const ps = allPolicies.filter(p => String(p.agentId) === String(id));
                 setPolicies(ps);
             }
 
@@ -76,7 +76,7 @@ const AgentDetails = () => {
             <div className="page-header">
                 <div>
                     <h1>👤 Agent Details</h1>
-                    <p>{agent.agentCode || agent.code} - {agent.fullName || agent.name}</p>
+                    <p>{agent.agentCode || agent.code} - {agent.user?.fullName}</p>
                 </div>
                 <Link to={`/agents/edit/${agent.id}`} className="btn btn-primary">
                     ✏️ Edit Agent
@@ -93,19 +93,19 @@ const AgentDetails = () => {
                     </div>
                     <div className="detail-row">
                         <span className="label">Name:</span>
-                        <span className="value">{agent.fullName || agent.name}</span>
+                        <span className="value">{agent.user?.fullName}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Email:</span>
-                        <span className="value">{agent.email}</span>
+                        <span className="value">{agent.user?.email}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Phone:</span>
-                        <span className="value">{agent.phone}</span>
+                        <span className="value">{agent.user?.phone}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">City:</span>
-                        <span className="value">{agent.city || 'N/A'}</span>
+                        <span className="value">{agent.user?.city || 'N/A'}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Status:</span>
@@ -142,7 +142,7 @@ const AgentDetails = () => {
                                 className="sub-agent-card"
                             >
                                 <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
-                                <div className="sub-agent-name">{sub.fullName || sub.name}</div>
+                                <div className="sub-agent-name">{sub.user?.fullName}</div>
                                 <div className="sub-agent-status">{sub.status}</div>
                             </Link>
                         ))}

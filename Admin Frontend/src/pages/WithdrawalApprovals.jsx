@@ -45,8 +45,8 @@ const WithdrawalApprovals = () => {
 
     const handleConfirmApprove = async () => {
         try {
-            // Processing withdrawal with status 'APPROVED'
-            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'APPROVED', notes);
+            // Processing withdrawal with status 'approve'
+            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'approve', notes);
 
             if (result.success) {
                 alert('Withdrawal approved! Agent wallet updated.');
@@ -68,7 +68,7 @@ const WithdrawalApprovals = () => {
         }
 
         try {
-            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'REJECTED');
+            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'reject', rejectionReason);
 
             if (result.success) {
                 alert('Withdrawal rejected.');
@@ -127,11 +127,11 @@ const WithdrawalApprovals = () => {
                             <div className="withdrawal-details">
                                 <div className="detail-row">
                                     <span className="label">Agent:</span>
-                                    <span className="value">{withdrawal.agentName || withdrawal.agent?.fullName}</span>
+                                    <span className="value">{withdrawal.agent?.user?.fullName || withdrawal.agentName}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Agent Code:</span>
-                                    <span className="value">{withdrawal.agentCode || withdrawal.agent?.agentCode}</span>
+                                    <span className="value">{withdrawal.agent?.agentCode || withdrawal.agentCode}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Bank Account:</span>
@@ -177,7 +177,7 @@ const WithdrawalApprovals = () => {
                         <div className="modal-body">
                             <div className="withdrawal-summary">
                                 <p><strong>Amount:</strong> ₹{parseFloat(selectedWithdrawal?.amount || 0).toLocaleString()}</p>
-                                <p><strong>Agent:</strong> {selectedWithdrawal?.agentName || selectedWithdrawal?.agent?.fullName}</p>
+                                <p><strong>Agent:</strong> {selectedWithdrawal?.agent?.user?.fullName || selectedWithdrawal?.agentName}</p>
                             </div>
 
                             {modalType === 'approve' ? (
