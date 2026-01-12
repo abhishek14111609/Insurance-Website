@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getAgentById, updateAgent, getAllAgents } from '../../utils/agentUtils';
+import { adminAPI } from '../../services/api.service';
 import './AddAgent.css';
 
 const EditAgent = () => {
@@ -8,16 +8,38 @@ const EditAgent = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const agent = getAgentById(id);
-        if (agent) {
-            setFormData(agent);
-        } else {
-            alert('Agent not found');
+        loadAgent();
+    }, [id]);
+
+    const loadAgent = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getAllAgents();
+            if (response.success) {
+                const agents = response.data.agents || [];
+                const foundFn = agents.find(a => String(a.id) === String(id));
+                if (foundFn) {
+                    // Map backend keys to form keys if necessary
+                    setFormData({
+                        ...foundFn,
+                        name: foundFn.fullName || foundFn.name,
+                        code: foundFn.agentCode || foundFn.code
+                    });
+                } else {
+                    alert('Agent not found');
+                    navigate('/agents');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading agent:', error);
             navigate('/agents');
+        } finally {
+            setLoading(false);
         }
-    }, [id, navigate]);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -27,24 +49,35 @@ const EditAgent = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const result = updateAgent(id, formData);
+        try {
+            // Map back to backend expectations
+            const updatePayload = {
+                ...formData,
+                fullName: formData.name, // Ensure match
+                // Backend might require specific fields, sending all is usually ok
+            };
 
-        if (result.success) {
-            alert('Agent updated successfully!');
-            navigate('/agents');
-        } else {
-            alert('Error updating agent');
+            const result = await adminAPI.updateAgent(id, updatePayload);
+            if (result.success) {
+                alert('Agent updated successfully!');
+                navigate('/agents');
+            } else {
+                alert(result.message || 'Error updating agent');
+            }
+        } catch (error) {
+            console.error('Error updating agent:', error);
+            alert('An error occurred while updating agent.');
+        } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (!formData) return <div>Loading...</div>;
-
-    const agents = getAllAgents().filter(a => a.status === 'active' && a.id !== id);
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading...</div>;
+    if (!formData) return <div>Agent not found</div>;
 
     return (
         <div className="add-agent-page">
@@ -62,7 +95,7 @@ const EditAgent = () => {
                             <label>Agent Code</label>
                             <input
                                 type="text"
-                                value={formData.code}
+                                value={formData.code || formData.agentCode}
                                 readOnly
                                 className="readonly-input"
                             />
@@ -73,7 +106,7 @@ const EditAgent = () => {
                             <input
                                 type="text"
                                 name="name"
-                                value={formData.name}
+                                value={formData.name || ''}
                                 onChange={handleChange}
                                 required
                             />
@@ -86,7 +119,7 @@ const EditAgent = () => {
                             <input
                                 type="email"
                                 name="email"
-                                value={formData.email}
+                                value={formData.email || ''}
                                 onChange={handleChange}
                                 required
                             />
@@ -97,7 +130,7 @@ const EditAgent = () => {
                             <input
                                 type="tel"
                                 name="phone"
-                                value={formData.phone}
+                                value={formData.phone || ''}
                                 onChange={handleChange}
                                 required
                             />
@@ -110,7 +143,7 @@ const EditAgent = () => {
                             <input
                                 type="text"
                                 name="city"
-                                value={formData.city}
+                                value={formData.city || ''}
                                 onChange={handleChange}
                                 required
                             />
@@ -121,7 +154,7 @@ const EditAgent = () => {
                             <input
                                 type="text"
                                 name="state"
-                                value={formData.state}
+                                value={formData.state || ''}
                                 onChange={handleChange}
                                 required
                             />
@@ -150,7 +183,7 @@ const EditAgent = () => {
                             <input
                                 type="number"
                                 name="commissionRate"
-                                value={formData.commissionRate}
+                                value={formData.commissionRate || ''}
                                 onChange={handleChange}
                                 min="0"
                                 max="100"
@@ -162,13 +195,14 @@ const EditAgent = () => {
                             <label>Status</label>
                             <select
                                 name="status"
-                                value={formData.status}
+                                value={formData.status || 'active'}
                                 onChange={handleChange}
                             >
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                                 <option value="pending">Pending</option>
                                 <option value="blocked">Blocked</option>
+                                <option value="rejected">Rejected</option>
                             </select>
                         </div>
                     </div>
@@ -194,5 +228,4 @@ const EditAgent = () => {
         </div>
     );
 };
-
 export default EditAgent;

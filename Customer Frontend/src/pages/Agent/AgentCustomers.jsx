@@ -1,86 +1,101 @@
 import { useState, useEffect } from 'react';
-import './AgentDashboard.css'; // Reusing dashboard styles for consistency (assuming AgentDashboard.css has necessary styles or we will add them)
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
+import './AgentCustomers.css';
 
 const AgentCustomers = () => {
-    // Initial dummy data
-    const initialCustomers = [
-        { id: 1, name: 'Rahul Sharma', email: 'rahul.s@example.com', phone: '9876543210', city: 'Mumbai', status: 'Active' },
-        { id: 2, name: 'Priya Patel', email: 'priya.p@example.com', phone: '9876543211', city: 'Ahmedabad', status: 'Active' },
-        { id: 3, name: 'Amit Kumar', email: 'amit.k@example.com', phone: '9876543212', city: 'Delhi', status: 'Inactive' },
-    ];
+    const navigate = useNavigate();
+    const { isAgent } = useAuth();
 
-    const [customers, setCustomers] = useState(() => {
-        const saved = localStorage.getItem('agent_customers');
-        return saved ? JSON.parse(saved) : initialCustomers;
-    });
-
-    const [showModal, setShowModal] = useState(false);
+    const [customers, setCustomers] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [formData, setFormData] = useState({
-        name: '', email: '', phone: '', city: '', status: 'Active'
-    });
-    const [isEditing, setIsEditing] = useState(false);
-    const [editId, setEditId] = useState(null);
 
-    // Save to localStorage whenever customers change
     useEffect(() => {
-        localStorage.setItem('agent_customers', JSON.stringify(customers));
-    }, [customers]);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (isEditing) {
-            setCustomers(customers.map(c => c.id === editId ? { ...formData, id: editId } : c));
-            setIsEditing(false);
-            setEditId(null);
-        } else {
-            const newCustomer = {
-                ...formData,
-                id: Date.now(), // Simple unique ID
-            };
-            setCustomers([...customers, newCustomer]);
+        if (!isAgent) {
+            navigate('/');
+            return;
         }
-        setShowModal(false);
-        setFormData({ name: '', email: '', phone: '', city: '', status: 'Active' });
-    };
 
-    const handleEdit = (customer) => {
-        setFormData(customer);
-        setEditId(customer.id);
-        setIsEditing(true);
-        setShowModal(true);
-    };
+        fetchCustomersFromPolicies();
+    }, [isAgent, navigate]);
 
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this customer?')) {
-            setCustomers(customers.filter(c => c.id !== id));
+    const fetchCustomersFromPolicies = async () => {
+        try {
+            setLoading(true);
+            // We get customers by fetching all policies sold by this agent
+            const response = await agentAPI.getPolicies();
+
+            if (response.success) {
+                const policies = response.data.policies || [];
+
+                // Extract unique customers from policies
+                const uniqueCustomers = [];
+                const seenEmails = new Set();
+
+                policies.forEach(policy => {
+                    // Assuming policy object contains customer details
+                    // If the API structure puts user details in a 'user' object or directly on policy
+                    // Based on previous files, it seemed to be direct fields like ownerName
+
+                    if (policy.email && !seenEmails.has(policy.email)) {
+                        seenEmails.add(policy.email);
+                        uniqueCustomers.push({
+                            id: policy.userId || Date.now() + Math.random(), // fallback ID
+                            name: policy.ownerName,
+                            email: policy.email,
+                            phone: policy.phone,
+                            city: policy.city,
+                            state: policy.state,
+                            status: 'Active', // Default status for someone with a policy
+                            totalPolicies: 1,
+                            lastPurchaseDate: policy.createdAt
+                        });
+                    } else if (policy.email && seenEmails.has(policy.email)) {
+                        // Update existing customer stats
+                        const customer = uniqueCustomers.find(c => c.email === policy.email);
+                        if (customer) {
+                            customer.totalPolicies += 1;
+                            if (new Date(policy.createdAt) > new Date(customer.lastPurchaseDate)) {
+                                customer.lastPurchaseDate = policy.createdAt;
+                            }
+                        }
+                    }
+                });
+
+                setCustomers(uniqueCustomers);
+            }
+        } catch (error) {
+            console.error('Error fetching customers:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const filteredCustomers = customers.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    if (loading) {
+        return (
+            <div className="agent-customers">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading customers...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="agent-page-container">
+        <div className="agent-customers">
             <div className="page-header">
                 <div>
                     <h1>My Customers</h1>
                     <p>Manage your client database</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => {
-                    setIsEditing(false);
-                    setFormData({ name: '', email: '', phone: '', city: '', status: 'Active' });
-                    setShowModal(true);
-                }}>
-                    + Add New Customer
-                </button>
             </div>
 
             {/* Search Filter */}
@@ -95,7 +110,7 @@ const AgentCustomers = () => {
             </div>
 
             {/* Customers Table */}
-            <div className="table-container fade-in">
+            <div className="table-container">
                 <table className="data-table">
                     <thead>
                         <tr>
@@ -103,8 +118,8 @@ const AgentCustomers = () => {
                             <th>Email</th>
                             <th>Phone</th>
                             <th>City</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th>Policies</th>
+                            <th>Last Active</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -113,7 +128,9 @@ const AgentCustomers = () => {
                                 <tr key={customer.id}>
                                     <td>
                                         <div className="customer-name-cell">
-                                            <div className="avatar-circle">{customer.name.charAt(0)}</div>
+                                            <div className="avatar-circle">
+                                                {customer.name?.charAt(0) || 'C'}
+                                            </div>
                                             {customer.name}
                                         </div>
                                     </td>
@@ -121,107 +138,28 @@ const AgentCustomers = () => {
                                     <td>{customer.phone}</td>
                                     <td>{customer.city}</td>
                                     <td>
-                                        <span className={`status-badge ${customer.status.toLowerCase()}`}>
-                                            {customer.status}
+                                        <span className="status-badge active">
+                                            {customer.totalPolicies} Policies
                                         </span>
                                     </td>
                                     <td>
-                                        <div className="action-buttons">
-                                            <button
-                                                className="btn-icon edit"
-                                                title="Edit"
-                                                onClick={() => handleEdit(customer)}
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button
-                                                className="btn-icon delete"
-                                                title="Delete"
-                                                onClick={() => handleDelete(customer.id)}
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
+                                        {new Date(customer.lastPurchaseDate).toLocaleDateString()}
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" className="no-data">No customers found.</td>
+                                <td colSpan="6">
+                                    <div className="empty-state">
+                                        <span className="empty-icon">👥</span>
+                                        <p>No customers found.</p>
+                                    </div>
+                                </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
-
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content animate-scale-in">
-                        <div className="modal-header">
-                            <h2>{isEditing ? 'Edit Customer' : 'Add New Customer'}</h2>
-                            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-                        </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label>Full Name</label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Email Address</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-row two-col">
-                                    <div className="form-group">
-                                        <label>Phone Number</label>
-                                        <input
-                                            type="tel"
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>City</label>
-                                        <input
-                                            type="text"
-                                            name="city"
-                                            value={formData.city}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label>Status</label>
-                                    <select name="status" value={formData.status} onChange={handleInputChange}>
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">{isEditing ? 'Update' : 'Save'} Customer</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

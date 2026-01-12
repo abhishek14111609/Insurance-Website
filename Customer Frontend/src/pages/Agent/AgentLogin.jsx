@@ -1,19 +1,38 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './AgentPublic.css';
 
 const AgentLogin = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
+
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Simulated Authentication
-        if (credentials.email === 'agent@securelife.com' && credentials.password === 'agent123') {
-            navigate('/agent/dashboard');
-        } else {
-            setError('Invalid credentials. Please try again.');
+        setError('');
+        setLoading(true);
+
+        try {
+            const result = await login(credentials.email, credentials.password);
+
+            if (result.success) {
+                if (result.user.role === 'agent') {
+                    navigate('/agent/dashboard');
+                } else {
+                    setError('This account is not registered as an agent.');
+                }
+            } else {
+                setError(result.error || 'Login failed. Please check your credentials.');
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            setError('An error occurred during login. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -54,8 +73,8 @@ const AgentLogin = () => {
                         />
                     </div>
 
-                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }}>
-                        Secure Login
+                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }} disabled={loading}>
+                        {loading ? 'Logging in...' : 'Secure Login'}
                     </button>
 
                     <div className="text-center mt-4">

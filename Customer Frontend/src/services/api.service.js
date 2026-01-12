@@ -366,6 +366,20 @@ export const agentAPI = {
             }
         });
         return handleResponse(response);
+    },
+
+    // Get customers
+    getCustomers: async (filters = {}) => {
+        const token = getToken();
+        const queryParams = new URLSearchParams(filters).toString();
+        const url = `${API_BASE_URL}/agents/customers${queryParams ? `?${queryParams}` : ''}`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
     }
 };
 

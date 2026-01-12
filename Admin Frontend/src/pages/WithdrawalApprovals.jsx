@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPendingWithdrawals, approveWithdrawal, rejectWithdrawal, sendEmail } from '../utils/adminUtils';
+import { adminAPI } from '../services/api.service';
 import './WithdrawalApprovals.css';
 
 const WithdrawalApprovals = () => {
@@ -9,13 +9,26 @@ const WithdrawalApprovals = () => {
     const [modalType, setModalType] = useState('');
     const [notes, setNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadWithdrawals();
     }, []);
 
-    const loadWithdrawals = () => {
-        setWithdrawals(getPendingWithdrawals());
+    const loadWithdrawals = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getWithdrawals();
+            if (response.success) {
+                // Filter pending withdrawals
+                const pending = (response.data.withdrawals || []).filter(w => (w.status || 'PENDING').toUpperCase() === 'PENDING');
+                setWithdrawals(pending);
+            }
+        } catch (error) {
+            console.error('Error loading withdrawals:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleApproveClick = (withdrawal) => {
@@ -30,42 +43,43 @@ const WithdrawalApprovals = () => {
         setShowModal(true);
     };
 
-    const handleConfirmApprove = () => {
-        const result = approveWithdrawal(selectedWithdrawal.id, notes);
+    const handleConfirmApprove = async () => {
+        try {
+            // Processing withdrawal with status 'APPROVED'
+            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'APPROVED', notes);
 
-        if (result.success) {
-            sendEmail({
-                to: selectedWithdrawal.agentEmail,
-                subject: 'Withdrawal Request Approved - SecureLife',
-                body: `Dear ${selectedWithdrawal.agentName},\n\nYour withdrawal request of ₹${selectedWithdrawal.amount?.toLocaleString()} has been approved.\n\nThe amount will be credited to your account within 2-3 business days.`,
-                type: 'withdrawal_approval'
-            });
-
-            alert('Withdrawal approved! Email sent.');
-            loadWithdrawals();
-            closeModal();
+            if (result.success) {
+                alert('Withdrawal approved! Agent wallet updated.');
+                loadWithdrawals();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to approve withdrawal');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('An error occurred during approval');
         }
     };
 
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectionReason.trim()) {
             alert('Please provide a rejection reason');
             return;
         }
 
-        const result = rejectWithdrawal(selectedWithdrawal.id, rejectionReason);
+        try {
+            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'REJECTED');
 
-        if (result.success) {
-            sendEmail({
-                to: selectedWithdrawal.agentEmail,
-                subject: 'Withdrawal Request Update - SecureLife',
-                body: `Dear ${selectedWithdrawal.agentName},\n\nYour withdrawal request has been rejected.\n\nReason: ${rejectionReason}`,
-                type: 'withdrawal_rejection'
-            });
-
-            alert('Withdrawal rejected. Email sent.');
-            loadWithdrawals();
-            closeModal();
+            if (result.success) {
+                alert('Withdrawal rejected.');
+                loadWithdrawals();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to reject withdrawal');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('An error occurred during rejection');
         }
     };
 
@@ -75,6 +89,8 @@ const WithdrawalApprovals = () => {
         setNotes('');
         setRejectionReason('');
     };
+
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Withdrawals...</div>;
 
     return (
         <div className="withdrawal-approvals-page">
@@ -100,7 +116,7 @@ const WithdrawalApprovals = () => {
                         <div key={withdrawal.id} className="withdrawal-card">
                             <div className="withdrawal-header">
                                 <div>
-                                    <h3>₹{withdrawal.amount?.toLocaleString()}</h3>
+                                    <h3>₹{parseFloat(withdrawal.amount || 0).toLocaleString()}</h3>
                                     <span className="status-badge pending">Pending</span>
                                 </div>
                                 <div className="withdrawal-date">
@@ -111,23 +127,23 @@ const WithdrawalApprovals = () => {
                             <div className="withdrawal-details">
                                 <div className="detail-row">
                                     <span className="label">Agent:</span>
-                                    <span className="value">{withdrawal.agentName}</span>
+                                    <span className="value">{withdrawal.agentName || withdrawal.agent?.fullName}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Agent Code:</span>
-                                    <span className="value">{withdrawal.agentCode}</span>
+                                    <span className="value">{withdrawal.agentCode || withdrawal.agent?.agentCode}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Bank Account:</span>
-                                    <span className="value">{withdrawal.bankAccount}</span>
+                                    <span className="value">{withdrawal.bankDetails?.accountNumber || withdrawal.bankAccount || 'N/A'}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">IFSC:</span>
-                                    <span className="value">{withdrawal.ifsc}</span>
+                                    <span className="value">{withdrawal.bankDetails?.ifscCode || withdrawal.ifsc || 'N/A'}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Account Holder:</span>
-                                    <span className="value">{withdrawal.accountHolder}</span>
+                                    <span className="value">{withdrawal.bankDetails?.accountHolderName || withdrawal.accountHolder || 'N/A'}</span>
                                 </div>
                             </div>
 
@@ -160,20 +176,20 @@ const WithdrawalApprovals = () => {
 
                         <div className="modal-body">
                             <div className="withdrawal-summary">
-                                <p><strong>Amount:</strong> ₹{selectedWithdrawal?.amount?.toLocaleString()}</p>
-                                <p><strong>Agent:</strong> {selectedWithdrawal?.agentName}</p>
-                                <p><strong>Account:</strong> {selectedWithdrawal?.bankAccount}</p>
+                                <p><strong>Amount:</strong> ₹{parseFloat(selectedWithdrawal?.amount || 0).toLocaleString()}</p>
+                                <p><strong>Agent:</strong> {selectedWithdrawal?.agentName || selectedWithdrawal?.agent?.fullName}</p>
                             </div>
 
                             {modalType === 'approve' ? (
                                 <div className="form-group">
-                                    <label>Admin Notes (Optional):</label>
+                                    <label>Transaction ID / Reference (Optional):</label>
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Add any notes..."
+                                        placeholder="Enter bank transaction reference..."
                                         rows="3"
                                     />
+                                    <small>This will be sent to the agent.</small>
                                 </div>
                             ) : (
                                 <div className="form-group">
@@ -181,7 +197,7 @@ const WithdrawalApprovals = () => {
                                     <textarea
                                         value={rejectionReason}
                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                        placeholder="Provide reason..."
+                                        placeholder="Provide reason for rejection..."
                                         rows="4"
                                         required
                                     />

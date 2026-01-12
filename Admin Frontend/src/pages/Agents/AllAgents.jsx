@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllAgents, deleteAgent, getAgentStats } from '../../utils/agentUtils';
+import { adminAPI } from '../../services/api.service';
 import './AllAgents.css';
 
 const AllAgents = () => {
@@ -9,6 +9,7 @@ const AllAgents = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [levelFilter, setLevelFilter] = useState('all');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadAgents();
@@ -18,9 +19,18 @@ const AllAgents = () => {
         filterAgents();
     }, [searchTerm, statusFilter, levelFilter, agents]);
 
-    const loadAgents = () => {
-        const allAgents = getAllAgents();
-        setAgents(allAgents);
+    const loadAgents = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getAllAgents();
+            if (response.success) {
+                setAgents(response.data.agents || []);
+            }
+        } catch (error) {
+            console.error('Error loading agents:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const filterAgents = () => {
@@ -29,15 +39,16 @@ const AllAgents = () => {
         // Search filter
         if (searchTerm) {
             filtered = filtered.filter(agent =>
-                agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                agent.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                agent.email.toLowerCase().includes(searchTerm.toLowerCase())
+                (agent.fullName || agent.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (agent.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (agent.email || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         // Status filter
         if (statusFilter !== 'all') {
-            filtered = filtered.filter(agent => agent.status === statusFilter);
+            const filterVal = statusFilter.toUpperCase();
+            filtered = filtered.filter(agent => (agent.status || 'PENDING').toUpperCase() === filterVal);
         }
 
         // Level filter
@@ -48,27 +59,35 @@ const AllAgents = () => {
         setFilteredAgents(filtered);
     };
 
-    const handleDelete = (agentId, agentName) => {
-        if (window.confirm(`Are you sure you want to delete agent: ${agentName}?`)) {
-            const result = deleteAgent(agentId);
-            if (result.success) {
-                alert('Agent deleted successfully');
-                loadAgents();
-            } else {
-                alert(result.message);
+    const handleReject = async (agentId, agentName) => {
+        if (window.confirm(`Are you sure you want to block/reject agent: ${agentName}?`)) {
+            try {
+                const result = await adminAPI.rejectAgent(agentId);
+                if (result.success) {
+                    alert('Agent blocked successfully');
+                    loadAgents();
+                } else {
+                    alert(result.message || 'Failed to block agent');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred');
             }
         }
     };
 
     const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case 'active': return 'badge-success';
-            case 'pending': return 'badge-warning';
-            case 'inactive': return 'badge-secondary';
-            case 'blocked': return 'badge-error';
+        const s = (status || '').toUpperCase();
+        switch (s) {
+            case 'APPROVED': case 'ACTIVE': return 'badge-success';
+            case 'PENDING': return 'badge-warning';
+            case 'INACTIVE': return 'badge-secondary';
+            case 'REJECTED': case 'BLOCKED': return 'badge-error';
             default: return 'badge-secondary';
         }
     };
+
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Agents...</div>;
 
     return (
         <div className="all-agents-page">
@@ -77,9 +96,12 @@ const AllAgents = () => {
                     <h1>👥 Agent Management</h1>
                     <p>Manage all agents and their hierarchy</p>
                 </div>
+                {/* 
+                // Disabled Adding Agents manually as Admin for now, relying on public registration + approval
                 <Link to="/agents/add" className="btn btn-primary">
                     ➕ Add New Agent
-                </Link>
+                </Link> 
+                */}
             </div>
 
             {/* Filters */}
@@ -98,8 +120,7 @@ const AllAgents = () => {
                         <option value="all">All Status</option>
                         <option value="active">Active</option>
                         <option value="pending">Pending</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="blocked">Blocked</option>
+                        <option value="rejected">Blocked/Rejected</option>
                     </select>
 
                     <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
@@ -107,8 +128,6 @@ const AllAgents = () => {
                         <option value="1">Level 1</option>
                         <option value="2">Level 2</option>
                         <option value="3">Level 3</option>
-                        <option value="4">Level 4</option>
-                        <option value="5">Level 5</option>
                     </select>
                 </div>
             </div>
@@ -121,11 +140,11 @@ const AllAgents = () => {
                 </div>
                 <div className="stat-box">
                     <span className="stat-label">Active</span>
-                    <span className="stat-value">{agents.filter(a => a.status === 'active').length}</span>
+                    <span className="stat-value">{agents.filter(a => (a.status || '').toUpperCase() === 'APPROVED' || (a.status || '').toUpperCase() === 'ACTIVE').length}</span>
                 </div>
                 <div className="stat-box">
                     <span className="stat-label">Pending</span>
-                    <span className="stat-value">{agents.filter(a => a.status === 'pending').length}</span>
+                    <span className="stat-value">{agents.filter(a => (a.status || '').toUpperCase() === 'PENDING').length}</span>
                 </div>
                 <div className="stat-box">
                     <span className="stat-label">Filtered Results</span>
@@ -157,54 +176,47 @@ const AllAgents = () => {
                                 </td>
                             </tr>
                         ) : (
-                            filteredAgents.map(agent => {
-                                const stats = getAgentStats(agent.id);
-                                return (
-                                    <tr key={agent.id}>
-                                        <td>
-                                            <strong>{agent.code}</strong>
-                                        </td>
-                                        <td>{agent.name}</td>
-                                        <td>{agent.email}</td>
-                                        <td>{agent.phone}</td>
-                                        <td>
-                                            <span className="level-badge">L{agent.level}</span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${getStatusBadgeClass(agent.status)}`}>
-                                                {agent.status}
-                                            </span>
-                                        </td>
-                                        <td>{stats.totalPolicies}</td>
-                                        <td>₹{stats.totalEarnings.toLocaleString()}</td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <Link
-                                                    to={`/agents/details/${agent.id}`}
-                                                    className="btn-icon"
-                                                    title="View Details"
-                                                >
-                                                    👁️
-                                                </Link>
-                                                <Link
-                                                    to={`/agents/edit/${agent.id}`}
-                                                    className="btn-icon"
-                                                    title="Edit"
-                                                >
-                                                    ✏️
-                                                </Link>
+                            filteredAgents.map(agent => (
+                                <tr key={agent.id}>
+                                    <td>
+                                        <strong>{agent.agentCode || agent.code || 'N/A'}</strong>
+                                    </td>
+                                    <td>{agent.fullName || agent.name}</td>
+                                    <td>{agent.email}</td>
+                                    <td>{agent.phone}</td>
+                                    <td>
+                                        <span className="level-badge">L{agent.level || 1}</span>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${getStatusBadgeClass(agent.status)}`}>
+                                            {agent.status === 'APPROVED' ? 'ACTIVE' : agent.status}
+                                        </span>
+                                    </td>
+                                    <td>{agent.policiesSold || agent.totalPolicies || 0}</td>
+                                    <td>₹{(agent.totalEarnings || 0).toLocaleString()}</td>
+                                    <td>
+                                        <div className="action-buttons">
+                                            <Link
+                                                to={`/agents/details/${agent.id}`}
+                                                className="btn-icon"
+                                                title="View Details"
+                                            >
+                                                👁️
+                                            </Link>
+                                            {/* Removed Edit/Delete, kept Block if needed */}
+                                            {agent.status !== 'REJECTED' && agent.status !== 'BLOCKED' && (
                                                 <button
-                                                    onClick={() => handleDelete(agent.id, agent.name)}
+                                                    onClick={() => handleReject(agent.id, agent.fullName || agent.name)}
                                                     className="btn-icon btn-danger"
-                                                    title="Delete"
+                                                    title="Block Agent"
                                                 >
-                                                    🗑️
+                                                    🚫
                                                 </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
                         )}
                     </tbody>
                 </table>

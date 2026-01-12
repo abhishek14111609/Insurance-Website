@@ -1,43 +1,82 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getAgentById, getAgentChildren, getAgentHierarchy, getAgentStats } from '../../utils/agentUtils';
-import { getPoliciesByAgent } from '../../utils/policyUtils';
-import { getCommissionsByAgent } from '../../utils/commissionUtils';
+import { adminAPI } from '../../services/api.service';
 import './AgentDetails.css';
 
 const AgentDetails = () => {
     const { id } = useParams();
     const [agent, setAgent] = useState(null);
     const [stats, setStats] = useState(null);
-    const [hierarchy, setHierarchy] = useState([]);
     const [subAgents, setSubAgents] = useState([]);
     const [policies, setPolicies] = useState([]);
-    const [commissions, setCommissions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadAgentData();
+        loadData();
     }, [id]);
 
-    const loadAgentData = () => {
-        const agentData = getAgentById(id);
-        if (agentData) {
-            setAgent(agentData);
-            setStats(getAgentStats(id));
-            setHierarchy(getAgentHierarchy(id));
-            setSubAgents(getAgentChildren(id));
-            setPolicies(getPoliciesByAgent(id));
-            setCommissions(getCommissionsByAgent(id));
+    const loadData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch all agents and policies to filter (Simulating getById/search)
+            const [agentsRes, policiesRes] = await Promise.all([
+                adminAPI.getAllAgents(),
+                adminAPI.getAllPolicies()
+            ]);
+
+            if (agentsRes.success) {
+                const agentsList = agentsRes.data.agents || [];
+                // Find current agent
+                // Note: id from params is string, agent.id might be number. Loose comparison or toString()
+                const foundAgent = agentsList.find(a => String(a.id) === String(id));
+
+                if (foundAgent) {
+                    setAgent(foundAgent);
+
+                    // Find sub-agents
+                    // Assuming agent.code is used for hierarchy or parentId
+                    // If we have parentId in response:
+                    const subs = agentsList.filter(a => String(a.parentId) === String(foundAgent.id) || a.referredByCode === foundAgent.code);
+                    setSubAgents(subs);
+
+                    // Stats derived from found agent if available, else calc
+                    setStats({
+                        totalPolicies: foundAgent.policiesSold || foundAgent.totalPolicies || 0,
+                        activePolicies: 0, // Not always available in list
+                        totalEarnings: foundAgent.totalEarnings || 0
+                    });
+                }
+            }
+
+            if (policiesRes.success) {
+                const allPolicies = policiesRes.data.policies || [];
+                // Filter policies by agentId or agentCode
+                if (agent) { // This might be stale due to closure if not careful, but we are in async flow
+                    // We need the ID from the found agent above.
+                }
+                // Let's filter here using the found agent ID from the list logic above
+                // To do this properly, we should assume we have the agent ID.
+                const ps = allPolicies.filter(p => String(p.agentId) === String(id) || (p.agent && String(p.agent.id) === String(id)));
+                setPolicies(ps);
+            }
+
+        } catch (error) {
+            console.error('Error loading agent details:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (!agent) return <div className="loading">Loading...</div>;
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Details...</div>;
+    if (!agent) return <div className="error-message">Agent not found</div>;
 
     return (
         <div className="agent-details-page">
             <div className="page-header">
                 <div>
                     <h1>👤 Agent Details</h1>
-                    <p>{agent.code} - {agent.name}</p>
+                    <p>{agent.agentCode || agent.code} - {agent.fullName || agent.name}</p>
                 </div>
                 <Link to={`/agents/edit/${agent.id}`} className="btn btn-primary">
                     ✏️ Edit Agent
@@ -50,11 +89,11 @@ const AgentDetails = () => {
                     <h3>Basic Information</h3>
                     <div className="detail-row">
                         <span className="label">Agent Code:</span>
-                        <span className="value">{agent.code}</span>
+                        <span className="value">{agent.agentCode || agent.code}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Name:</span>
-                        <span className="value">{agent.name}</span>
+                        <span className="value">{agent.fullName || agent.name}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Email:</span>
@@ -66,15 +105,11 @@ const AgentDetails = () => {
                     </div>
                     <div className="detail-row">
                         <span className="label">City:</span>
-                        <span className="value">{agent.city}</span>
-                    </div>
-                    <div className="detail-row">
-                        <span className="label">State:</span>
-                        <span className="value">{agent.state}</span>
+                        <span className="value">{agent.city || 'N/A'}</span>
                     </div>
                     <div className="detail-row">
                         <span className="label">Status:</span>
-                        <span className={`badge badge-${agent.status}`}>{agent.status}</span>
+                        <span className={`badge badge-${(agent.status || '').toLowerCase()}`}>{agent.status}</span>
                     </div>
                 </div>
 
@@ -82,39 +117,16 @@ const AgentDetails = () => {
                     <h3>Agent Statistics</h3>
                     <div className="stat-item">
                         <span className="stat-label">Level</span>
-                        <span className="stat-value">{agent.level}</span>
+                        <span className="stat-value">{agent.level || 1}</span>
                     </div>
                     <div className="stat-item">
                         <span className="stat-label">Total Policies</span>
                         <span className="stat-value">{stats?.totalPolicies || 0}</span>
                     </div>
                     <div className="stat-item">
-                        <span className="stat-label">Active Policies</span>
-                        <span className="stat-value">{stats?.activePolicies || 0}</span>
-                    </div>
-                    <div className="stat-item">
                         <span className="stat-label">Total Earnings</span>
-                        <span className="stat-value">₹{stats?.totalEarnings?.toLocaleString() || 0}</span>
+                        <span className="stat-value">₹{(stats?.totalEarnings || 0).toLocaleString()}</span>
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Wallet Balance</span>
-                        <span className="stat-value">₹{agent.wallet?.balance?.toLocaleString() || 0}</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Hierarchy */}
-            <div className="detail-card">
-                <h3>Agent Hierarchy</h3>
-                <div className="hierarchy-path">
-                    {hierarchy.map((h, index) => (
-                        <span key={h.id}>
-                            {index > 0 && <span className="separator">→</span>}
-                            <Link to={`/agents/details/${h.id}`} className="hierarchy-link">
-                                {h.code}
-                            </Link>
-                        </span>
-                    ))}
                 </div>
             </div>
 
@@ -129,8 +141,8 @@ const AgentDetails = () => {
                                 to={`/agents/details/${sub.id}`}
                                 className="sub-agent-card"
                             >
-                                <div className="sub-agent-code">{sub.code}</div>
-                                <div className="sub-agent-name">{sub.name}</div>
+                                <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
+                                <div className="sub-agent-name">{sub.fullName || sub.name}</div>
                                 <div className="sub-agent-status">{sub.status}</div>
                             </Link>
                         ))}
@@ -142,13 +154,13 @@ const AgentDetails = () => {
             <div className="detail-card">
                 <h3>Recent Policies ({policies.length})</h3>
                 {policies.length === 0 ? (
-                    <p className="empty-state">No policies found</p>
+                    <p className="empty-state">No policies found associated with this agent.</p>
                 ) : (
                     <div className="table-container">
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Policy Number</th>
+                                    <th>Policy #</th>
                                     <th>Customer</th>
                                     <th>Premium</th>
                                     <th>Status</th>
@@ -159,43 +171,10 @@ const AgentDetails = () => {
                                 {policies.slice(0, 10).map(policy => (
                                     <tr key={policy.id}>
                                         <td>{policy.policyNumber}</td>
-                                        <td>{policy.customerName || policy.ownerName}</td>
-                                        <td>₹{policy.premium?.toLocaleString()}</td>
-                                        <td><span className={`badge badge-${policy.status.toLowerCase()}`}>{policy.status}</span></td>
+                                        <td>{policy.customer?.fullName || policy.ownerName}</td>
+                                        <td>₹{parseInt(policy.premium || 0).toLocaleString()}</td>
+                                        <td><span className={`badge badge-${(policy.status || '').toLowerCase()}`}>{policy.status}</span></td>
                                         <td>{new Date(policy.createdAt).toLocaleDateString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            {/* Commissions */}
-            <div className="detail-card">
-                <h3>Commission Records ({commissions.length})</h3>
-                {commissions.length === 0 ? (
-                    <p className="empty-state">No commissions found</p>
-                ) : (
-                    <div className="table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Policy Number</th>
-                                    <th>Amount</th>
-                                    <th>Level</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {commissions.slice(0, 10).map(commission => (
-                                    <tr key={commission.id}>
-                                        <td>{commission.policyNumber}</td>
-                                        <td>₹{commission.amount?.toLocaleString()}</td>
-                                        <td>Level {commission.level}</td>
-                                        <td><span className={`badge badge-${commission.status}`}>{commission.status}</span></td>
-                                        <td>{new Date(commission.createdAt).toLocaleDateString()}</td>
                                     </tr>
                                 ))}
                             </tbody>

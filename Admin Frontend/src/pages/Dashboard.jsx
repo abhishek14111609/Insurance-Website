@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { policyAPI } from '../services/api.service';
+import { policyAPI, adminAPI } from '../services/api.service';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -18,6 +18,9 @@ const Dashboard = () => {
         totalCustomers: 0,
         totalRevenue: 0
     });
+
+    // We can fetch recent pending items separately if the dashboard stats endpoint
+    // doesn't return list data, which is typical.
     const [pendingPolicies, setPendingPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,28 +30,22 @@ const Dashboard = () => {
 
     const loadData = async () => {
         try {
-            // Fetch Pending Policies
-            const policyResponse = await policyAPI.getPending();
+            setLoading(true);
 
-            let policies = [];
-            if (policyResponse.success) {
-                policies = policyResponse.data.policies;
-                setPendingPolicies(policies.slice(0, 5));
+            // 1. Get Dashboard Stats
+            const statsResponse = await adminAPI.getDashboardStats();
+            if (statsResponse.success) {
+                setStats(statsResponse.data);
             }
 
-            // Calculate basic stats from available data or default
-            // Since we don't have a full stats endpoint yet, we use what we have.
-            // Pending counts are accurate from API. Totals are unknown/0 for now.
-            setStats(prev => ({
-                ...prev,
-                pendingPolicies: policies.length,
-                pendingAgents: 0, // Placeholder
-                pendingWithdrawals: 0, // Placeholder
-            }));
+            // 2. Get Pending Policies for the list
+            const policyResponse = await policyAPI.getPending();
+            if (policyResponse.success) {
+                setPendingPolicies(policyResponse.data.policies?.slice(0, 5) || []);
+            }
 
         } catch (err) {
             console.error('Dashboard load error:', err);
-            // Verify if auth error, done by api service usually
         } finally {
             setLoading(false);
         }
@@ -76,7 +73,7 @@ const Dashboard = () => {
                 <div className="stat-card success">
                     <div className="stat-icon">👥</div>
                     <div className="stat-content">
-                        <h3>--</h3>
+                        <h3>{stats.activeAgents}</h3>
                         <p>Active Agents</p>
                     </div>
                 </div>
@@ -84,7 +81,7 @@ const Dashboard = () => {
                 <div className="stat-card info">
                     <div className="stat-icon">👤</div>
                     <div className="stat-content">
-                        <h3>--</h3>
+                        <h3>{stats.totalCustomers}</h3>
                         <p>Total Customers</p>
                     </div>
                 </div>
@@ -92,7 +89,7 @@ const Dashboard = () => {
                 <div className="stat-card warning">
                     <div className="stat-icon">💰</div>
                     <div className="stat-content">
-                        <h3>₹ --</h3>
+                        <h3>₹{stats.totalRevenue?.toLocaleString() || '0'}</h3>
                         <p>Total Revenue</p>
                     </div>
                 </div>
@@ -129,26 +126,42 @@ const Dashboard = () => {
                         </Link>
                     </div>
 
-                    {/* Pending Agents (Placeholder) */}
+                    {/* Pending Agents */}
                     <div className="approval-card">
                         <div className="approval-header">
                             <h3>👥 Agent Approvals</h3>
-                            <span className="count-badge">0</span>
+                            <span className="count-badge">{stats.pendingAgents}</span>
                         </div>
                         <div className="approval-list">
-                            <p className="empty-state">Agent system not connected</p>
+                            <div className="stat-summary">
+                                {stats.pendingAgents > 0 ? (
+                                    <p className="text-warning">{stats.pendingAgents} agents waiting for verification</p>
+                                ) : (
+                                    <p className="empty-state">No pending agents</p>
+                                )}
+                            </div>
                         </div>
+                        <Link to="/agent-approvals" className="view-all-btn">
+                            View All →
+                        </Link>
                     </div>
 
-                    {/* Pending Withdrawals (Placeholder) */}
+                    {/* Pending Withdrawals */}
                     <div className="approval-card">
                         <div className="approval-header">
                             <h3>💳 Withdrawal Requests</h3>
-                            <span className="count-badge">0</span>
+                            <span className="count-badge">{stats.pendingWithdrawals}</span>
                         </div>
                         <div className="approval-list">
-                            <p className="empty-state">Withdrawal system not connected</p>
+                            {stats.pendingWithdrawals > 0 ? (
+                                <p className="text-warning" style={{ padding: '1rem' }}>{stats.pendingWithdrawals} requests pending processing</p>
+                            ) : (
+                                <p className="empty-state">No pending withdrawals</p>
+                            )}
                         </div>
+                        <Link to="/withdrawal-approvals" className="view-all-btn">
+                            View All →
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -163,20 +176,22 @@ const Dashboard = () => {
                         {stats.pendingPolicies > 0 && <span className="action-badge">{stats.pendingPolicies}</span>}
                     </Link>
 
-                    <button className="action-btn success disabled" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                    <Link to="/agent-approvals" className="action-btn success">
                         <span className="action-icon">👥</span>
                         <span>Approve Agents</span>
-                    </button>
+                        {stats.pendingAgents > 0 && <span className="action-badge">{stats.pendingAgents}</span>}
+                    </Link>
 
-                    <button className="action-btn warning disabled" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                    <Link to="/withdrawal-approvals" className="action-btn warning">
                         <span className="action-icon">💳</span>
                         <span>Process Withdrawals</span>
-                    </button>
+                        {stats.pendingWithdrawals > 0 && <span className="action-badge">{stats.pendingWithdrawals}</span>}
+                    </Link>
 
-                    <button className="action-btn info disabled" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                    <Link to="/commission-settings" className="action-btn info">
                         <span className="action-icon">⚙️</span>
                         <span>Commission Settings</span>
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>

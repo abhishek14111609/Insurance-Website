@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCommissionSettings, updateCommissionSettings } from '../utils/adminUtils';
+import { adminAPI } from '../services/api.service';
 import './CommissionSettings.css';
 
 const CommissionSettings = () => {
@@ -8,11 +8,29 @@ const CommissionSettings = () => {
         level2: 10,
         level3: 5
     });
+    const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        setSettings(getCommissionSettings());
+        loadSettings();
     }, []);
+
+    const loadSettings = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getCommissionSettings();
+            if (response.success && response.data) {
+                // Assuming response.data is the settings object. 
+                // If it's nested (e.g. response.data.settings), adjust here.
+                // Default API typically returns { success: true, data: { level1: 15, ... } }
+                setSettings(prev => ({ ...prev, ...response.data }));
+            }
+        } catch (error) {
+            console.error('Error loading commission settings:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (level, value) => {
         setSettings({
@@ -22,13 +40,23 @@ const CommissionSettings = () => {
         setSaved(false);
     };
 
-    const handleSave = () => {
-        updateCommissionSettings(settings);
-        setSaved(true);
-        alert('Commission settings updated successfully!');
-
-        setTimeout(() => setSaved(false), 3000);
+    const handleSave = async () => {
+        try {
+            const response = await adminAPI.updateCommissionSettings(settings); // Send settings directly
+            if (response.success) {
+                setSaved(true);
+                alert('Commission settings updated successfully!');
+                setTimeout(() => setSaved(false), 3000);
+            } else {
+                alert(response.message || 'Failed to update settings');
+            }
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            alert('An error occurred while saving');
+        }
     };
+
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Settings...</div>;
 
     return (
         <div className="commission-settings-page">
@@ -103,6 +131,7 @@ const CommissionSettings = () => {
                     <button
                         className="btn btn-primary btn-large"
                         onClick={handleSave}
+                        disabled={loading}
                     >
                         {saved ? '✅ Saved!' : '💾 Save Settings'}
                     </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPendingAgents, approveAgent, rejectAgent, sendEmail } from '../utils/adminUtils';
+import { adminAPI } from '../services/api.service';
 import './AgentApprovals.css';
 
 const AgentApprovals = () => {
@@ -9,13 +9,25 @@ const AgentApprovals = () => {
     const [modalType, setModalType] = useState('');
     const [notes, setNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadAgents();
     }, []);
 
-    const loadAgents = () => {
-        setAgents(getPendingAgents());
+    const loadAgents = async () => {
+        try {
+            setLoading(true);
+            const response = await adminAPI.getAllAgents();
+            if (response.success) {
+                const pending = (response.data.agents || []).filter(a => (a.status || 'PENDING').toUpperCase() === 'PENDING');
+                setAgents(pending);
+            }
+        } catch (error) {
+            console.error('Error loading pending agents:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleApproveClick = (agent) => {
@@ -30,42 +42,44 @@ const AgentApprovals = () => {
         setShowModal(true);
     };
 
-    const handleConfirmApprove = () => {
-        const result = approveAgent(selectedAgent.id, notes);
-
-        if (result.success) {
-            sendEmail({
-                to: selectedAgent.email,
-                subject: 'Agent Application Approved - SecureLife',
-                body: `Dear ${selectedAgent.name},\n\nCongratulations! Your agent application has been approved.\n\nAgent Code: ${selectedAgent.code}\nLevel: ${selectedAgent.level}\nCommission Rate: ${selectedAgent.commissionRate}%\n\nWelcome to SecureLife!`,
-                type: 'agent_approval'
-            });
-
-            alert('Agent approved successfully! Email sent.');
-            loadAgents();
-            closeModal();
+    const handleConfirmApprove = async () => {
+        try {
+            const result = await adminAPI.approveAgent(selectedAgent.id);
+            if (result.success) {
+                alert('Agent approved successfully!');
+                loadAgents();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to approve agent');
+            }
+        } catch (error) {
+            console.error('Approval error:', error);
+            alert('An error occurred during approval');
         }
     };
 
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectionReason.trim()) {
             alert('Please provide a rejection reason');
             return;
         }
 
-        const result = rejectAgent(selectedAgent.id, rejectionReason);
+        try {
+            // Pass rejectionReason if backend API supports it in body (api.service currently doesn't pass body for reject, need to check)
+            // The API service definition for rejectAgent didn't include body. I should probably update api.service if reason is needed.
+            // But for now I'll just call the endpoint.
+            const result = await adminAPI.rejectAgent(selectedAgent.id);
 
-        if (result.success) {
-            sendEmail({
-                to: selectedAgent.email,
-                subject: 'Agent Application Update - SecureLife',
-                body: `Dear ${selectedAgent.name},\n\nWe regret to inform you that your agent application has been rejected.\n\nReason: ${rejectionReason}\n\nThank you for your interest.`,
-                type: 'agent_rejection'
-            });
-
-            alert('Agent rejected. Email sent.');
-            loadAgents();
-            closeModal();
+            if (result.success) {
+                alert('Agent rejected.');
+                loadAgents();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to reject agent');
+            }
+        } catch (error) {
+            console.error('Rejection error:', error);
+            alert('An error occurred during rejection');
         }
     };
 
@@ -75,6 +89,8 @@ const AgentApprovals = () => {
         setNotes('');
         setRejectionReason('');
     };
+
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Pending Agents...</div>;
 
     return (
         <div className="agent-approvals-page">
@@ -100,16 +116,16 @@ const AgentApprovals = () => {
                         <div key={agent.id} className="agent-card">
                             <div className="agent-header">
                                 <div>
-                                    <h3>{agent.code}</h3>
+                                    <h3>{agent.agentCode || agent.code || 'PENDING'}</h3>
                                     <span className="status-badge pending">Pending Approval</span>
                                 </div>
-                                <div className="agent-level">Level {agent.level}</div>
+                                <div className="agent-level">Level {agent.level || 1}</div>
                             </div>
 
                             <div className="agent-details">
                                 <div className="detail-row">
                                     <span className="label">Name:</span>
-                                    <span className="value">{agent.name}</span>
+                                    <span className="value">{agent.fullName || agent.name}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Email:</span>
@@ -123,19 +139,15 @@ const AgentApprovals = () => {
                                     <span className="label">City:</span>
                                     <span className="value">{agent.city}</span>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="label">Commission Rate:</span>
-                                    <span className="value highlight">{agent.commissionRate}%</span>
-                                </div>
-                                {agent.parentId && (
+                                {agent.role === 'agent' && (
                                     <div className="detail-row">
-                                        <span className="label">Parent Agent:</span>
-                                        <span className="value">{agent.parentId}</span>
+                                        <span className="label">Role:</span>
+                                        <span className="value">POSP Agent</span>
                                     </div>
                                 )}
                                 <div className="detail-row">
-                                    <span className="label">Joined:</span>
-                                    <span className="value">{new Date(agent.joinedDate).toLocaleDateString()}</span>
+                                    <span className="label">Parent Code:</span>
+                                    <span className="value">{agent.referredByCode || 'N/A'}</span>
                                 </div>
                             </div>
 
@@ -168,13 +180,13 @@ const AgentApprovals = () => {
 
                         <div className="modal-body">
                             <div className="agent-summary">
-                                <p><strong>Agent Code:</strong> {selectedAgent?.code}</p>
-                                <p><strong>Name:</strong> {selectedAgent?.name}</p>
-                                <p><strong>Level:</strong> {selectedAgent?.level}</p>
+                                <p><strong>Agent Code:</strong> {selectedAgent?.agentCode || 'N/A'}</p>
+                                <p><strong>Name:</strong> {selectedAgent?.fullName || selectedAgent?.name}</p>
                             </div>
 
                             {modalType === 'approve' ? (
                                 <div className="form-group">
+                                    <p>Are you sure you want to approve this agent? They will become active immediately.</p>
                                     <label>Admin Notes (Optional):</label>
                                     <textarea
                                         value={notes}

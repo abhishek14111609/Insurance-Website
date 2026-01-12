@@ -103,7 +103,128 @@ export const policyAPI = {
     }
 };
 
+// Admin API
+export const adminAPI = {
+    // Dashboard Stats
+    getDashboardStats: async () => {
+        const token = getToken();
+        // Since backend endpoint is GET /api/admin/dashboard
+        const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    // Agent Management
+    getAllAgents: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    approveAgent: async (agentId) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/approve`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    rejectAgent: async (agentId) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/reject`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    updateAgent: async (agentId, agentData) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(agentData)
+        });
+        return handleResponse(response);
+    },
+
+    // Policy Management (Already heavily covered by policyAPI but adding admin specifics)
+    getAllPolicies: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/policies`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    // Financials
+    getWithdrawals: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/withdrawals`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    processWithdrawal: async (withdrawalId, action, transactionHash = null) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/withdrawals/${withdrawalId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: action, transactionHash })
+        });
+        return handleResponse(response);
+    },
+
+    // Commission Settings
+    getCommissionSettings: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    updateCommissionSettings: async (settings) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(settings)
+        });
+        return handleResponse(response);
+    }
+};
+
 export default {
     auth: authAPI,
-    policy: policyAPI
+    policy: policyAPI,
+    admin: adminAPI
 };
