@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -14,10 +14,6 @@ import ForgotPassword from './pages/ForgotPassword';
 import CustomerProfile from './pages/CustomerProfile';
 
 // Insurance Pages
-// import HealthInsurance from './pages/HealthInsurance';
-// import CarInsurance from './pages/CarInsurance';
-// import BikeInsurance from './pages/BikeInsurance';
-// import TravelInsurance from './pages/TravelInsurance';
 import AnimalInsurance from './pages/AnimalInsurance';
 import AnimalPolicyForm from './pages/AnimalPolicyForm';
 import PaymentPage from './pages/PaymentPage';
@@ -32,8 +28,6 @@ import Claims from './pages/Claims';
 import Renewals from './pages/Renewals';
 import RenewalForm from './pages/RenewalForm';
 import ClaimForm from './pages/ClaimForm';
-
-
 
 // Agent Pages
 import AgentDashboard from './pages/Agent/AgentDashboard';
@@ -92,12 +86,6 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Product Routes - Only Cattle Enabled */}
-          {/* <Route path="/health-insurance" element={<HealthInsurance />} /> */}
-          {/* <Route path="/car-insurance" element={<CarInsurance />} /> */}
-          {/* <Route path="/bike-insurance" element={<BikeInsurance />} /> */}
-          {/* <Route path="/travel-insurance" element={<TravelInsurance />} /> */}
 
           {/* Cattle Insurance - Main route */}
           <Route path="/policies" element={<AnimalInsurance />} />

@@ -61,7 +61,7 @@ export const calculateAndDistributeCommissions = async (policy, transaction = nu
                     }, { transaction });
 
                     commissions.push(commission);
-                    console.log(`Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ${currentAgent.id}`);
+                    console.log(`[CommissionUtil] Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ID ${currentAgent.id} (User: ${currentAgent.userId})`);
                 }
             }
 

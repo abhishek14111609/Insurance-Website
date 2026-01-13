@@ -102,7 +102,7 @@ const AddAgent = () => {
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Failed to connect to server');
+            alert(error.message || 'Failed to connect to server');
         } finally {
             setIsSubmitting(false);
         }

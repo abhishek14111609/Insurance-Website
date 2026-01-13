@@ -121,18 +121,12 @@ export const registerAgent = async (req, res) => {
 
         await transaction.commit();
 
-        // Generate tokens
-        const token = generateToken(user);
-        const refreshToken = generateRefreshToken(user);
-
         res.status(201).json({
             success: true,
             message: 'Agent registered successfully. Pending admin approval.',
             data: {
                 user: user.toJSON(),
-                agentCode: agent.agentCode,
-                token,
-                refreshToken
+                agentCode: agent.agentCode
             }
         });
     } catch (error) {
@@ -420,6 +414,47 @@ export const resetPassword = async (req, res) => {
             success: false,
             message: 'Error resetting password',
             error: error.message
+        });
+    }
+};
+
+// @desc    Verify agent code (Public)
+// @route   GET /api/auth/verify-code/:code
+// @access  Public
+export const verifyAgentCode = async (req, res) => {
+    try {
+        const { code } = req.params;
+
+        const agent = await Agent.findOne({
+            where: { agentCode: code },
+            include: [{
+                model: User,
+                as: 'user',
+                attributes: ['fullName']
+            }]
+        });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Invalid agent code'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                id: agent.id,
+                agentCode: agent.agentCode,
+                fullName: agent.user?.fullName,
+                level: agent.level
+            }
+        });
+    } catch (error) {
+        console.error('Verify agent code error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verifying agent code'
         });
     }
 };

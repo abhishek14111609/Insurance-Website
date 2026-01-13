@@ -4,9 +4,7 @@ import {
     getPolicies,
     getPolicyById,
     updatePolicyPayment,
-    getPendingPolicies,
-    approvePolicy,
-    rejectPolicy
+    getPendingPolicies
 } from '../controllers/policy.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -18,9 +16,7 @@ router.get('/', authenticate, getPolicies);
 router.get('/:id', authenticate, getPolicyById);
 router.patch('/:id/payment-complete', authenticate, updatePolicyPayment);
 
-// Admin routes
+// Admin routes - only pending policies list (approval/rejection handled in admin routes)
 router.get('/admin/pending', authenticate, authorize('admin'), getPendingPolicies);
-router.patch('/:id/approve', authenticate, authorize('admin'), approvePolicy);
-router.patch('/:id/reject', authenticate, authorize('admin'), rejectPolicy);
 
 export default router;

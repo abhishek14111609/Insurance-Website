@@ -1,7 +1,7 @@
 import { User, Policy, Agent, Payment, Commission, Withdrawal, Claim, CommissionSettings } from '../models/index.js';
 import { Op } from 'sequelize';
 import sequelize from '../config/database.js';
-import { calculateAndDistributeCommissions, approveCommission as approveCommissionUtil } from '../utils/commission.util.js';
+import { calculateAndDistributeCommissions, approveCommission } from '../utils/commission.util.js';
 import {
     notifyPolicyApproval,
     notifyPolicyRejection,
@@ -10,6 +10,7 @@ import {
     notifyWithdrawalApproved,
     notifyWithdrawalRejected
 } from '../utils/notification.util.js';
+import { seedDatabase } from '../utils/seed.js';
 
 // @desc    Get dashboard statistics
 // @route   GET /api/admin/dashboard
@@ -190,10 +191,112 @@ export const getPolicyDetails = async (req, res) => {
 // @route   PATCH /api/admin/policies/:id/approve
 // @access  Private (admin)
 export const approvePolicy = async (req, res) => {
+    console.log(`[ApprovePolicy] Starting approval for policy ID: ${req.params.id}`);
     const transaction = await sequelize.transaction();
 
     try {
         const { adminNotes } = req.body;
+
+        const policy = await Policy.findByPk(req.params.id, {
+            include: [{ model: User, as: 'customer' }]
+        });
+
+        if (!policy) {
+            console.log(`[ApprovePolicy] Policy ${req.params.id} not found`);
+            await transaction.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Policy not found'
+            });
+        }
+
+        console.log(`[ApprovePolicy] Found policy ${policy.policyNumber}, current status: ${policy.status}`);
+
+        // Prevent redundant approval
+        if (policy.status === 'APPROVED') {
+            console.log(`[ApprovePolicy] Policy ${policy.id} already approved`);
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Policy is already approved'
+            });
+        }
+
+        // Update policy status
+        console.log(`[ApprovePolicy] Updating policy status to APPROVED for ID: ${policy.id}`);
+        const adminId = (req.user && req.user.id) ? req.user.id : null;
+
+        await policy.update({
+            status: 'APPROVED',
+            approvedAt: new Date(),
+            approvedBy: adminId,
+            adminNotes
+        }, { transaction });
+        console.log(`[ApprovePolicy] Policy status updated successfully`);
+
+        // Calculate and distribute commissions
+        console.log(`[ApprovePolicy] Calculating commissions for agent: ${policy.agentId}`);
+        const commissions = await calculateAndDistributeCommissions(policy, transaction);
+        console.log(`[ApprovePolicy] Created ${commissions.length} commission records`);
+
+        // Create notification (wrapped in try-catch to not fail the whole approval)
+        try {
+            console.log(`[ApprovePolicy] Sending approval notification to customer ${policy.customerId}`);
+            await notifyPolicyApproval(policy);
+        } catch (notifyError) {
+            console.error('[ApprovePolicy] Notification Error (non-blocking):', notifyError);
+        }
+
+        await transaction.commit();
+        console.log(`[ApprovePolicy] Transaction committed successfully`);
+
+        // Reload policy to get the full state including associations for response
+        const updatedPolicy = await Policy.findByPk(policy.id, {
+            include: [
+                { model: User, as: 'customer' },
+                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
+                { model: Payment, as: 'payments' }
+            ]
+        });
+
+        res.json({
+            success: true,
+            message: 'Policy approved successfully',
+            data: {
+                policy: updatedPolicy,
+                commissionsCreated: commissions.length
+            }
+        });
+    } catch (error) {
+        if (transaction) {
+            console.log(`[ApprovePolicy] Rolling back transaction due to error`);
+            await transaction.rollback();
+        }
+        console.error('[ApprovePolicy] FATAL ERROR:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error approving policy: ' + error.message,
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+};
+
+// @desc    Reject policy
+// @route   PATCH /api/admin/policies/:id/reject
+// @access  Private (admin)
+export const rejectPolicy = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { rejectionReason } = req.body;
+
+        if (!rejectionReason) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Rejection reason is required'
+            });
+        }
 
         const policy = await Policy.findByPk(req.params.id);
         if (!policy) {
@@ -204,60 +307,11 @@ export const approvePolicy = async (req, res) => {
             });
         }
 
-        // Update policy status
-        await policy.update({
-            status: 'APPROVED',
-            approvedAt: new Date(),
-            approvedBy: req.user.id,
-            adminNotes
-        }, { transaction });
-
-        // Calculate and distribute commissions
-        const commissions = await calculateAndDistributeCommissions(policy);
-
-        // Send notification
-        await notifyPolicyApproval(policy);
-
-        await transaction.commit();
-
-        res.json({
-            success: true,
-            message: 'Policy approved successfully',
-            data: {
-                policy,
-                commissionsCreated: commissions.length
-            }
-        });
-    } catch (error) {
-        await transaction.rollback();
-        console.error('Approve policy error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error approving policy',
-            error: error.message
-        });
-    }
-};
-
-// @desc    Reject policy
-// @route   PATCH /api/admin/policies/:id/reject
-// @access  Private (admin)
-export const rejectPolicy = async (req, res) => {
-    try {
-        const { rejectionReason } = req.body;
-
-        if (!rejectionReason) {
+        if (policy.status === 'REJECTED') {
+            await transaction.rollback();
             return res.status(400).json({
                 success: false,
-                message: 'Rejection reason is required'
-            });
-        }
-
-        const policy = await Policy.findByPk(req.params.id);
-        if (!policy) {
-            return res.status(404).json({
-                success: false,
-                message: 'Policy not found'
+                message: 'Policy is already rejected'
             });
         }
 
@@ -266,17 +320,28 @@ export const rejectPolicy = async (req, res) => {
             rejectedAt: new Date(),
             rejectedBy: req.user.id,
             rejectionReason
-        });
+        }, { transaction });
 
-        // Send notification
-        await notifyPolicyRejection(policy);
+        // Create notification (wrapped in try-catch to not fail the whole rejection)
+        try {
+            await notifyPolicyRejection(policy);
+        } catch (notifyError) {
+            console.error('[RejectPolicy] Notification Error (non-blocking):', notifyError);
+        }
+
+        await transaction.commit();
+
+        const updatedPolicy = await Policy.findByPk(policy.id, {
+            include: [{ model: User, as: 'customer' }]
+        });
 
         res.json({
             success: true,
             message: 'Policy rejected successfully',
-            data: { policy }
+            data: { policy: updatedPolicy }
         });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         console.error('Reject policy error:', error);
         res.status(500).json({
             success: false,
@@ -344,8 +409,20 @@ export const createAgent = async (req, res) => {
     try {
         const { fullName, email, phone, password, address, city, state, pincode, parentId, commissionRate, status, agentCode } = req.body;
 
+        // Basic validation
+        if (!fullName || !email || !password) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Full name, email, and password are required'
+            });
+        }
+
         // Check if user exists
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await User.findOne({
+            where: { email },
+            transaction
+        });
         if (existingUser) {
             await transaction.rollback();
             return res.status(400).json({
@@ -370,17 +447,24 @@ export const createAgent = async (req, res) => {
 
         // Calculate level if parentId exists
         let level = 1;
-        if (parentId) {
-            const parent = await Agent.findByPk(parentId);
+        if (parentId && parentId !== '') {
+            const parent = await Agent.findByPk(parentId, { transaction });
             if (parent) {
                 level = parent.level + 1;
             }
         }
 
+        // Generate Agent Code if not provided
+        let finalAgentCode = agentCode;
+        if (!finalAgentCode || finalAgentCode === 'generated automatically') {
+            const count = await Agent.count({ transaction });
+            finalAgentCode = `AGT${1000 + count + 1}`;
+        }
+
         // Create Agent Profile
         const agent = await Agent.create({
             userId: user.id,
-            agentCode,
+            agentCode: finalAgentCode,
             parentAgentId: parentId || null,
             level,
             status: status || 'active',
@@ -404,7 +488,7 @@ export const createAgent = async (req, res) => {
         });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.error('Create agent error:', error);
+        console.error('Create agent error detailed:', error);
         res.status(500).json({
             success: false,
             message: 'Error creating agent',
@@ -578,6 +662,43 @@ export const updateAgent = async (req, res) => {
     }
 };
 
+// @desc    Get agent by ID
+// @route   GET /api/admin/agents/:id
+// @access  Private (admin)
+export const getAgentById = async (req, res) => {
+    try {
+        const agent = await Agent.findByPk(req.params.id, {
+            include: [
+                { model: User, as: 'user' },
+                { model: Agent, as: 'parentAgent', include: [{ model: User, as: 'user' }] },
+                { model: Agent, as: 'subAgents', include: [{ model: User, as: 'user' }] },
+                { model: Policy, as: 'policies', limit: 10 },
+                { model: Commission, as: 'commissions', limit: 10 },
+                { model: Withdrawal, as: 'withdrawals', limit: 10 }
+            ]
+        });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agent not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: { agent }
+        });
+    } catch (error) {
+        console.error('Get agent error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching agent details',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Get all customers
 // @route   GET /api/admin/customers
 // @access  Private (admin)
@@ -616,6 +737,43 @@ export const getAllCustomers = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching customers',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get customer by ID
+// @route   GET /api/admin/customers/:id
+// @access  Private (admin)
+export const getCustomerById = async (req, res) => {
+    try {
+        const customer = await User.findByPk(req.params.id, {
+            where: { role: 'customer' },
+            attributes: { exclude: ['password'] },
+            include: [
+                { model: Policy, as: 'policies' },
+                { model: Claim, as: 'claims' },
+                { model: Payment, as: 'payments' },
+                { model: Notification, as: 'notifications', limit: 10 }
+            ]
+        });
+
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Customer not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: { customer }
+        });
+    } catch (error) {
+        console.error('Get customer error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching customer details',
             error: error.message
         });
     }
@@ -766,6 +924,27 @@ export const processWithdrawal = async (req, res) => {
     }
 };
 
+// @desc    Approve commission (credit to wallet)
+// @route   PATCH /api/admin/commissions/:id/approve
+// @access  Private (admin)
+export const approveCommissionController = async (req, res) => {
+    try {
+        const commission = await approveCommission(req.params.id, req.user.id);
+
+        res.json({
+            success: true,
+            message: 'Commission approved and credited to agent wallet',
+            data: { commission }
+        });
+    } catch (error) {
+        console.error('Approve commission error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error approving commission'
+        });
+    }
+};
+
 // @desc    Get all commissions
 // @route   GET /api/admin/commissions
 // @access  Private (admin)
@@ -883,6 +1062,28 @@ export const updateCommissionSettings = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error updating commission settings',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Setup/Seed database
+// @route   POST /api/admin/setup-db
+// @access  Private (admin)
+export const setupDatabase = async (req, res) => {
+    try {
+        const { force } = req.body;
+
+        // This is a dangerous operation, so we only allow it if explicitly confirmed
+        // or in development environment.
+        const result = await seedDatabase(force === true);
+
+        res.json(result);
+    } catch (error) {
+        console.error('Setup database error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error setting up database',
             error: error.message
         });
     }

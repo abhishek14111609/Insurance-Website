@@ -44,7 +44,7 @@ const AgentApprovals = () => {
 
     const handleConfirmApprove = async () => {
         try {
-            const result = await adminAPI.approveAgent(selectedAgent.id);
+            const result = await adminAPI.approveAgent(selectedAgent.id, notes);
             if (result.success) {
                 alert('Agent approved successfully!');
                 loadAgents();
@@ -65,10 +65,7 @@ const AgentApprovals = () => {
         }
 
         try {
-            // Pass rejectionReason if backend API supports it in body (api.service currently doesn't pass body for reject, need to check)
-            // The API service definition for rejectAgent didn't include body. I should probably update api.service if reason is needed.
-            // But for now I'll just call the endpoint.
-            const result = await adminAPI.rejectAgent(selectedAgent.id);
+            const result = await adminAPI.rejectAgent(selectedAgent.id, rejectionReason);
 
             if (result.success) {
                 alert('Agent rejected.');
@@ -82,6 +79,7 @@ const AgentApprovals = () => {
             alert('An error occurred during rejection');
         }
     };
+
 
     const closeModal = () => {
         setShowModal(false);

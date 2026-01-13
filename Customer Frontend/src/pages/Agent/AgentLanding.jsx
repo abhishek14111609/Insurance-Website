@@ -45,6 +45,11 @@ const AgentLanding = () => {
             return;
         }
 
+        if (registrationData.phone.length !== 10) {
+            setError('Mobile number must be 10 digits');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -83,15 +88,22 @@ const AgentLanding = () => {
             if (result.success) {
                 const user = result.data.user;
                 if (user && user.role === 'agent') {
+                    // Check agent status
+                    if (user.status === 'pending') {
+                        setLoginError('Your agent account is pending approval by admin. Please check back later.');
+                        return;
+                    }
+                    if (user.status === 'rejected') {
+                        setLoginError('Your agent application was not approved. Please contact support.');
+                        return;
+                    }
                     navigate('/agent/dashboard');
                 } else {
                     setLoginError('This account is not registered as an agent.');
                 }
-            } else {
-                setLoginError(result.error || 'Login failed');
             }
         } catch (err) {
-            setLoginError('Invalid credentials or server error');
+            setLoginError(err.message || 'Invalid credentials or server error');
         } finally {
             setLoading(false);
         }
@@ -316,7 +328,7 @@ const AgentLanding = () => {
                                     <p className="text-muted">Access your partner dashboard</p>
                                 </div>
                                 {loginError && (
-                                    <div className="alert-error" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
+                                    <div className="alert-error">
                                         {loginError}
                                     </div>
                                 )}

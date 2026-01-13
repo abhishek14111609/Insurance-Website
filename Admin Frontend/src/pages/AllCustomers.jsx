@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { adminAPI } from '../services/api.service';
 import './AllCustomers.css';
 
@@ -115,7 +116,7 @@ const AllCustomers = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <button className="btn-view" title="View Details">👁️</button>
+                                        <Link to={`/customers/${customer.id}`} className="btn-view" title="View Details">👁️</Link>
                                     </td>
                                 </tr>
                             ))

@@ -23,6 +23,7 @@ const Dashboard = () => {
     // doesn't return list data, which is typical.
     const [pendingPolicies, setPendingPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -31,6 +32,7 @@ const Dashboard = () => {
     const loadData = async () => {
         try {
             setLoading(true);
+            setError(null);
 
             // 1. Get Dashboard Stats
             const statsResponse = await adminAPI.getDashboardStats();
@@ -60,12 +62,25 @@ const Dashboard = () => {
 
         } catch (err) {
             console.error('Dashboard load error:', err);
+            setError('Failed to connect to backend server. Please check if the server is running.');
         } finally {
             setLoading(false);
         }
     };
 
     if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Dashboard...</div>;
+
+    if (error) return (
+        <div className="admin-dashboard error-state-container">
+            <div className="error-card">
+                <span className="error-icon">🔌</span>
+                <h2>Connection Error</h2>
+                <p>{error}</p>
+                <button onClick={loadData} className="btn btn-primary">Try Again</button>
+                <Link to="/database-setup" className="btn btn-secondary" style={{ marginTop: '1rem' }}>Setup Database</Link>
+            </div>
+        </div>
+    );
 
     return (
         <div className="admin-dashboard">

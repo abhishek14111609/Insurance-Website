@@ -474,3 +474,65 @@
         font-size: 2rem;
     }
 }
+
+/* Error States */
+.error-state-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.error-card {
+    background: white;
+    padding: 3rem;
+    border-radius: 1.5rem;
+    text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    border: 1px solid #fee2e2;
+}
+
+.error-card .error-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+.error-card h2 {
+    color: #991b1b;
+    margin-bottom: 1rem;
+}
+
+.error-card p {
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.error-card .btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+}
+
+.error-card .btn-primary {
+    background: #6366f1;
+    color: white;
+    margin-right: 1rem;
+}
+
+.error-card .btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.error-card .btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(0.9);
+}

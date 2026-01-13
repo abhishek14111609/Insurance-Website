@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { policyAPI } from '../services/api.service';
+import { policyAPI, BASE_URL } from '../services/api.service';
 import './PolicyApprovals.css';
 
 const PolicyApprovals = () => {
@@ -11,6 +11,9 @@ const PolicyApprovals = () => {
     const [notes, setNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
     useEffect(() => {
         loadPolicies();
@@ -19,16 +22,22 @@ const PolicyApprovals = () => {
     const loadPolicies = async () => {
         try {
             setLoading(true);
+            setError('');
             const response = await policyAPI.getPending();
             if (response.success) {
-                setPolicies(response.data.policies);
+                setPolicies(response.data.policies || []);
             }
         } catch (err) {
             console.error('Error loading policies:', err);
-            setError('Failed to load pending policies');
+            setError('Failed to load pending policies. Please check your connection.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleViewDetails = (policy) => {
+        setSelectedPolicy(policy);
+        setDetailsModalOpen(true);
     };
 
     const handleApproveClick = (policy) => {
@@ -44,15 +53,22 @@ const PolicyApprovals = () => {
     };
 
     const handleConfirmApprove = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
         try {
             const result = await policyAPI.approve(selectedPolicy.id, notes);
             if (result.success) {
                 alert('Policy approved successfully!');
                 loadPolicies();
                 closeModal();
+            } else {
+                alert(result.message || 'Approval failed');
             }
         } catch (err) {
+            console.error('Approval error:', err);
             alert(err.message || 'Approval failed');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -62,28 +78,35 @@ const PolicyApprovals = () => {
             return;
         }
 
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
         try {
             const result = await policyAPI.reject(selectedPolicy.id, rejectionReason);
             if (result.success) {
                 alert('Policy rejected.');
                 loadPolicies();
                 closeModal();
+            } else {
+                alert(result.message || 'Rejection failed');
             }
         } catch (err) {
+            console.error('Rejection error:', err);
             alert(err.message || 'Rejection failed');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const closeModal = () => {
         setShowModal(false);
+        setDetailsModalOpen(false);
         setSelectedPolicy(null);
         setNotes('');
         setRejectionReason('');
     };
 
-    if (loading) {
-        return <div className="loading-spinner">Loading...</div>; // Add simple loading UI
-    }
+    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Approvals...</div>;
 
     return (
         <div className="policy-approvals-page">
@@ -92,6 +115,18 @@ const PolicyApprovals = () => {
                 <p>Review and approve pending policy applications</p>
                 <div className="header-stats">
                     <span className="stat-badge">{policies.length} Pending</span>
+                </div>
+            </div>
+
+            <div className="filters-section">
+                <div className="search-box">
+                    <span className="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Search by policy #, customer name or tag ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
@@ -105,85 +140,201 @@ const PolicyApprovals = () => {
                 </div>
             ) : (
                 <div className="policies-grid">
-                    {policies.map(policy => (
-                        <div key={policy.id} className="policy-card">
-                            <div className="policy-header">
-                                <div>
-                                    <h3>{policy.policyNumber}</h3>
-                                    <span className="status-badge pending">Pending Approval</span>
-                                </div>
-                                <div className="policy-date">
-                                    {new Date(policy.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
-
-                            <div className="policy-details">
-                                <div className="detail-row">
-                                    <span className="label">Customer:</span>
-                                    <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Email:</span>
-                                    <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Phone:</span>
-                                    <span className="value">{policy.ownerPhone}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Cattle Type:</span>
-                                    <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Tag ID:</span>
-                                    <span className="value">{policy.tagId}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Coverage:</span>
-                                    <span className="value highlight">₹{parseInt(policy.coverageAmount).toLocaleString()}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Premium:</span>
-                                    <span className="value highlight">₹{parseInt(policy.premium).toLocaleString()}</span>
-                                </div>
-                            </div>
-
-                            {/* Photos */}
-                            {policy.photos && (
-                                <div className="policy-photos">
-                                    <h4>Cattle Photos:</h4>
-                                    <div className="photos-grid">
-                                        {/* Handle both object (old mock) and JSON string (backend) */}
-                                        {/* Backend might store as JSON string or parsed object depending on fetcher */}
-                                        {/* Assuming fetcher parses JSON automatically if res.json() is used and DB stores JSON type or parsed by Sequelize */}
-                                        {policy.photos && typeof policy.photos === 'object' && Object.entries(policy.photos).map(([side, url]) => (
-                                            url && (
-                                                <div key={side} className="photo-item">
-                                                    <img src={url} alt={`${side} view`} onError={(e) => e.target.style.display = 'none'} />
-                                                    <span>{side}</span>
-                                                </div>
-                                            )
-                                        ))}
+                    {policies
+                        .filter(p =>
+                            p.policyNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            p.ownerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            p.tagId?.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .map(policy => (
+                            <div key={policy.id} className="policy-card">
+                                <div className="policy-header">
+                                    <div>
+                                        <h3>{policy.policyNumber}</h3>
+                                        <span className="status-badge pending">Pending Approval</span>
+                                    </div>
+                                    <div className="policy-date">
+                                        {new Date(policy.createdAt).toLocaleDateString()}
                                     </div>
                                 </div>
-                            )}
 
-                            <div className="policy-actions">
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => handleApproveClick(policy)}
-                                >
-                                    ✅ Approve
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={() => handleRejectClick(policy)}
-                                >
-                                    ❌ Reject
-                                </button>
+                                <div className="policy-details">
+                                    <div className="detail-row">
+                                        <span className="label">Customer:</span>
+                                        <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Email:</span>
+                                        <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Phone:</span>
+                                        <span className="value">{policy.ownerPhone}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Cattle Type:</span>
+                                        <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Tag ID:</span>
+                                        <span className="value">{policy.tagId}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Coverage:</span>
+                                        <span className="value highlight">₹{parseInt(policy.coverageAmount).toLocaleString()}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Premium:</span>
+                                        <span className="value highlight">₹{parseInt(policy.premium).toLocaleString()}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Breed:</span>
+                                        <span className="value">{policy.breed || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Age:</span>
+                                        <span className="value">{policy.age ? `${policy.age} Years` : 'N/A'}</span>
+                                    </div>
+                                    {policy.agent && (
+                                        <div className="detail-row">
+                                            <span className="label">Agent:</span>
+                                            <span className="value">{policy.agent.user?.fullName} ({policy.agent.agentCode})</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Photos */}
+                                {policy.photos && (
+                                    <div className="policy-photos">
+                                        <h4>Cattle Photos:</h4>
+                                        <div className="photos-grid">
+                                            {(() => {
+                                                let photos = policy.photos;
+                                                if (!photos) return null;
+                                                if (typeof photos === 'string') {
+                                                    try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
+                                                }
+                                                return Object.entries(photos || {}).map(([side, url]) => (
+                                                    url && (
+                                                        <div key={side} className="photo-item">
+                                                            <img src={url.startsWith('http') ? url : `${BASE_URL}${url}`} alt={`${side} view`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo' }} />
+                                                            <span>{side}</span>
+                                                        </div>
+                                                    )
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="policy-actions">
+                                    <button
+                                        className="btn btn-info"
+                                        onClick={() => handleViewDetails(policy)}
+                                    >
+                                        👁️ Details
+                                    </button>
+                                    <button
+                                        className="btn btn-success"
+                                        onClick={() => handleApproveClick(policy)}
+                                    >
+                                        ✅ Approve
+                                    </button>
+                                    <button
+                                        className="btn btn-danger"
+                                        onClick={() => handleRejectClick(policy)}
+                                    >
+                                        ❌ Reject
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            )}
+
+            {/* Detailed Policy Modal */}
+            {detailsModalOpen && selectedPolicy && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Detailed Policy Information</h2>
+                            <button className="close-btn" onClick={closeModal}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="details-layout">
+                                <section className="info-section">
+                                    <h3>👤 Owner Information</h3>
+                                    <div className="info-grid">
+                                        <div className="info-item"><span className="label">Name:</span> <span>{selectedPolicy.ownerName}</span></div>
+                                        <div className="info-item"><span className="label">Email:</span> <span>{selectedPolicy.ownerEmail}</span></div>
+                                        <div className="info-item"><span className="label">Phone:</span> <span>{selectedPolicy.ownerPhone}</span></div>
+                                        <div className="info-item"><span className="label">Address:</span> <span>{selectedPolicy.ownerAddress}, {selectedPolicy.ownerCity}, {selectedPolicy.ownerState} - {selectedPolicy.ownerPincode}</span></div>
+                                    </div>
+                                </section>
+
+                                <section className="info-section">
+                                    <h3>🐄 Cattle Details</h3>
+                                    <div className="info-grid">
+                                        <div className="info-item"><span className="label">Type:</span> <span>{selectedPolicy.cattleType}</span></div>
+                                        <div className="info-item"><span className="label">Breed:</span> <span>{selectedPolicy.breed}</span></div>
+                                        <div className="info-item"><span className="label">Age:</span> <span>{selectedPolicy.age} Years</span></div>
+                                        <div className="info-item"><span className="label">Health:</span> <span>{selectedPolicy.healthCondition}</span></div>
+                                        <div className="info-item"><span className="label">Tag ID:</span> <span>{selectedPolicy.tagId}</span></div>
+                                    </div>
+                                </section>
+
+                                <section className="info-section">
+                                    <h3>📄 Policy & Photos</h3>
+                                    <div className="info-grid single-col">
+                                        <div className="info-item"><span className="label">Premium:</span> <span className="highlight">₹{parseInt(selectedPolicy.premium).toLocaleString()}</span></div>
+                                        <div className="info-item"><span className="label">Coverage:</span> <span className="highlight">₹{parseInt(selectedPolicy.coverageAmount).toLocaleString()}</span></div>
+                                    </div>
+                                    <div className="policy-photos-view">
+                                        <h4>Identification Photos:</h4>
+                                        <div className="photos-row">
+                                            {(() => {
+                                                let photos = selectedPolicy.photos;
+                                                if (typeof photos === 'string') {
+                                                    try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
+                                                }
+                                                return Object.entries(photos || {}).map(([side, url]) => (
+                                                    url && (
+                                                        <div key={side} className="photo-box">
+                                                            <img src={url.startsWith('http') ? url : `${BASE_URL}${url}`} alt={side} />
+                                                            <span>{side}</span>
+                                                        </div>
+                                                    )
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {selectedPolicy.documents && (
+                                    <section className="info-section">
+                                        <h3>📎 Documents</h3>
+                                        <div className="docs-list">
+                                            {(() => {
+                                                let docs = selectedPolicy.documents;
+                                                if (typeof docs === 'string') {
+                                                    try { docs = JSON.parse(docs); } catch (e) { docs = {}; }
+                                                }
+                                                return Object.entries(docs || {}).map(([name, url]) => (
+                                                    <a key={name} href={url.startsWith('http') ? url : `${BASE_URL}${url}`} target="_blank" rel="noreferrer" className="doc-link">
+                                                        📄 {name}
+                                                    </a>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </section>
+                                )}
                             </div>
                         </div>
-                    ))}
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={closeModal}>Close Details</button>
+                            <button className="btn btn-success" onClick={() => { setDetailsModalOpen(false); handleApproveClick(selectedPolicy); }}>Approve This Policy</button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -236,8 +387,9 @@ const PolicyApprovals = () => {
                             <button
                                 className={`btn ${modalType === 'approve' ? 'btn-success' : 'btn-danger'}`}
                                 onClick={modalType === 'approve' ? handleConfirmApprove : handleConfirmReject}
+                                disabled={isSubmitting}
                             >
-                                {modalType === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}
+                                {isSubmitting ? 'Processing...' : (modalType === 'approve' ? 'Confirm Approval' : 'Confirm Rejection')}
                             </button>
                         </div>
                     </div>

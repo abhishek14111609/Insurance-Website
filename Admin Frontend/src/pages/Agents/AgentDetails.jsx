@@ -18,49 +18,22 @@ const AgentDetails = () => {
     const loadData = async () => {
         try {
             setLoading(true);
+            const response = await adminAPI.getAgentById(id);
 
-            // Fetch all agents and policies to filter (Simulating getById/search)
-            const [agentsRes, policiesRes] = await Promise.all([
-                adminAPI.getAllAgents(),
-                adminAPI.getAllPolicies()
-            ]);
+            if (response.success) {
+                const agentData = response.data.agent;
+                setAgent(agentData);
+                setSubAgents(agentData.subAgents || []);
+                setPolicies(agentData.policies || []);
 
-            if (agentsRes.success) {
-                const agentsList = agentsRes.data.agents || [];
-                // Find current agent
-                // Note: id from params is string, agent.id might be number. Loose comparison or toString()
-                const foundAgent = agentsList.find(a => String(a.id) === String(id));
-
-                if (foundAgent) {
-                    setAgent(foundAgent);
-
-                    // Find sub-agents
-                    // Assuming agent.code is used for hierarchy or parentId
-                    // If we have parentId in response:
-                    const subs = agentsList.filter(a => String(a.parentAgentId) === String(foundAgent.id));
-                    setSubAgents(subs);
-
-                    // Stats derived from found agent if available, else calc
-                    setStats({
-                        totalPolicies: foundAgent.policiesSold || foundAgent.totalPolicies || 0,
-                        activePolicies: 0, // Not always available in list
-                        totalEarnings: foundAgent.totalEarnings || 0
-                    });
-                }
+                setStats({
+                    totalPolicies: agentData.policiesSold || agentData.totalPolicies || agentData.policies?.length || 0,
+                    activePolicies: (agentData.policies || []).filter(p => p.status === 'APPROVED').length,
+                    totalEarnings: agentData.totalEarnings || 0
+                });
+            } else {
+                console.error('Failed to load agent:', response.message);
             }
-
-            if (policiesRes.success) {
-                const allPolicies = policiesRes.data.policies || [];
-                // Filter policies by agentId or agentCode
-                if (agent) { // This might be stale due to closure if not careful, but we are in async flow
-                    // We need the ID from the found agent above.
-                }
-                // Let's filter here using the found agent ID from the list logic above
-                // To do this properly, we should assume we have the agent ID.
-                const ps = allPolicies.filter(p => String(p.agentId) === String(id));
-                setPolicies(ps);
-            }
-
         } catch (error) {
             console.error('Error loading agent details:', error);
         } finally {

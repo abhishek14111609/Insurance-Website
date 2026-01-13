@@ -85,7 +85,6 @@ export const authAPI = {
         return handleResponse(response);
     },
 
-    // Update profile
     updateProfile: async (profileData) => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/auth/profile`, {
@@ -96,6 +95,12 @@ export const authAPI = {
             },
             body: JSON.stringify(profileData)
         });
+        return handleResponse(response);
+    },
+
+    // Verify agent code (Public)
+    verifyAgentCode: async (code) => {
+        const response = await fetch(`${API_BASE_URL}/auth/verify-code/${code}`);
         return handleResponse(response);
     },
 

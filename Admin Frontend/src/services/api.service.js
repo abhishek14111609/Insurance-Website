@@ -1,5 +1,6 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const BASE_URL = API_BASE_URL.replace('/api', '');
 
 // Helper function to get auth token
 const getToken = () => {
@@ -8,14 +9,26 @@ const getToken = () => {
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (err) {
+        // Handle non-JSON responses or empty responses
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        return { success: true }; // Maybe it's a 204 No Content
+    }
 
     if (!response.ok) {
         // Handle authentication errors
         if (response.status === 401) {
             localStorage.removeItem('admin_token');
             localStorage.removeItem('admin_user');
-            window.location.href = '/login';
+            // Prevent redirect loop if already on login page
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
         }
         throw new Error(data.message || 'API request failed');
     }
@@ -128,6 +141,14 @@ export const adminAPI = {
         return handleResponse(response);
     },
 
+    getAgentById: async (id) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/agents/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return handleResponse(response);
+    },
+
     createAgent: async (agentData) => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/admin/agents`, {
@@ -141,27 +162,32 @@ export const adminAPI = {
         return handleResponse(response);
     },
 
-    approveAgent: async (agentId) => {
+    approveAgent: async (agentId, adminNotes = '') => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/approve`, {
             method: 'PATCH',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            body: JSON.stringify({ adminNotes })
         });
         return handleResponse(response);
     },
 
-    rejectAgent: async (agentId) => {
+    rejectAgent: async (agentId, rejectionReason = '') => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/reject`, {
             method: 'PATCH',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            body: JSON.stringify({ rejectionReason })
         });
         return handleResponse(response);
     },
+
 
     updateAgent: async (agentId, agentData) => {
         const token = getToken();
@@ -260,6 +286,26 @@ export const adminAPI = {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
+        });
+        return handleResponse(response);
+    },
+    getCustomerById: async (id) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/customers/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return handleResponse(response);
+    },
+
+    setupDatabase: async (force = false) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/setup-db`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ force })
         });
         return handleResponse(response);
     }

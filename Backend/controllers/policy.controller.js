@@ -223,89 +223,10 @@ export const getPendingPolicies = async (req, res) => {
     }
 };
 
-// @desc    Approve policy
-// @route   PATCH /api/policies/:id/approve
-// @access  Private (Admin)
-export const approvePolicy = async (req, res) => {
-    try {
-        const { adminNotes } = req.body;
-
-        const policy = await Policy.findByPk(req.params.id);
-        if (!policy) {
-            return res.status(404).json({
-                success: false,
-                message: 'Policy not found'
-            });
-        }
-
-        await policy.update({
-            status: 'APPROVED',
-            approvedAt: new Date(),
-            approvedBy: req.user.id,
-            adminNotes
-        });
-
-        // TODO: Send approval email to customer
-        // TODO: Calculate and create commission records
-
-        res.json({
-            success: true,
-            message: 'Policy approved successfully',
-            data: { policy }
-        });
-    } catch (error) {
-        console.error('Approve policy error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error approving policy',
-            error: error.message
-        });
-    }
-};
-
-// @desc    Reject policy
-// @route   PATCH /api/policies/:id/reject
-// @access  Private (Admin)
-export const rejectPolicy = async (req, res) => {
-    try {
-        const { rejectionReason } = req.body;
-
-        if (!rejectionReason) {
-            return res.status(400).json({
-                success: false,
-                message: 'Rejection reason is required'
-            });
-        }
-
-        const policy = await Policy.findByPk(req.params.id);
-        if (!policy) {
-            return res.status(404).json({
-                success: false,
-                message: 'Policy not found'
-            });
-        }
-
-        await policy.update({
-            status: 'REJECTED',
-            rejectedAt: new Date(),
-            rejectedBy: req.user.id,
-            rejectionReason
-        });
-
-        // TODO: Send rejection email to customer
-        // TODO: Process refund if payment was made
-
-        res.json({
-            success: true,
-            message: 'Policy rejected successfully',
-            data: { policy }
-        });
-    } catch (error) {
-        console.error('Reject policy error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error rejecting policy',
-            error: error.message
-        });
-    }
+export default {
+    createPolicy,
+    getPolicies,
+    getPolicyById,
+    updatePolicyPayment,
+    getPendingPolicies
 };

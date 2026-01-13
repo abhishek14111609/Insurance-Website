@@ -9,6 +9,7 @@ import {
     getWallet,
     requestWithdrawal,
     getWithdrawals,
+    getCommissions,
     getPoliciesSold,
     getAgentCustomers,
     updateCustomerNotes,

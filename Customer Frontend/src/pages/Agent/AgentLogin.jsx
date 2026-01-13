@@ -25,17 +25,29 @@ const AgentLogin = () => {
             if (result.success) {
                 // Check role from response data structure
                 const user = result.data.user;
+                const agentProfile = result.data.agentProfile;
+
                 if (user && user.role === 'agent') {
+                    // Check agent status from agent profile
+                    if (agentProfile) {
+                        if (agentProfile.status === 'pending') {
+                            setError('Your agent account is pending approval by admin. Please check back later.');
+                            return;
+                        }
+                        if (agentProfile.status === 'rejected') {
+                            setError('Your agent application was not approved. Please contact support.');
+                            return;
+                        }
+                    }
                     navigate('/agent/dashboard');
                 } else {
+
                     setError('This account is not registered as an agent.');
                 }
-            } else {
-                setError(result.error || 'Login failed. Please check your credentials.');
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError('An error occurred during login. Please try again.');
+            setError(err.message || 'An error occurred during login. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -51,7 +63,7 @@ const AgentLogin = () => {
                 </div>
 
                 {error && (
-                    <div className="alert-error" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
+                    <div className="alert-error">
                         {error}
                     </div>
                 )}

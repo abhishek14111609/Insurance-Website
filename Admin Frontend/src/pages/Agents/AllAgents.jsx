@@ -61,19 +61,26 @@ const AllAgents = () => {
     };
 
     const handleReject = async (agentId, agentName) => {
-        if (window.confirm(`Are you sure you want to block/reject agent: ${agentName}?`)) {
-            try {
-                const result = await adminAPI.rejectAgent(agentId);
-                if (result.success) {
-                    alert('Agent blocked successfully');
-                    loadAgents();
-                } else {
-                    alert(result.message || 'Failed to block agent');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('An error occurred');
+        const reason = window.prompt(`Are you sure you want to block/reject agent: ${agentName}?\nPlease provide a reason:`);
+
+        if (reason === null) return; // User cancelled
+
+        if (!reason.trim()) {
+            alert('A reason is required to block an agent.');
+            return;
+        }
+
+        try {
+            const result = await adminAPI.rejectAgent(agentId, reason);
+            if (result.success) {
+                alert('Agent blocked successfully');
+                loadAgents();
+            } else {
+                alert(result.message || 'Failed to block agent');
             }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred: ' + err.message);
         }
     };
 
@@ -207,7 +214,7 @@ const AllAgents = () => {
                                             {/* Removed Edit/Delete, kept Block if needed */}
                                             {agent.status !== 'REJECTED' && agent.status !== 'BLOCKED' && (
                                                 <button
-                                                    onClick={() => handleReject(agent.id, agent.fullName || agent.name)}
+                                                    onClick={() => handleReject(agent.id, agent.user?.fullName || 'Agent')}
                                                     className="btn-icon btn-danger"
                                                     title="Block Agent"
                                                 >

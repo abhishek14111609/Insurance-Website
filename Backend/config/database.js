@@ -34,13 +34,14 @@ export const testConnection = async () => {
 };
 
 // Sync database
-export const syncDatabase = async (force = false) => {
+export const syncDatabase = async (options = {}) => {
     try {
-        await sequelize.sync({ force }); // force: true will drop tables
-        console.log('✅ Database synchronized successfully.');
+        await sequelize.sync(options);
+        console.log(`✅ Database synchronized successfully (options: ${JSON.stringify(options)}).`);
     } catch (error) {
         console.error('❌ Error synchronizing database:', error);
     }
 };
+
 
 export default sequelize;

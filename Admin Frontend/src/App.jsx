@@ -27,6 +27,8 @@ import WithdrawalApprovals from './pages/WithdrawalApprovals';
 import ClaimApprovals from './pages/ClaimApprovals';
 import AllCustomers from './pages/AllCustomers';
 import CommissionHistory from './pages/CommissionHistory';
+import CustomerDetails from './pages/CustomerDetails';
+import DatabaseSetup from './pages/DatabaseSetup';
 
 import './App.css';
 
@@ -141,6 +143,16 @@ const AdminLayout = ({ children }) => {
             Withdrawals
           </NavLink>
 
+          <div className="nav-section">System</div>
+
+          <NavLink
+            to="/database-setup"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">🛠️</span>
+            Database Setup
+          </NavLink>
+
           <div className="nav-section">Account</div>
 
           <button
@@ -187,6 +199,7 @@ const App = () => {
                   <Route path="/agents/details/:id" element={<AgentDetails />} />
                   <Route path="/agent-approvals" element={<AgentApprovals />} />
                   <Route path="/customers" element={<AllCustomers />} />
+                  <Route path="/customers/:id" element={<CustomerDetails />} />
 
                   {/* Policies */}
                   <Route path="/policy-plans" element={<AllPolicyPlans />} />
@@ -199,6 +212,7 @@ const App = () => {
                   <Route path="/commission-history" element={<CommissionHistory />} />
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
+                  <Route path="/database-setup" element={<DatabaseSetup />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>
