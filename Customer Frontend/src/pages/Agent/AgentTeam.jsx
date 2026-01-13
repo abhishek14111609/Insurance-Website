@@ -1,299 +1,236 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import HierarchyTree from '../../components/HierarchyTree';
-import {
-    initializeMockAgentData,
-    getAgentHierarchy,
-    generateAgentCode,
-    getNextSequence,
-    getCommissionRate
-} from '../../utils/agentUtils';
-import './AgentDashboard.css';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
+import './AgentTeam.css';
 
 const AgentTeam = () => {
     const navigate = useNavigate();
-    const [currentAgent] = useState({
-        id: 'agent-1',
-        code: 'AG001',
-        name: 'Rajesh Kumar',
-        level: 1
-    });
+    const { user, isAgent } = useAuth();
 
     const [teamMembers, setTeamMembers] = useState([]);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newAgentData, setNewAgentData] = useState({
-        name: '',
-        email: '',
-        phone: ''
-    });
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
 
     useEffect(() => {
-        initializeMockAgentData();
-        loadTeamData();
-    }, []);
-
-    const loadTeamData = () => {
-        const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-        setTeamMembers(allAgents);
-    };
-
-    const handleAddAgent = (e) => {
-        e.preventDefault();
-
-        // Generate new agent code
-        const sequence = getNextSequence(currentAgent.code);
-        const newCode = generateAgentCode(currentAgent.code, sequence);
-        const newLevel = currentAgent.level + 1;
-
-        if (newLevel > 3) {
-            alert('Maximum hierarchy depth (3 levels) reached!');
+        if (!isAgent) {
+            navigate('/');
             return;
         }
 
-        const newAgent = {
-            id: `agent-${Date.now()}`,
-            code: newCode,
-            name: newAgentData.name,
-            email: newAgentData.email,
-            phone: newAgentData.phone,
-            parentId: currentAgent.id,
-            level: newLevel,
-            commissionRate: getCommissionRate(newLevel),
-            walletBalance: 0,
-            totalEarnings: 0,
-            customersCount: 0,
-            policiesSold: 0,
-            joinedDate: new Date().toISOString()
+        fetchTeamMembers();
+    }, [isAgent, navigate]);
+
+    const fetchTeamMembers = async () => {
+        try {
+            setLoading(true);
+            const response = await agentAPI.getTeam();
+            if (response.success) {
+                setTeamMembers(response.data.team || []);
+            }
+        } catch (error) {
+            console.error('Error fetching team:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateTraining = async (memberId, trainingData) => {
+        try {
+            const response = await agentAPI.updateSubAgentTraining(memberId, trainingData);
+            if (response.success) {
+                fetchTeamMembers(); // Refresh to see changes
+            }
+        } catch (error) {
+            console.error('Error updating training:', error);
+        }
+    };
+
+    const filteredMembers = filter === 'all'
+        ? teamMembers
+        : teamMembers.filter(m => m.relativeLevel === parseInt(filter));
+
+    const getStatusBadge = (status) => {
+        const badges = {
+            active: { class: 'status-active', text: 'Active' },
+            inactive: { class: 'status-inactive', text: 'Inactive' },
+            pending: { class: 'status-pending', text: 'Pending' }
         };
-
-        // Save to localStorage
-        const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-        allAgents.push(newAgent);
-        localStorage.setItem('agent_hierarchy', JSON.stringify(allAgents));
-
-        setTeamMembers(allAgents);
-        setShowAddModal(false);
-        setNewAgentData({ name: '', email: '', phone: '' });
-
-        alert(`New agent added successfully!\nAgent Code: ${newCode}\nCommission Rate: ${getCommissionRate(newLevel)}%`);
+        return badges[status] || badges.pending;
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewAgentData({ ...newAgentData, [name]: value });
-    };
-
-    const teamStats = {
-        totalMembers: getAgentHierarchy(currentAgent.id).length,
-        directReports: teamMembers.filter(a => a.parentId === currentAgent.id).length,
-        totalCustomers: getAgentHierarchy(currentAgent.id).reduce((sum, a) => sum + (a.customersCount || 0), 0),
-        totalPolicies: getAgentHierarchy(currentAgent.id).reduce((sum, a) => sum + (a.policiesSold || 0), 0)
-    };
+    if (loading) {
+        return (
+            <div className="agent-team">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading team...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="agent-page-container">
-            <div className="page-header">
+        <div className="agent-team">
+            <div className="team-header">
                 <div>
                     <h1>My Team</h1>
-                    <p>Manage your agent network and build your team</p>
+                    <p>Manage your agent network</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                    + Add Sub-Agent
+                <div className="team-stats">
+                    <div className="stat-item">
+                        <span>Total Members</span>
+                        <strong>{teamMembers.length}</strong>
+                    </div>
+                    <div className="stat-item">
+                        <span>Direct</span>
+                        <strong>{teamMembers.filter(m => m.relativeLevel === 1).length}</strong>
+                    </div>
+                    <div className="stat-item">
+                        <span>Indirect</span>
+                        <strong>{teamMembers.filter(m => m.relativeLevel > 1).length}</strong>
+                    </div>
+                </div>
+            </div>
+
+            {/* Referral Info */}
+            <div className="referral-card">
+                <h3>Your Referral Code</h3>
+                <div className="referral-code-display">
+                    <code>{user?.agentCode || 'Loading...'}</code>
+                    <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => {
+                            navigator.clipboard.writeText(user?.agentCode || '');
+                            alert('Referral code copied!');
+                        }}
+                    >
+                        Copy
+                    </button>
+                </div>
+                <p>Share this code with new agents to build your team</p>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="filter-tabs">
+                <button
+                    className={filter === 'all' ? 'active' : ''}
+                    onClick={() => setFilter('all')}
+                >
+                    All ({teamMembers.length})
+                </button>
+                <button
+                    className={filter === '1' ? 'active' : ''}
+                    onClick={() => setFilter('1')}
+                >
+                    Level 1 ({teamMembers.filter(m => m.relativeLevel === 1).length})
+                </button>
+                <button
+                    className={filter === '2' ? 'active' : ''}
+                    onClick={() => setFilter('2')}
+                >
+                    Level 2 ({teamMembers.filter(m => m.relativeLevel === 2).length})
+                </button>
+                <button
+                    className={filter === '3' ? 'active' : ''}
+                    onClick={() => setFilter('3')}
+                >
+                    Level 3 ({teamMembers.filter(m => m.relativeLevel === 3).length})
                 </button>
             </div>
 
-            {/* Team Stats */}
-            <div className="stats-grid" style={{ marginBottom: '2rem' }}>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Total Team Members</div>
-                        <div className="stat-value">{teamStats.totalMembers}</div>
-                        <div className="stat-change">Across all levels</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Direct Reports</div>
-                        <div className="stat-value">{teamStats.directReports}</div>
-                        <div className="stat-change">Level 2 agents</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Team Customers</div>
-                        <div className="stat-value">{teamStats.totalCustomers}</div>
-                        <div className="stat-change">Total acquired</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Team Policies</div>
-                        <div className="stat-value">{teamStats.totalPolicies}</div>
-                        <div className="stat-change">Total sold</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Agent Code Display */}
-            <div className="agent-code-display-card">
-                <div className="code-header">
-                    <div>
-                        <h3>Your Agent Code</h3>
-                        <p>Share this code with new agents to add them to your team</p>
-                    </div>
-                </div>
-                <div className="code-value">
-                    <span className="code-text">{currentAgent.code}</span>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={() => {
-                            navigator.clipboard.writeText(currentAgent.code);
-                            alert('Agent code copied to clipboard!');
-                        }}
-                    >
-                        📋 Copy Code
-                    </button>
-                </div>
-            </div>
-
-            {/* Hierarchy Tree */}
-            <div style={{ marginTop: '2rem' }}>
-                <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 700 }}>Team Hierarchy</h2>
-                <HierarchyTree
-                    agents={teamMembers}
-                    currentAgentId={currentAgent.id}
-                    onAgentClick={(agent) => {/* Agent details can be shown in a modal */ }}
-                />
-            </div>
-
-            {/* Team Table */}
-            <div className="table-container" style={{ marginTop: '2rem' }}>
-                <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 700 }}>Team Members</h2>
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>Agent Code</th>
-                            <th>Name</th>
-                            <th>Level</th>
-                            <th>Customers</th>
-                            <th>Policies</th>
-                            <th>Earnings</th>
-                            <th>Joined</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {getAgentHierarchy(currentAgent.id).map(agent => (
-                            <tr key={agent.id}>
-                                <td>
-                                    <span className="font-medium" style={{ color: 'var(--primary-color)' }}>
-                                        {agent.code}
+            {/* Team Members List */}
+            {filteredMembers.length > 0 ? (
+                <div className="team-grid">
+                    {filteredMembers.map((member) => {
+                        const badge = getStatusBadge(member.status);
+                        return (
+                            <div key={member.id} className="team-member-card">
+                                <div className="member-header">
+                                    <div className="member-avatar">
+                                        {member.user?.fullName?.charAt(0) || 'A'}
+                                    </div>
+                                    <div className="member-info">
+                                        <h3>{member.user?.fullName}</h3>
+                                        <p>Agent Code: {member.agentCode}</p>
+                                    </div>
+                                    <span className={`status-badge ${badge.class}`}>
+                                        {badge.text}
                                     </span>
-                                </td>
-                                <td>{agent.name}</td>
-                                <td>
-                                    <span className={`level-badge level-${agent.level}`}>
-                                        Level {agent.level}
-                                    </span>
-                                </td>
-                                <td>{agent.customersCount || 0}</td>
-                                <td>{agent.policiesSold || 0}</td>
-                                <td className="text-success" style={{ fontWeight: 700 }}>
-                                    ₹{(agent.totalEarnings || 0).toLocaleString('en-IN')}
-                                </td>
-                                <td>{new Date(agent.joinedDate).toLocaleDateString('en-IN')}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                </div>
 
-                {getAgentHierarchy(currentAgent.id).length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
-                        <p>No team members yet. Add your first sub-agent to start building your team!</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Add Agent Modal */}
-            {showAddModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content animate-scale-in">
-                        <div className="modal-header">
-                            <h2>Add New Sub-Agent</h2>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
-                        </div>
-                        <form onSubmit={handleAddAgent}>
-                            <div className="modal-body">
-                                <div className="info-box" style={{
-                                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                                    padding: '1rem',
-                                    borderRadius: '8px',
-                                    marginBottom: '1.5rem',
-                                    border: '2px solid #3b82f6'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: 600 }}>New Agent Code:</span>
-                                        <span style={{ fontWeight: 800, color: 'var(--primary-color)' }}>
-                                            {generateAgentCode(currentAgent.code, getNextSequence(currentAgent.code))}
-                                        </span>
+                                <div className="member-details">
+                                    <div className="detail-item">
+                                        <span>Level</span>
+                                        <strong>Level {member.relativeLevel}</strong>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: 600 }}>Level:</span>
-                                        <span style={{ fontWeight: 800 }}>Level {currentAgent.level + 1}</span>
+                                    <div className="detail-item">
+                                        <span>Policies Sold</span>
+                                        <strong>{member.policiesSold || 0}</strong>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontWeight: 600 }}>Commission Rate:</span>
-                                        <span style={{ fontWeight: 800, color: '#10b981' }}>
-                                            {getCommissionRate(currentAgent.level + 1)}%
-                                        </span>
+                                    <div className="detail-item">
+                                        <span>Total Earnings</span>
+                                        <strong>₹{member.totalEarnings?.toLocaleString() || '0'}</strong>
+                                    </div>
+                                    <div className="detail-item">
+                                        <span>Joined</span>
+                                        <strong>{new Date(member.createdAt).toLocaleDateString()}</strong>
                                     </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label>Full Name *</label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        value={newAgentData.name}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter agent's full name"
-                                        required
-                                    />
+                                <div className="member-contact">
+                                    <p>📧 {member.user?.email}</p>
+                                    <p>📱 {member.user?.phone}</p>
                                 </div>
-                                <div className="form-group">
-                                    <label>Email Address *</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={newAgentData.email}
-                                        onChange={handleInputChange}
-                                        placeholder="agent@example.com"
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Phone Number *</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={newAgentData.phone}
-                                        onChange={handleInputChange}
-                                        placeholder="10-digit mobile number"
-                                        pattern="[0-9]{10}"
-                                        required
-                                    />
-                                </div>
+
+                                {/* Training Section - Only for Direct Downline (Level 1) */}
+                                {member.relativeLevel === 1 && (
+                                    <div className="training-section">
+                                        <div className="section-label">Training Progress</div>
+                                        <div className="progress-container">
+                                            <div className="progress-bar-bg">
+                                                <div
+                                                    className="progress-bar-fill"
+                                                    style={{ width: `${member.trainingProgress || 0}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="progress-text">{member.trainingProgress || 0}%</span>
+                                        </div>
+                                        <div className="training-controls">
+                                            <select
+                                                value={member.trainingStatus || 'not_started'}
+                                                onChange={(e) => handleUpdateTraining(member.id, { status: e.target.value })}
+                                                className="training-select"
+                                            >
+                                                <option value="not_started">Not Started</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={member.trainingProgress || 0}
+                                                onChange={(e) => handleUpdateTraining(member.id, { progress: parseInt(e.target.value) })}
+                                                className="training-range"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Add Agent
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="empty-state">
+                    <span className="empty-icon">👥</span>
+                    <h3>No Team Members</h3>
+                    <p>
+                        {filter === 'all'
+                            ? "You haven't recruited any agents yet. Share your referral code to build your team!"
+                            : `No Level ${filter} team members found.`
+                        }
+                    </p>
                 </div>
             )}
         </div>

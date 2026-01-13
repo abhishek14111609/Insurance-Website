@@ -1,23 +1,45 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getCustomerPolicies } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
+import { policyAPI } from '../services/api.service';
 import './PolicyDetails.css';
 
 const PolicyDetails = () => {
     const { policyId } = useParams();
     const navigate = useNavigate();
-    const [policy, setPolicy] = useState(null);
+    const { isAgent } = useAuth();
 
     useEffect(() => {
-        const policies = getCustomerPolicies();
-        const foundPolicy = policies.find(p => p.id === parseInt(policyId));
-
-        if (!foundPolicy) {
-            navigate('/profile');
-        } else {
-            setPolicy(foundPolicy);
+        if (isAgent) {
+            navigate('/agent/policies');
         }
-    }, [policyId, navigate]);
+    }, [isAgent, navigate]);
+    const [policy, setPolicy] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchPolicy = async () => {
+            try {
+                setLoading(true);
+                const response = await policyAPI.getById(policyId);
+                if (response.success) {
+                    setPolicy(response.data.policy);
+                } else {
+                    setError('Policy not found or access denied.');
+                }
+            } catch (err) {
+                console.error("Error fetching policy:", err);
+                setError('Failed to load policy details.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (policyId) {
+            fetchPolicy();
+        }
+    }, [policyId]);
 
     const handleDownload = () => {
         alert('Policy PDF download will be available soon!');
@@ -27,30 +49,81 @@ const PolicyDetails = () => {
         window.print();
     };
 
-    if (!policy) {
-        return null;
+    if (loading) {
+        return (
+            <div className="policy-details-page">
+                <div className="policy-details-container" style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
+                    <div className="spinner"></div>
+                </div>
+            </div>
+        );
     }
+
+    if (error || !policy) {
+        return (
+            <div className="policy-details-page">
+                <div className="policy-details-container" style={{ textAlign: 'center', padding: '50px' }}>
+                    <h3>{error || 'Policy not found'}</h3>
+                    <button className="btn btn-primary" onClick={() => navigate('/my-policies')}>Back to My Policies</button>
+                </div>
+            </div>
+        );
+    }
+
+    // Helper to safely get date
+    const formatDate = (dateStr) => {
+        try {
+            return new Date(dateStr).toLocaleDateString('en-IN');
+        } catch (e) {
+            return 'N/A';
+        }
+    };
 
     return (
         <div className="policy-details-page">
             <div className="policy-details-container">
                 {/* Header */}
                 <div className="policy-header-section">
-                    <Link to="/profile" state={{ activeTab: 'policies' }} className="back-link">
+                    <Link to="/my-policies" className="back-link">
                         ← Back to My Policies
                     </Link>
                     <div className="header-content">
                         <div className="header-left">
                             <h1>Cattle Insurance Policy</h1>
-                            <p className="policy-number">Policy No: {policy.policyNumber}</p>
+                            <p className="policy-number">Policy No: {policy.policyNumber || 'Processing...'}</p>
                         </div>
                         <div className="header-right">
-                            <span className={`status-badge ${policy.status}`}>
-                                {policy.status === 'active' ? '✓ Active' : 'Inactive'}
+                            <span className={`status-badge ${policy.status.toLowerCase()}`}>
+                                {policy.status === 'PENDING_APPROVAL' ? '⏳ Pending Approval' :
+                                    policy.status === 'PENDING' ? '🟡 Payment Pending' :
+                                        policy.status === 'APPROVED' ? '✓ Active' : policy.status}
                             </span>
                         </div>
                     </div>
                 </div>
+
+                {policy.status === 'PENDING' && (
+                    <div className="payment-alert" style={{
+                        background: '#fff3cd',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        border: '1px solid #ffc107',
+                        marginBottom: '20px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <span>
+                            <strong>Action Required:</strong> Payment is pending for this policy.
+                        </span>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => navigate('/payment', { state: { policyId: policy.id } })}
+                        >
+                            Complete Payment
+                        </button>
+                    </div>
+                )}
 
                 {/* Policy Document */}
                 <div className="policy-document">
@@ -72,21 +145,19 @@ const PolicyDetails = () => {
                             <h4>Policy Information</h4>
                             <div className="detail-row">
                                 <span className="label">Policy Number:</span>
-                                <span className="value">{policy.policyNumber}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="label">Issue Date:</span>
-                                <span className="value">{new Date(policy.purchaseDate).toLocaleDateString('en-IN')}</span>
+                                <span className="value">{policy.policyNumber || 'Pending'}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Start Date:</span>
-                                <span className="value">{new Date(policy.startDate || policy.purchaseDate).toLocaleDateString('en-IN')}</span>
+                                <span className="value">{formatDate(policy.startDate)}</span>
                             </div>
                             <div className="detail-row">
-                                <span className="label">Expiry Date:</span>
-                                <span className="value">
-                                    {new Date(new Date(policy.purchaseDate).setFullYear(new Date(policy.purchaseDate).getFullYear() + 1)).toLocaleDateString('en-IN')}
-                                </span>
+                                <span className="label">End Date:</span>
+                                <span className="value">{formatDate(policy.endDate)}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="label">Duration:</span>
+                                <span className="value">{policy.duration}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Status:</span>
@@ -102,15 +173,18 @@ const PolicyDetails = () => {
                             </div>
                             <div className="detail-row">
                                 <span className="label">Email:</span>
-                                <span className="value">{policy.email}</span>
+                                <span className="value">{policy.ownerEmail || policy.customerEmail}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Phone:</span>
-                                <span className="value">{policy.phone}</span>
+                                <span className="value">{policy.ownerPhone}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Address:</span>
-                                <span className="value">{policy.address}, {policy.city} - {policy.pincode}</span>
+                                <span className="value">
+                                    {policy.ownerAddress}<br />
+                                    {policy.ownerCity}, {policy.ownerState} - {policy.ownerPincode}
+                                </span>
                             </div>
                         </div>
 
@@ -119,20 +193,24 @@ const PolicyDetails = () => {
                             <div className="detail-row">
                                 <span className="label">Type:</span>
                                 <span className="value">
-                                    {policy.petType === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}
+                                    {(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}
                                 </span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Tag ID:</span>
-                                <span className="value">{policy.tagId || policy.petName || 'N/A'}</span>
+                                <span className="value">{policy.tagId}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Age:</span>
-                                <span className="value">{policy.petAge} years</span>
+                                <span className="value">{policy.age} years</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Breed:</span>
-                                <span className="value">{policy.petBreed}</span>
+                                <span className="value">{policy.breed}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="label">Gender:</span>
+                                <span className="value">{policy.gender}</span>
                             </div>
                             {policy.milkYield && (
                                 <div className="detail-row">
@@ -140,10 +218,6 @@ const PolicyDetails = () => {
                                     <span className="value">{policy.milkYield} liters/day</span>
                                 </div>
                             )}
-                            <div className="detail-row">
-                                <span className="label">Gender:</span>
-                                <span className="value">{policy.petGender}</span>
-                            </div>
                         </div>
 
                         <div className="detail-section">
@@ -153,13 +227,19 @@ const PolicyDetails = () => {
                                 <span className="value premium">₹{parseInt(policy.coverageAmount).toLocaleString()}</span>
                             </div>
                             <div className="detail-row">
-                                <span className="label">Annual Premium:</span>
-                                <span className="value premium">₹{policy.premium?.toLocaleString()}</span>
+                                <span className="label">Total Premium:</span>
+                                <span className="value premium">₹{parseInt(policy.premium).toLocaleString()}</span>
                             </div>
                             <div className="detail-row">
                                 <span className="label">Payment Method:</span>
-                                <span className="value">{policy.paymentMethod || 'Card'}</span>
+                                <span className="value">{policy.paymentMethod || 'Razorpay'}</span>
                             </div>
+                            {policy.paymentId && (
+                                <div className="detail-row">
+                                    <span className="label">Payment ID:</span>
+                                    <span className="value">{policy.paymentId}</span>
+                                </div>
+                            )}
                             {policy.agentCode && (
                                 <div className="detail-row">
                                     <span className="label">Agent Code:</span>
@@ -222,14 +302,18 @@ const PolicyDetails = () => {
 
                 {/* Action Buttons */}
                 <div className="action-buttons">
-                    <button onClick={handleDownload} className="btn btn-primary">
-                        📄 Download PDF
-                    </button>
-                    <button onClick={handlePrint} className="btn btn-outline">
-                        🖨️ Print Policy
-                    </button>
-                    <Link to="/profile" state={{ activeTab: 'policies' }} className="btn btn-secondary">
-                        Back to Dashboard
+                    {policy.status === 'APPROVED' && (
+                        <>
+                            <button onClick={handleDownload} className="btn btn-primary">
+                                📄 Download PDF
+                            </button>
+                            <button onClick={handlePrint} className="btn btn-outline">
+                                🖨️ Print Policy
+                            </button>
+                        </>
+                    )}
+                    <Link to="/my-policies" className="btn btn-secondary">
+                        Back to My Policies
                     </Link>
                 </div>
             </div>

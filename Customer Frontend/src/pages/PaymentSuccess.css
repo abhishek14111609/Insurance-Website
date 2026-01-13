@@ -127,6 +127,11 @@
     color: #047857;
 }
 
+.status-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
 .policy-info {
     display: grid;
     gap: 1rem;

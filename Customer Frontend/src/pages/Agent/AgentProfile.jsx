@@ -1,289 +1,303 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgentAncestors, formatCurrency, initializeMockAgentData } from '../../utils/agentUtils';
-import './AgentDashboard.css';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
+import './AgentProfile.css';
 
 const AgentProfile = () => {
     const navigate = useNavigate();
-    const [agentData, setAgentData] = useState(null);
-    const [ancestors, setAncestors] = useState([]);
+    const { user, isAgent, updateUser, refreshUser } = useAuth();
+
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
     const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({
-        name: '',
+
+    const [profileData, setProfileData] = useState({
+        fullName: '',
         email: '',
         phone: '',
-        city: ''
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: '',
+        accountHolderName: ''
     });
 
+    const [agentInfo, setAgentInfo] = useState(null);
+
     useEffect(() => {
-        initializeMockAgentData();
-
-        // Load current agent data
-        const currentAgent = JSON.parse(localStorage.getItem('current_agent') || '{}');
-        const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-        const fullAgentData = allAgents.find(a => a.id === currentAgent.id) || {
-            id: 'agent-1',
-            code: 'AG001',
-            name: 'Rajesh Kumar',
-            email: 'agent@securelife.com',
-            phone: '9876543210',
-            city: 'Mumbai',
-            level: 1,
-            commissionRate: 15,
-            walletBalance: 24500,
-            totalEarnings: 125000,
-            customersCount: 15,
-            policiesSold: 18,
-            joinedDate: '2023-01-15',
-            parentId: null
-        };
-
-        setAgentData(fullAgentData);
-        setEditData({
-            name: fullAgentData.name,
-            email: fullAgentData.email,
-            phone: fullAgentData.phone,
-            city: fullAgentData.city
-        });
-
-        // Get ancestors
-        if (fullAgentData.parentId) {
-            const ancestorList = getAgentAncestors(fullAgentData.id);
-            setAncestors(ancestorList);
-        }
-    }, []);
-
-    const handleSave = () => {
-        // Update agent data
-        const updatedAgent = { ...agentData, ...editData };
-        setAgentData(updatedAgent);
-
-        // Update in localStorage
-        const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-        const index = allAgents.findIndex(a => a.id === agentData.id);
-        if (index !== -1) {
-            allAgents[index] = updatedAgent;
-            localStorage.setItem('agent_hierarchy', JSON.stringify(allAgents));
+        if (!isAgent) {
+            navigate('/');
+            return;
         }
 
-        // Update current agent
-        localStorage.setItem('current_agent', JSON.stringify(updatedAgent));
+        fetchAgentProfile();
+    }, [isAgent, navigate]);
 
-        setIsEditing(false);
-        alert('Profile updated successfully!');
+    useEffect(() => {
+        if (user) {
+            setProfileData({
+                fullName: user.fullName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                address: user.address || '',
+                city: user.city || '',
+                state: user.state || '',
+                pincode: user.pincode || '',
+                bankName: user.bankName || '',
+                accountNumber: user.accountNumber || '',
+                ifscCode: user.ifscCode || '',
+                accountHolderName: user.accountHolderName || ''
+            });
+        }
+    }, [user]);
+
+    const fetchAgentProfile = async () => {
+        try {
+            const response = await agentAPI.getProfile();
+            if (response.success) {
+                setAgentInfo(response.data.agent);
+            }
+        } catch (error) {
+            console.error('Error fetching agent profile:', error);
+        }
     };
 
-    if (!agentData) {
-        return <div className="agent-page-container">Loading...</div>;
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setProfileData({
+            ...profileData,
+            [name]: value
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage({ type: '', text: '' });
+
+        try {
+            await agentAPI.updateProfile(profileData);
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setIsEditing(false);
+            await refreshUser();
+            await fetchAgentProfile();
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!agentInfo) {
+        return (
+            <div className="agent-profile">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading profile...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="agent-page-container">
-            <div className="page-header">
-                <div>
-                    <h1>My Profile</h1>
-                    <p>Manage your agent profile and credentials</p>
-                </div>
-                <button
-                    className={`btn ${isEditing ? 'btn-secondary' : 'btn-primary'}`}
-                    onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
-                >
-                    {isEditing ? 'Cancel' : '✏️ Edit Profile'}
-                </button>
+        <div className="agent-profile">
+            <div className="profile-header">
+                <h1>Agent Profile</h1>
+                <p>Manage your agent account information</p>
             </div>
 
-            {/* Agent Code Card */}
-            <div className="agent-code-display-card" style={{ marginBottom: '2rem' }}>
-                <div className="code-header">
-                    <div>
-                        <h3>Your Agent Code</h3>
-                        <p>Share this code with customers and new agents</p>
-                    </div>
-                </div>
-                <div className="code-value">
-                    <span className="code-text">{agentData.code}</span>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={() => {
-                            navigator.clipboard.writeText(agentData.code);
-                            alert('Agent code copied to clipboard!');
-                        }}
-                    >
-                        📋 Copy Code
-                    </button>
-                </div>
-            </div>
-
-            {/* Profile Stats */}
-            <div className="stats-grid" style={{ marginBottom: '2rem' }}>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Agent Level</div>
-                        <div className="stat-value">
-                            <span className={`level-badge level-${agentData.level}`}>
-                                Level {agentData.level}
-                            </span>
-                        </div>
-                        <div className="stat-change">Commission: {agentData.commissionRate}%</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Total Earnings</div>
-                        <div className="stat-value text-success">{formatCurrency(agentData.totalEarnings)}</div>
-                        <div className="stat-change">Lifetime</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Policies Sold</div>
-                        <div className="stat-value">{agentData.policiesSold}</div>
-                        <div className="stat-change">{agentData.customersCount} customers</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Member Since</div>
-                        <div className="stat-value" style={{ fontSize: '1.5rem' }}>
-                            {new Date(agentData.joinedDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-                        </div>
-                        <div className="stat-change">
-                            {Math.floor((new Date() - new Date(agentData.joinedDate)) / (1000 * 60 * 60 * 24))} days
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Hierarchy Info */}
-            {ancestors.length > 0 && (
-                <div style={{
-                    background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)',
-                    padding: '1.5rem',
-                    borderRadius: '12px',
-                    marginBottom: '2rem',
-                    border: '2px solid #c7d2fe'
-                }}>
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 700 }}>
-                        Reporting Hierarchy
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        {ancestors.reverse().map((ancestor, index) => (
-                            <React.Fragment key={ancestor.id}>
-                                <div style={{
-                                    background: 'white',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '8px',
-                                    border: '2px solid #3b82f6'
-                                }}>
-                                    <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
-                                        {ancestor.name}
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                        {ancestor.code}
-                                    </div>
-                                </div>
-                                {index < ancestors.length - 1 && (
-                                    <span style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>→</span>
-                                )}
-                            </React.Fragment>
-                        ))}
-                        <span style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>→</span>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                            padding: '0.75rem 1rem',
-                            borderRadius: '8px',
-                            color: 'white'
-                        }}>
-                            <div style={{ fontWeight: 700 }}>You ({agentData.name})</div>
-                            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>{agentData.code}</div>
-                        </div>
-                    </div>
+            {message.text && (
+                <div className={`alert alert-${message.type}`}>
+                    {message.text}
                 </div>
             )}
 
-            {/* Profile Details */}
-            <div className="table-container">
-                <div className="table-header">
-                    <h2>Personal Information</h2>
-                </div>
-                <div style={{ padding: '2rem' }}>
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                        <div className="form-group">
-                            <label style={{ fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Full Name</label>
-                            {isEditing ? (
-                                <input
-                                    type="text"
-                                    value={editData.name}
-                                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', border: '2px solid #cbd5e1', borderRadius: '8px' }}
-                                />
-                            ) : (
-                                <div style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', fontWeight: 500 }}>
-                                    {agentData.name}
-                                </div>
-                            )}
+            {/* Agent Info Card */}
+            <div className="agent-info-card">
+                <h2>Agent Information</h2>
+                <div className="info-grid">
+                    <div className="info-item">
+                        <label>Agent Code</label>
+                        <strong>{agentInfo.agentCode}</strong>
+                    </div>
+                    <div className="info-item">
+                        <label>Level</label>
+                        <strong>Level {agentInfo.level}</strong>
+                    </div>
+                    <div className="info-item">
+                        <label>Status</label>
+                        <span className={`status-badge status-${agentInfo.status}`}>
+                            {agentInfo.status}
+                        </span>
+                    </div>
+                    <div className="info-item">
+                        <label>Joined On</label>
+                        <strong>{new Date(agentInfo.createdAt).toLocaleDateString()}</strong>
+                    </div>
+                    {agentInfo.parentAgentId && (
+                        <div className="info-item">
+                            <label>Referred By</label>
+                            <strong>Agent #{agentInfo.parentAgent?.agentCode}</strong>
                         </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Personal Information */}
+            <div className="profile-section">
+                <div className="section-header">
+                    <h2>Personal Information</h2>
+                    {!isEditing ? (
+                        <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
+                            Edit Profile
+                        </button>
+                    ) : (
+                        <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
+                            Cancel
+                        </button>
+                    )}
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-grid">
                         <div className="form-group">
-                            <label style={{ fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Email Address</label>
-                            {isEditing ? (
-                                <input
-                                    type="email"
-                                    value={editData.email}
-                                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', border: '2px solid #cbd5e1', borderRadius: '8px' }}
-                                />
-                            ) : (
-                                <div style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', fontWeight: 500 }}>
-                                    {agentData.email}
-                                </div>
-                            )}
+                            <label>Full Name</label>
+                            <input
+                                type="text"
+                                name="fullName"
+                                value={profileData.fullName}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={profileData.email}
+                                disabled
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Phone</label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={profileData.phone}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group full-width">
+                            <label>Address</label>
+                            <textarea
+                                name="address"
+                                value={profileData.address}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                                rows="3"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>City</label>
+                            <input
+                                type="text"
+                                name="city"
+                                value={profileData.city}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>State</label>
+                            <input
+                                type="text"
+                                name="state"
+                                value={profileData.state}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Pincode</label>
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={profileData.pincode}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                                maxLength="6"
+                            />
                         </div>
                     </div>
 
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    {/* Bank Details */}
+                    <h3 className="section-subtitle">Bank Details</h3>
+                    <div className="form-grid">
                         <div className="form-group">
-                            <label style={{ fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Phone Number</label>
-                            {isEditing ? (
-                                <input
-                                    type="tel"
-                                    value={editData.phone}
-                                    onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', border: '2px solid #cbd5e1', borderRadius: '8px' }}
-                                />
-                            ) : (
-                                <div style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', fontWeight: 500 }}>
-                                    {agentData.phone}
-                                </div>
-                            )}
+                            <label>Bank Name</label>
+                            <input
+                                type="text"
+                                name="bankName"
+                                value={profileData.bankName}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
                         </div>
+
                         <div className="form-group">
-                            <label style={{ fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>City</label>
-                            {isEditing ? (
-                                <input
-                                    type="text"
-                                    value={editData.city}
-                                    onChange={(e) => setEditData({ ...editData, city: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem', border: '2px solid #cbd5e1', borderRadius: '8px' }}
-                                />
-                            ) : (
-                                <div style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', fontWeight: 500 }}>
-                                    {agentData.city}
-                                </div>
-                            )}
+                            <label>Account Number</label>
+                            <input
+                                type="text"
+                                name="accountNumber"
+                                value={profileData.accountNumber}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>IFSC Code</label>
+                            <input
+                                type="text"
+                                name="ifscCode"
+                                value={profileData.ifscCode}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Account Holder Name</label>
+                            <input
+                                type="text"
+                                name="accountHolderName"
+                                value={profileData.accountHolderName}
+                                onChange={handleInputChange}
+                                disabled={!isEditing}
+                            />
                         </div>
                     </div>
 
                     {isEditing && (
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                            <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                                Cancel
-                            </button>
-                            <button className="btn btn-primary" onClick={handleSave}>
-                                Save Changes
-                            </button>
-                        </div>
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </button>
                     )}
-                </div>
+                </form>
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -13,16 +14,20 @@ import ForgotPassword from './pages/ForgotPassword';
 import CustomerProfile from './pages/CustomerProfile';
 
 // Insurance Pages
-// import HealthInsurance from './pages/HealthInsurance';
-// import CarInsurance from './pages/CarInsurance';
-// import BikeInsurance from './pages/BikeInsurance';
-// import TravelInsurance from './pages/TravelInsurance';
 import AnimalInsurance from './pages/AnimalInsurance';
 import AnimalPolicyForm from './pages/AnimalPolicyForm';
 import PaymentPage from './pages/PaymentPage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import PolicyDetails from './pages/PolicyDetails';
+
+// Customer Dashboard Pages
+import Dashboard from './pages/Dashboard';
+import MyPolicies from './pages/MyPolicies';
+import Claims from './pages/Claims';
+import Renewals from './pages/Renewals';
+import RenewalForm from './pages/RenewalForm';
+import ClaimForm from './pages/ClaimForm';
 
 // Agent Pages
 import AgentDashboard from './pages/Agent/AgentDashboard';
@@ -38,13 +43,19 @@ import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
 
 import './App.css';
-import { isCustomerLoggedIn } from './utils/authUtils';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  if (!isCustomerLoggedIn()) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return children;
 };
 
@@ -71,17 +82,14 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/become-partner" element={<AgentLanding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Product Routes - Only Cattle Enabled */}
-          {/* <Route path="/health-insurance" element={<HealthInsurance />} /> */}
-          {/* <Route path="/car-insurance" element={<CarInsurance />} /> */}
-          {/* <Route path="/bike-insurance" element={<BikeInsurance />} /> */}
-          {/* <Route path="/travel-insurance" element={<TravelInsurance />} /> */}
-
-          {/* Renamed Animal -> Cattle Insurance */}
+          {/* Cattle Insurance - Main route */}
+          <Route path="/policies" element={<AnimalInsurance />} />
+          {/* Backward compatibility */}
           <Route path="/animal-insurance" element={<AnimalInsurance />} />
 
           {/* Protected Customer Routes */}
@@ -90,6 +98,54 @@ function App() {
             element={
               <ProtectedRoute>
                 <CustomerProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-policies"
+            element={
+              <ProtectedRoute>
+                <MyPolicies />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/claims"
+            element={
+              <ProtectedRoute>
+                <Claims />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renewals"
+            element={
+              <ProtectedRoute>
+                <Renewals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renew"
+            element={
+              <ProtectedRoute>
+                <RenewalForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/claims/new"
+            element={
+              <ProtectedRoute>
+                <ClaimForm />
               </ProtectedRoute>
             }
           />

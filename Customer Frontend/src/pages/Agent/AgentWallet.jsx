@@ -1,324 +1,245 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import WalletCard from '../../components/WalletCard';
-import { formatCurrency } from '../../utils/agentUtils';
-import './AgentDashboard.css';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
+import './AgentWallet.css';
 
 const AgentWallet = () => {
     const navigate = useNavigate();
-    const [walletData, setWalletData] = useState({
-        balance: 24500,
-        pendingAmount: 8100,
-        totalEarnings: 125000
-    });
+    const { user, isAgent } = useAuth();
 
+    const [walletData, setWalletData] = useState(null);
     const [transactions, setTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
     const [withdrawAmount, setWithdrawAmount] = useState('');
-    const [filter, setFilter] = useState('all'); // all, earned, withdrawn
+    const [withdrawing, setWithdrawing] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
-        // Load transactions from localStorage
-        const savedTransactions = JSON.parse(localStorage.getItem('wallet_transactions') || '[]');
-
-        if (savedTransactions.length === 0) {
-            // Initialize with mock data
-            const mockTransactions = [
-                {
-                    id: 1,
-                    date: '2024-03-15',
-                    type: 'earned',
-                    description: 'Commission from Policy ANI-001234',
-                    policyNumber: 'ANI-001234',
-                    amount: 1500,
-                    status: 'paid',
-                    level: 1
-                },
-                {
-                    id: 2,
-                    date: '2024-03-12',
-                    type: 'earned',
-                    description: 'Commission from Policy ANI-001235',
-                    policyNumber: 'ANI-001235',
-                    amount: 1000,
-                    status: 'paid',
-                    level: 2
-                },
-                {
-                    id: 3,
-                    date: '2024-03-10',
-                    type: 'withdrawn',
-                    description: 'Withdrawal to Bank Account',
-                    amount: -5000,
-                    status: 'completed'
-                },
-                {
-                    id: 4,
-                    date: '2024-03-08',
-                    type: 'earned',
-                    description: 'Commission from Policy ANI-001236',
-                    policyNumber: 'ANI-001236',
-                    amount: 2250,
-                    status: 'pending',
-                    level: 1
-                },
-                {
-                    id: 5,
-                    date: '2024-03-05',
-                    type: 'earned',
-                    description: 'Commission from Policy ANI-001237',
-                    policyNumber: 'ANI-001237',
-                    amount: 800,
-                    status: 'paid',
-                    level: 3
-                }
-            ];
-            localStorage.setItem('wallet_transactions', JSON.stringify(mockTransactions));
-            setTransactions(mockTransactions);
-        } else {
-            setTransactions(savedTransactions);
+        if (!isAgent) {
+            navigate('/');
+            return;
         }
-    }, []);
 
-    const handleWithdraw = () => {
-        setShowWithdrawModal(true);
+        fetchWalletData();
+    }, [isAgent, navigate]);
+
+    const fetchWalletData = async () => {
+        try {
+            setLoading(true);
+            const response = await agentAPI.getWallet();
+            if (response.success) {
+                setWalletData(response.data.wallet);
+                setTransactions(response.data.transactions || []);
+            }
+        } catch (error) {
+            console.error('Error fetching wallet data:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleWithdrawSubmit = (e) => {
+    const handleWithdrawRequest = async (e) => {
         e.preventDefault();
+        setMessage({ type: '', text: '' });
+
         const amount = parseFloat(withdrawAmount);
-        const availableBalance = walletData.balance - walletData.pendingAmount;
-
-        if (amount > availableBalance) {
-            alert('Insufficient balance!');
+        if (!amount || amount <= 0) {
+            setMessage({ type: 'error', text: 'Please enter a valid amount' });
             return;
         }
 
-        if (amount < 1000) {
-            alert('Minimum withdrawal amount is ₹1,000');
+        if (amount > walletData.balance) {
+            setMessage({ type: 'error', text: 'Insufficient balance' });
             return;
         }
 
-        // Create withdrawal transaction
-        const newTransaction = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            type: 'withdrawn',
-            description: 'Withdrawal Request',
-            amount: -amount,
-            status: 'pending'
-        };
+        if (amount < 500) {
+            setMessage({ type: 'error', text: 'Minimum withdrawal amount is ₹500' });
+            return;
+        }
 
-        const updatedTransactions = [newTransaction, ...transactions];
-        setTransactions(updatedTransactions);
-        localStorage.setItem('wallet_transactions', JSON.stringify(updatedTransactions));
-
-        // Update wallet balance
-        setWalletData({
-            ...walletData,
-            balance: walletData.balance - amount
-        });
-
-        setShowWithdrawModal(false);
-        setWithdrawAmount('');
-        alert('Withdrawal request submitted! It will be processed within 2-3 business days.');
+        try {
+            setWithdrawing(true);
+            const response = await agentAPI.requestWithdrawal({ amount });
+            if (response.success) {
+                setMessage({ type: 'success', text: 'Withdrawal request submitted successfully!' });
+                setShowWithdrawModal(false);
+                setWithdrawAmount('');
+                await fetchWalletData();
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: error.message || 'Failed to submit withdrawal request' });
+        } finally {
+            setWithdrawing(false);
+        }
     };
 
-    const filteredTransactions = transactions.filter(t => {
-        if (filter === 'all') return true;
-        return t.type === filter;
-    });
-
-    const getTransactionIcon = (type, status) => {
-        if (type === 'earned') {
-            return status === 'paid' ? '💰' : '⏳';
-        }
-        return '💸';
+    const getTransactionIcon = (type) => {
+        const icons = {
+            commission: '💰',
+            withdrawal: '💳',
+            bonus: '🎁',
+            refund: '↩️'
+        };
+        return icons[type] || '💵';
     };
 
     const getStatusBadge = (status) => {
         const badges = {
-            paid: { text: 'Paid', class: 'success' },
-            pending: { text: 'Pending', class: 'warning' },
-            completed: { text: 'Completed', class: 'success' },
-            rejected: { text: 'Rejected', class: 'error' }
+            pending: { class: 'status-pending', text: 'Pending' },
+            approved: { class: 'status-approved', text: 'Approved' },
+            rejected: { class: 'status-rejected', text: 'Rejected' },
+            completed: { class: 'status-completed', text: 'Completed' }
         };
         return badges[status] || badges.pending;
     };
 
+    if (loading) {
+        return (
+            <div className="agent-wallet">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading wallet...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="agent-page-container">
-            <div className="page-header">
-                <div>
-                    <h1>My Wallet</h1>
-                    <p>Manage your earnings and withdrawals</p>
+        <div className="agent-wallet">
+            <div className="wallet-header">
+                <h1>My Wallet</h1>
+                <p>Manage your earnings and withdrawals</p>
+            </div>
+
+            {message.text && (
+                <div className={`alert alert-${message.type}`}>
+                    {message.text}
+                </div>
+            )}
+
+            {/* Wallet Balance Card */}
+            <div className="wallet-balance-card">
+                <div className="balance-info">
+                    <h2>Available Balance</h2>
+                    <p className="balance-amount">₹{walletData?.balance?.toLocaleString() || '0'}</p>
+                    <small>Total Earnings: ₹{walletData?.totalEarnings?.toLocaleString() || '0'}</small>
+                </div>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => setShowWithdrawModal(true)}
+                    disabled={!walletData?.balance || walletData.balance < 500}
+                >
+                    Request Withdrawal
+                </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="wallet-stats-grid">
+                <div className="stat-card">
+                    <h3>Total Withdrawn</h3>
+                    <p className="stat-value">₹{walletData?.totalWithdrawn?.toLocaleString() || '0'}</p>
+                </div>
+                <div className="stat-card">
+                    <h3>Pending Withdrawals</h3>
+                    <p className="stat-value">₹{walletData?.pendingWithdrawals?.toLocaleString() || '0'}</p>
+                </div>
+                <div className="stat-card">
+                    <h3>This Month</h3>
+                    <p className="stat-value">₹{walletData?.thisMonthEarnings?.toLocaleString() || '0'}</p>
                 </div>
             </div>
 
-            {/* Wallet Card */}
-            <div style={{ marginBottom: '2rem' }}>
-                <WalletCard
-                    balance={walletData.balance}
-                    pendingAmount={walletData.pendingAmount}
-                    transactionCount={transactions.length}
-                    onWithdraw={handleWithdraw}
-                    onViewTransactions={() => window.scrollTo({ top: 400, behavior: 'smooth' })}
-                />
-            </div>
+            {/* Transactions List */}
+            <div className="transactions-section">
+                <h2>Transaction History</h2>
 
-            {/* Stats Cards */}
-            <div className="stats-grid" style={{ marginBottom: '2rem' }}>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Total Earnings</div>
-                        <div className="stat-value">{formatCurrency(walletData.totalEarnings)}</div>
-                        <div className="stat-change">Lifetime</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">This Month</div>
-                        <div className="stat-value">{formatCurrency(5650)}</div>
-                        <div className="stat-change text-success">↑ 12% vs last month</div>
-                    </div>
-                </div>
-                <div className="stat-card" style={{ background: 'white' }}>
-                    <div className="stat-content">
-                        <div className="stat-title">Total Withdrawn</div>
-                        <div className="stat-value">{formatCurrency(100500)}</div>
-                        <div className="stat-change">All time</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Transaction History */}
-            <div className="table-container">
-                <div className="table-header">
-                    <h2>Transaction History</h2>
-                    <div className="filter-buttons">
-                        <button
-                            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-                            onClick={() => setFilter('all')}
-                        >
-                            All
-                        </button>
-                        <button
-                            className={`filter-btn ${filter === 'earned' ? 'active' : ''}`}
-                            onClick={() => setFilter('earned')}
-                        >
-                            Earned
-                        </button>
-                        <button
-                            className={`filter-btn ${filter === 'withdrawn' ? 'active' : ''}`}
-                            onClick={() => setFilter('withdrawn')}
-                        >
-                            Withdrawn
-                        </button>
-                    </div>
-                </div>
-
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Policy</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredTransactions.map(transaction => {
-                            const statusBadge = getStatusBadge(transaction.status);
+                {transactions.length > 0 ? (
+                    <div className="transactions-list">
+                        {transactions.map((transaction) => {
+                            const badge = getStatusBadge(transaction.status);
                             return (
-                                <tr key={transaction.id}>
-                                    <td>{new Date(transaction.date).toLocaleDateString('en-IN')}</td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '1.25rem' }}>
-                                                {getTransactionIcon(transaction.type, transaction.status)}
+                                <div key={transaction.id} className="transaction-item">
+                                    <div className="transaction-icon">
+                                        {getTransactionIcon(transaction.type)}
+                                    </div>
+                                    <div className="transaction-content">
+                                        <h4>{transaction.description || transaction.type}</h4>
+                                        <p>{new Date(transaction.createdAt).toLocaleDateString()}</p>
+                                        {transaction.status && (
+                                            <span className={`status-badge ${badge.class}`}>
+                                                {badge.text}
                                             </span>
-                                            <span>{transaction.description}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {transaction.policyNumber ? (
-                                            <span className="font-medium">{transaction.policyNumber}</span>
-                                        ) : (
-                                            <span style={{ color: '#94a3b8' }}>—</span>
                                         )}
-                                    </td>
-                                    <td>
-                                        <span className={transaction.amount > 0 ? 'text-success' : 'text-error'} style={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                                            {transaction.amount > 0 ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${statusBadge.class}`}>
-                                            {statusBadge.text}
-                                        </span>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    <div className={`transaction-amount ${transaction.type === 'withdrawal' ? 'debit' : 'credit'}`}>
+                                        {transaction.type === 'withdrawal' ? '-' : '+'}₹{transaction.amount?.toLocaleString()}
+                                    </div>
+                                </div>
                             );
                         })}
-                    </tbody>
-                </table>
-
-                {filteredTransactions.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                        No {filter} transactions found
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <p>No transactions yet</p>
                     </div>
                 )}
             </div>
 
-            {/* Withdraw Modal */}
+            {/* Withdrawal Modal */}
             {showWithdrawModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content animate-scale-in">
+                <>
+                    <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)} />
+                    <div className="modal">
                         <div className="modal-header">
-                            <h2>Withdraw Funds</h2>
+                            <h3>Request Withdrawal</h3>
                             <button className="close-btn" onClick={() => setShowWithdrawModal(false)}>×</button>
                         </div>
-                        <form onSubmit={handleWithdrawSubmit}>
+                        <form onSubmit={handleWithdrawRequest}>
                             <div className="modal-body">
-                                <div className="withdraw-info">
-                                    <div className="info-row">
-                                        <span>Available Balance:</span>
-                                        <span className="info-value">{formatCurrency(walletData.balance - walletData.pendingAmount)}</span>
-                                    </div>
-                                    <div className="info-row">
-                                        <span>Pending Clearance:</span>
-                                        <span className="info-value pending">{formatCurrency(walletData.pendingAmount)}</span>
-                                    </div>
+                                <div className="form-group">
+                                    <label>Available Balance</label>
+                                    <p className="balance-display">₹{walletData?.balance?.toLocaleString()}</p>
                                 </div>
-
                                 <div className="form-group">
                                     <label>Withdrawal Amount *</label>
                                     <input
                                         type="number"
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
-                                        placeholder="Enter amount (Min: ₹1,000)"
-                                        min="1000"
-                                        max={walletData.balance - walletData.pendingAmount}
+                                        placeholder="Enter amount"
+                                        min="500"
+                                        max={walletData?.balance}
                                         required
                                     />
-                                    <small style={{ color: '#64748b', marginTop: '0.5rem', display: 'block' }}>
-                                        Minimum withdrawal: ₹1,000 | Processing time: 2-3 business days
-                                    </small>
+                                    <small>Minimum: ₹500 | Maximum: ₹{walletData?.balance?.toLocaleString()}</small>
+                                </div>
+                                <div className="info-box">
+                                    <p>📌 Withdrawal requests are processed within 3-5 business days</p>
+                                    <p>📌 Amount will be credited to your registered bank account</p>
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowWithdrawModal(false)}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowWithdrawModal(false)}
+                                >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Request Withdrawal
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={withdrawing}
+                                >
+                                    {withdrawing ? 'Submitting...' : 'Submit Request'}
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );

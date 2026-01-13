@@ -1,42 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { findAgentByCode, validateAgentCode, getAgentAncestors } from '../utils/agentUtils';
+import { authAPI } from '../services/api.service';
 import './AgentCodeInput.css';
 
-/**
- * AgentCodeInput Component
- * Input field for agent code with validation and hierarchy display
- */
-const AgentCodeInput = ({ value, onChange, required = false, label = "Agent Code (Optional)" }) => {
+const AgentCodeInput = ({ value, onChange, required = false, label = "Referral Agent Code (Optional)" }) => {
     const [agentInfo, setAgentInfo] = useState(null);
     const [isValid, setIsValid] = useState(null);
-    const [hierarchy, setHierarchy] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (value && value.length >= 5) {
-            const isValidCode = validateAgentCode(value);
-            setIsValid(isValidCode);
-
-            if (isValidCode) {
-                const agent = findAgentByCode(value);
-                if (agent) {
-                    setAgentInfo(agent);
-                    const ancestors = getAgentAncestors(agent.id);
-                    setHierarchy(ancestors);
-                } else {
-                    setAgentInfo(null);
-                    setHierarchy([]);
+        const verifyCode = async () => {
+            if (value && value.length >= 5) {
+                setLoading(true);
+                try {
+                    const response = await authAPI.verifyAgentCode(value);
+                    if (response.success) {
+                        setIsValid(true);
+                        setAgentInfo({
+                            name: response.data.fullName,
+                            code: response.data.agentCode,
+                            level: response.data.level
+                        });
+                    } else {
+                        setIsValid(false);
+                        setAgentInfo(null);
+                    }
+                } catch (err) {
                     setIsValid(false);
+                    setAgentInfo(null);
+                } finally {
+                    setLoading(false);
                 }
             } else {
                 setAgentInfo(null);
-                setHierarchy([]);
+                setIsValid(null);
             }
-        } else {
-            setAgentInfo(null);
-            setIsValid(null);
-            setHierarchy([]);
-        }
+        };
+
+        const timer = setTimeout(verifyCode, 500);
+        return () => clearTimeout(timer);
     }, [value]);
 
     const getInputClass = () => {
@@ -82,29 +84,6 @@ const AgentCodeInput = ({ value, onChange, required = false, label = "Agent Code
                         <span className={`level-badge level-${agentInfo.level}`}>
                             Level {agentInfo.level}
                         </span>
-                    </div>
-
-                    {hierarchy.length > 0 && (
-                        <div className="agent-hierarchy">
-                            <div className="hierarchy-label">Under:</div>
-                            <div className="hierarchy-chain">
-                                {hierarchy.reverse().map((ancestor, index) => (
-                                    <React.Fragment key={ancestor.id}>
-                                        <span className="hierarchy-item">
-                                            {ancestor.name} ({ancestor.code})
-                                        </span>
-                                        {index < hierarchy.length - 1 && (
-                                            <span className="hierarchy-arrow">→</span>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="commission-info">
-                        <span className="commission-label">Commission Rate:</span>
-                        <span className="commission-rate">{agentInfo.commissionRate}%</span>
                     </div>
                 </div>
             )}

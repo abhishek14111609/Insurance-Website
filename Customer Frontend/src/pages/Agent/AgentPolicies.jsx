@@ -1,197 +1,173 @@
 import { useState, useEffect } from 'react';
-import './AgentDashboard.css';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
+import './AgentPolicies.css';
 
 const AgentPolicies = () => {
-    // Initial dummy data
-    const initialPolicies = [
-        { id: 101, policyNo: 'POL-8821', customer: 'Rahul Sharma', type: 'Car Insurance', premium: '₹12,400', status: 'Active', date: '2024-01-15' },
-        { id: 102, policyNo: 'POL-9932', customer: 'Priya Patel', type: 'Health Insurance', premium: '₹8,500', status: 'Pending', date: '2024-02-01' },
-        { id: 103, policyNo: 'POL-7711', customer: 'Amit Kumar', type: 'Bike Insurance', premium: '₹1,200', status: 'Expired', date: '2023-12-10' },
-    ];
+    const navigate = useNavigate();
+    const { isAgent } = useAuth();
 
-    const [policies, setPolicies] = useState(() => {
-        const saved = localStorage.getItem('agent_policies');
-        return saved ? JSON.parse(saved) : initialPolicies;
-    });
+    const [policies, setPolicies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
 
-    const [showModal, setShowModal] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [formData, setFormData] = useState({
-        policyNo: '', customer: '', type: 'Car Insurance', premium: '', status: 'Active', date: ''
-    });
-
-    // Save to localStorage
     useEffect(() => {
-        localStorage.setItem('agent_policies', JSON.stringify(policies));
-    }, [policies]);
+        if (!isAgent) {
+            navigate('/');
+            return;
+        }
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
+        fetchPolicies();
+    }, [isAgent, navigate]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const newPolicy = {
-            ...formData,
-            id: Date.now(),
-            policyNo: formData.policyNo || `POL-${Math.floor(Math.random() * 10000)}`
-        };
-        setPolicies([newPolicy, ...policies]);
-        setShowModal(false);
-        setFormData({ policyNo: '', customer: '', type: 'Car Insurance', premium: '', status: 'Active', date: '' });
-    };
-
-    const handleDelete = (id) => {
-        if (window.confirm('Delete this policy record?')) {
-            setPolicies(policies.filter(p => p.id !== id));
+    const fetchPolicies = async () => {
+        try {
+            setLoading(true);
+            const response = await agentAPI.getPolicies();
+            if (response.success) {
+                setPolicies(response.data.policies || []);
+            }
+        } catch (error) {
+            console.error('Error fetching policies:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const filteredPolicies = policies.filter(p =>
-        p.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.policyNo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredPolicies = filter === 'all'
+        ? policies
+        : policies.filter(p => p.status === filter);
+
+    const getStatusBadge = (status) => {
+        const badges = {
+            PENDING: { class: 'status-pending', text: 'Pending' },
+            PENDING_APPROVAL: { class: 'status-pending', text: 'Pending Approval' },
+            APPROVED: { class: 'status-approved', text: 'Active' },
+            REJECTED: { class: 'status-rejected', text: 'Rejected' },
+            EXPIRED: { class: 'status-expired', text: 'Expired' }
+        };
+        return badges[status] || badges.PENDING;
+    };
+
+    if (loading) {
+        return (
+            <div className="agent-policies">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>Loading policies...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="agent-page-container">
-            <div className="page-header">
-                <div>
-                    <h1>Policy Management</h1>
-                    <p>Track and manage insurance policies sold</p>
+        <div className="agent-policies">
+            <div className="policies-header">
+                <h1>My Policies</h1>
+                <p>Policies sold by you</p>
+            </div>
+
+            {/* Stats */}
+            <div className="policies-stats">
+                <div className="stat-item">
+                    <span>Total Policies</span>
+                    <strong>{policies.length}</strong>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    + New Policy
+                <div className="stat-item">
+                    <span>Active</span>
+                    <strong>{policies.filter(p => p.status === 'APPROVED').length}</strong>
+                </div>
+                <div className="stat-item">
+                    <span>Pending</span>
+                    <strong>{policies.filter(p => p.status === 'PENDING_APPROVAL').length}</strong>
+                </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="filter-tabs">
+                <button
+                    className={filter === 'all' ? 'active' : ''}
+                    onClick={() => setFilter('all')}
+                >
+                    All ({policies.length})
+                </button>
+                <button
+                    className={filter === 'PENDING_APPROVAL' ? 'active' : ''}
+                    onClick={() => setFilter('PENDING_APPROVAL')}
+                >
+                    Pending ({policies.filter(p => p.status === 'PENDING_APPROVAL').length})
+                </button>
+                <button
+                    className={filter === 'APPROVED' ? 'active' : ''}
+                    onClick={() => setFilter('APPROVED')}
+                >
+                    Active ({policies.filter(p => p.status === 'APPROVED').length})
                 </button>
             </div>
 
-            <div className="table-controls">
-                <input
-                    type="text"
-                    placeholder="Search by policy number or customer..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                />
-            </div>
-
-            <div className="table-container fade-in">
-                <table className="data-table">
-                    <thead>
-                        <tr>
-                            <th>Policy No</th>
-                            <th>Customer</th>
-                            <th>Type</th>
-                            <th>Premium</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredPolicies.length > 0 ? (
-                            filteredPolicies.map(policy => (
-                                <tr key={policy.id}>
-                                    <td><span className="font-medium">{policy.policyNo}</span></td>
-                                    <td>{policy.customer}</td>
-                                    <td>{policy.type}</td>
-                                    <td>{policy.premium}</td>
-                                    <td>{policy.date}</td>
-                                    <td>
-                                        <span className={`status-badge ${policy.status.toLowerCase()}`}>
-                                            {policy.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-icon delete"
-                                            title="Delete"
-                                            onClick={() => handleDelete(policy.id)}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="7" className="no-data">No policies found.</td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Add Policy Modal */}
-            {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content animate-scale-in">
-                        <div className="modal-header">
-                            <h2>Draft New Policy</h2>
-                            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-                        </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label>Customer Name</label>
-                                    <input
-                                        type="text"
-                                        name="customer"
-                                        value={formData.customer}
-                                        onChange={handleInputChange}
-                                        required
-                                        placeholder="Enter customer name"
-                                    />
-                                </div>
-                                <div className="form-row two-col">
-                                    <div className="form-group">
-                                        <label>Policy Type</label>
-                                        <select name="type" value={formData.type} onChange={handleInputChange}>
-                                            <option value="Car Insurance">Car Insurance</option>
-                                            <option value="Bike Insurance">Bike Insurance</option>
-                                            <option value="Health Insurance">Health Insurance</option>
-                                            <option value="Travel Insurance">Travel Insurance</option>
-                                        </select>
+            {/* Policies Grid */}
+            {filteredPolicies.length > 0 ? (
+                <div className="policies-grid">
+                    {filteredPolicies.map((policy) => {
+                        const badge = getStatusBadge(policy.status);
+                        return (
+                            <div key={policy.id} className="policy-card">
+                                <div className="policy-header">
+                                    <div>
+                                        <h3>{policy.policyNumber || 'Processing...'}</h3>
+                                        <p>{policy.cattleType === 'cow' ? '🐄' : '🐃'} {policy.tagId}</p>
                                     </div>
-                                    <div className="form-group">
-                                        <label>Premium Amount (₹)</label>
-                                        <input
-                                            type="text"
-                                            name="premium"
-                                            value={formData.premium}
-                                            onChange={handleInputChange}
-                                            required
-                                            placeholder="e.g. 12000"
-                                        />
+                                    <span className={`status-badge ${badge.class}`}>
+                                        {badge.text}
+                                    </span>
+                                </div>
+
+                                <div className="policy-details">
+                                    <div className="detail-row">
+                                        <span>Customer</span>
+                                        <strong>{policy.ownerName}</strong>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span>Coverage</span>
+                                        <strong>₹{policy.coverageAmount?.toLocaleString()}</strong>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span>Premium</span>
+                                        <strong>₹{policy.premium?.toLocaleString()}</strong>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span>Duration</span>
+                                        <strong>{policy.duration}</strong>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span>Created</span>
+                                        <strong>{new Date(policy.createdAt).toLocaleDateString()}</strong>
                                     </div>
                                 </div>
-                                <div className="form-row two-col">
-                                    <div className="form-group">
-                                        <label>Date</label>
-                                        <input
-                                            type="date"
-                                            name="date"
-                                            value={formData.date}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Status</label>
-                                        <select name="status" value={formData.status} onChange={handleInputChange}>
-                                            <option value="Active">Active</option>
-                                            <option value="Pending">Pending</option>
-                                            <option value="Expired">Expired</option>
-                                        </select>
-                                    </div>
+
+                                <div className="policy-footer">
+                                    <button
+                                        className="btn btn-sm btn-outline"
+                                        onClick={() => navigate(`/policy/${policy.id}`)}
+                                    >
+                                        View Details
+                                    </button>
                                 </div>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">Create Policy</button>
-                            </div>
-                        </form>
-                    </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="empty-state">
+                    <span className="empty-icon">📄</span>
+                    <h3>No Policies Found</h3>
+                    <p>
+                        {filter === 'all'
+                            ? "You haven't sold any policies yet."
+                            : `No ${filter.toLowerCase().replace('_', ' ')} policies found.`
+                        }
+                    </p>
                 </div>
             )}
         </div>

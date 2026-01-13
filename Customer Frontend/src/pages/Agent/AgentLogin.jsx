@@ -1,19 +1,55 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './AgentPublic.css';
 
 const AgentLogin = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
+
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Simulated Authentication
-        if (credentials.email === 'agent@securelife.com' && credentials.password === 'agent123') {
-            navigate('/agent/dashboard');
-        } else {
-            setError('Invalid credentials. Please try again.');
+        setError('');
+        setLoading(true);
+
+        try {
+            const result = await login({
+                email: credentials.email,
+                password: credentials.password
+            });
+
+            if (result.success) {
+                // Check role from response data structure
+                const user = result.data.user;
+                const agentProfile = result.data.agentProfile;
+
+                if (user && user.role === 'agent') {
+                    // Check agent status from agent profile
+                    if (agentProfile) {
+                        if (agentProfile.status === 'pending') {
+                            setError('Your agent account is pending approval by admin. Please check back later.');
+                            return;
+                        }
+                        if (agentProfile.status === 'rejected') {
+                            setError('Your agent application was not approved. Please contact support.');
+                            return;
+                        }
+                    }
+                    navigate('/agent/dashboard');
+                } else {
+
+                    setError('This account is not registered as an agent.');
+                }
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || 'An error occurred during login. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -27,7 +63,7 @@ const AgentLogin = () => {
                 </div>
 
                 {error && (
-                    <div className="alert-error" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
+                    <div className="alert-error">
                         {error}
                     </div>
                 )}
@@ -54,8 +90,8 @@ const AgentLogin = () => {
                         />
                     </div>
 
-                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }}>
-                        Secure Login
+                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }} disabled={loading}>
+                        {loading ? 'Logging in...' : 'Secure Login'}
                     </button>
 
                     <div className="text-center mt-4">

@@ -1,0 +1,141 @@
+/* Photo Upload Component Styles */
+
+.photo-upload {
+    margin-bottom: 1.5rem;
+}
+
+.photo-upload-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.photo-upload-label .required {
+    color: var(--error-color);
+    margin-left: 0.25rem;
+}
+
+.photo-upload-container {
+    position: relative;
+}
+
+.photo-upload-input {
+    display: none;
+}
+
+.photo-upload-box {
+    display: block;
+    width: 100%;
+    height: 200px;
+    border: 2px dashed var(--border-color);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.photo-upload-box:hover {
+    border-color: var(--primary-color);
+    background: var(--background-body);
+}
+
+.photo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.photo-placeholder span {
+    display: block;
+}
+
+.upload-hint {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+}
+
+.photo-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+    font-weight: 600;
+}
+
+.photo-preview:hover .photo-overlay {
+    opacity: 1;
+}
+
+.error-message {
+    display: block;
+    color: var(--error-color);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+/* Photos Grid */
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.photo-upload-section {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: var(--background-body);
+    border-radius: 1rem;
+}
+
+.photo-upload-section h3 {
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.section-hint {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .photos-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .photo-upload-box {
+        height: 180px;
+    }
+}

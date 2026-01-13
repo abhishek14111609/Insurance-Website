@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { agentAPI } from '../../services/api.service';
 import AgentCodeInput from '../../components/AgentCodeInput';
-import {
-    findAgentByCode,
-    generateAgentCode,
-    getNextSequence,
-    getCommissionRate
-} from '../../utils/agentUtils';
 import './AgentPublic.css';
 
 const AgentLanding = () => {
@@ -16,13 +12,19 @@ const AgentLanding = () => {
         name: '',
         phone: '',
         email: '',
+        password: '',
+        confirmPassword: '',
         city: '',
         parentAgentCode: ''
     });
+    const [registeredAgentCode, setRegisteredAgentCode] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     // Login State
     const navigate = useNavigate();
     const location = useLocation();
+    const { login } = useAuth();
     const [loginCredentials, setLoginCredentials] = useState({ email: '', password: '' });
     const [loginError, setLoginError] = useState('');
 
@@ -34,81 +36,76 @@ const AgentLanding = () => {
         }
     }, [location]);
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
+        setError('');
 
-        // Determine parent agent and level
-        let parentAgent = null;
-        let newLevel = 1;
-        let newCode = '';
-
-        if (registrationData.parentAgentCode) {
-            parentAgent = findAgentByCode(registrationData.parentAgentCode);
-            if (!parentAgent) {
-                alert('Invalid parent agent code!');
-                return;
-            }
-            newLevel = parentAgent.level + 1;
-            if (newLevel > 3) {
-                alert('Maximum hierarchy depth (3 levels) reached! Cannot add more sub-agents.');
-                return;
-            }
-            const sequence = getNextSequence(parentAgent.code);
-            newCode = generateAgentCode(parentAgent.code, sequence);
-        } else {
-            // Top-level agent
-            const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-            const topLevelAgents = allAgents.filter(a => a.level === 1);
-            const sequence = topLevelAgents.length + 1;
-            newCode = generateAgentCode(null, sequence);
+        if (registrationData.password !== registrationData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
         }
 
-        // Save registration data
-        const newAgent = {
-            id: `agent-${Date.now()}`,
-            code: newCode,
-            name: registrationData.name,
-            email: registrationData.email,
-            phone: registrationData.phone,
-            city: registrationData.city,
-            parentId: parentAgent ? parentAgent.id : null,
-            level: newLevel,
-            commissionRate: getCommissionRate(newLevel),
-            walletBalance: 0,
-            totalEarnings: 0,
-            customersCount: 0,
-            policiesSold: 0,
-            joinedDate: new Date().toISOString(),
-            status: 'pending' // Admin approval required
-        };
+        if (registrationData.phone.length !== 10) {
+            setError('Mobile number must be 10 digits');
+            return;
+        }
 
-        const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
-        allAgents.push(newAgent);
-        localStorage.setItem('agent_hierarchy', JSON.stringify(allAgents));
+        setLoading(true);
 
-        // Store generated code for display
-        localStorage.setItem('pending_agent_code', newCode);
+        try {
+            const response = await agentAPI.register({
+                fullName: registrationData.name,
+                email: registrationData.email,
+                phone: registrationData.phone,
+                password: registrationData.password,
+                city: registrationData.city,
+                referredByCode: registrationData.parentAgentCode
+            });
 
-        setSubmitted(true);
+            if (response.success) {
+                setRegisteredAgentCode(response.data.agentCode);
+                setSubmitted(true);
+            }
+        } catch (err) {
+            console.error('Registration error:', err);
+            setError(err.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Simulated Authentication
-        if (loginCredentials.email === 'agent@securelife.com' && loginCredentials.password === 'agent123') {
-            // Store logged-in agent data
-            const agentData = {
-                id: 'agent-1',
-                code: 'AG001',
-                name: 'Rajesh Kumar',
-                email: 'agent@securelife.com',
-                level: 1,
-                commissionRate: 15
-            };
-            localStorage.setItem('current_agent', JSON.stringify(agentData));
-            navigate('/agent/dashboard');
-        } else {
-            setLoginError('Invalid credentials. Please try again.');
+        setLoginError('');
+        setLoading(true);
+
+        try {
+            const result = await login({
+                email: loginCredentials.email,
+                password: loginCredentials.password
+            });
+
+            if (result.success) {
+                const user = result.data.user;
+                if (user && user.role === 'agent') {
+                    // Check agent status
+                    if (user.status === 'pending') {
+                        setLoginError('Your agent account is pending approval by admin. Please check back later.');
+                        return;
+                    }
+                    if (user.status === 'rejected') {
+                        setLoginError('Your agent application was not approved. Please contact support.');
+                        return;
+                    }
+                    navigate('/agent/dashboard');
+                } else {
+                    setLoginError('This account is not registered as an agent.');
+                }
+            }
+        } catch (err) {
+            setLoginError(err.message || 'Invalid credentials or server error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -125,7 +122,7 @@ const AgentLanding = () => {
                     <span className="brand-badge">Join Our Network</span>
                     <h1>Become a Certified POSP Agent</h1>
                     <p>Start your journey with SecureLife today. Zero investment, unlimited earning potential, and complete training support.</p>
-                    <button className="btn btn-secondary" onClick={() => document.getElementById('register-form').scrollIntoView({ behavior: 'smooth' })}>
+                    <button className="btn btn-secondary" onClick={() => document.getElementById('register-form')?.scrollIntoView({ behavior: 'smooth' })}>
                         Register Now
                     </button>
                 </div>
@@ -189,6 +186,9 @@ const AgentLanding = () => {
                                         <h2>Start Your Application</h2>
                                         <p className="text-muted">Fill in your details to get started</p>
                                     </div>
+
+                                    {error && <div className="alert-error">{error}</div>}
+
                                     <form onSubmit={handleRegister} className="agent-form" id="register-form">
                                         <div className="form-group mb-3">
                                             <label>Full Name *</label>
@@ -224,6 +224,33 @@ const AgentLanding = () => {
                                                 required
                                             />
                                         </div>
+
+                                        <div className="form-group mb-3">
+                                            <label>Password *</label>
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                value={registrationData.password}
+                                                onChange={handleInputChange}
+                                                placeholder="Create a password"
+                                                minLength="6"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group mb-3">
+                                            <label>Confirm Password *</label>
+                                            <input
+                                                type="password"
+                                                name="confirmPassword"
+                                                value={registrationData.confirmPassword}
+                                                onChange={handleInputChange}
+                                                placeholder="Confirm password"
+                                                minLength="6"
+                                                required
+                                            />
+                                        </div>
+
                                         <div className="form-group mb-4">
                                             <label>City *</label>
                                             <input
@@ -240,12 +267,12 @@ const AgentLanding = () => {
                                         <AgentCodeInput
                                             value={registrationData.parentAgentCode}
                                             onChange={(value) => setRegistrationData({ ...registrationData, parentAgentCode: value })}
-                                            label="Parent Agent Code (Optional)"
+                                            label="Referral Agent Code (Optional)"
                                             required={false}
                                         />
 
-                                        <button type="submit" className="btn btn-primary btn-block w-full">
-                                            Submit Application
+                                        <button type="submit" className="btn btn-primary btn-block w-full" disabled={loading}>
+                                            {loading ? 'Submitting...' : 'Submit Application'}
                                         </button>
                                     </form>
                                 </>
@@ -270,15 +297,25 @@ const AgentLanding = () => {
                                             fontFamily: 'monospace',
                                             letterSpacing: '3px'
                                         }}>
-                                            {localStorage.getItem('pending_agent_code')}
+                                            {registeredAgentCode || 'PENDING'}
                                         </div>
                                         <div style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.85rem' }}>
-                                            Save this code for future reference
+                                            Wait for admin approval to activate account
                                         </div>
                                     </div>
-                                    <p>Thank you for your interest. Our team will verify your details and contact you within 24 hours.</p>
-                                    <button className="btn btn-outline text-primary border-primary mt-4" onClick={() => setSubmitted(false)}>
-                                        Start New Application
+                                    <p>Thank you for your interest. Our team will verify your details and approve your account shortly.</p>
+                                    <button
+                                        className="btn btn-outline text-primary border-primary mt-4"
+                                        onClick={() => {
+                                            setSubmitted(false);
+                                            setRegistrationData({
+                                                name: '', phone: '', email: '', password: '',
+                                                confirmPassword: '', city: '', parentAgentCode: ''
+                                            });
+                                            setActiveTab('login');
+                                        }}
+                                    >
+                                        Go to Login
                                     </button>
                                 </div>
                             )
@@ -291,7 +328,7 @@ const AgentLanding = () => {
                                     <p className="text-muted">Access your partner dashboard</p>
                                 </div>
                                 {loginError && (
-                                    <div className="alert-error" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
+                                    <div className="alert-error">
                                         {loginError}
                                     </div>
                                 )}
@@ -316,8 +353,8 @@ const AgentLanding = () => {
                                             required
                                         />
                                     </div>
-                                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }}>
-                                        Secure Login
+                                    <button type="submit" className="btn btn-primary w-full" style={{ width: '100%' }} disabled={loading}>
+                                        {loading ? 'Logging in...' : 'Secure Login'}
                                     </button>
                                 </form>
                             </>

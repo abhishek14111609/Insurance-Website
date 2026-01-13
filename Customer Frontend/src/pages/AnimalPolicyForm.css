@@ -28,6 +28,87 @@
     color: var(--text-secondary);
 }
 
+/* Selected Plan Summary */
+.selected-plan-summary {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.plan-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.plan-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.plan-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.plan-details {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.95rem;
+}
+
+.plan-details strong {
+    color: var(--primary-dark);
+}
+
+/* Alert Info */
+.alert-info {
+    background: #eff6ff;
+    border-left: 4px solid var(--primary-color);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    color: #1e40af;
+    margin-bottom: 1.5rem;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-top: 0.25rem;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.checkbox-group a {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+/* Secure Badge */
+.secure-badge {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+
 .policy-form {
     background: white;
     border-radius: 20px;

@@ -1,10 +1,22 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerCustomer, loginCustomer } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 import './Register.css';
 
 const Register = () => {
     const navigate = useNavigate();
+    const { register, isAuthenticated, isAgent } = useAuth();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            if (isAgent) {
+                navigate('/agent/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        }
+    }, [isAuthenticated, isAgent, navigate]);
+
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -22,6 +34,8 @@ const Register = () => {
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -73,23 +87,34 @@ const Register = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) return;
 
         setIsSubmitting(true);
 
-        // Register user
-        const result = registerCustomer(formData);
+        try {
+            // Register user via AuthContext
+            await register({
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                password: formData.password,
+                address: formData.address,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode,
+                role: 'customer'
+            });
 
-        if (result.success) {
-            // Auto-login after registration
-            loginCustomer(formData.email, formData.password);
+            // Dispatch custom event to notify navbar
+            window.dispatchEvent(new Event('customerLogin'));
+
             alert('Registration successful! Welcome to SecureLife!');
-            navigate('/');
-        } else {
-            setErrors({ email: result.message });
+            navigate('/dashboard');
+        } catch (error) {
+            setErrors({ email: error.message || 'Registration failed. Please try again.' });
             setIsSubmitting(false);
         }
     };
@@ -235,26 +260,46 @@ const Register = () => {
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Password *</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    placeholder="Minimum 6 characters"
-                                    className={errors.password ? 'error' : ''}
-                                />
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
+                                        placeholder="Minimum 6 characters"
+                                        className={errors.password ? 'error' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? "👁️" : "👁️‍🗨️"}
+                                    </button>
+                                </div>
                                 {errors.password && <span className="error-message">{errors.password}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Confirm Password *</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleInputChange}
-                                    placeholder="Re-enter password"
-                                    className={errors.confirmPassword ? 'error' : ''}
-                                />
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleInputChange}
+                                        placeholder="Re-enter password"
+                                        className={errors.confirmPassword ? 'error' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+                                    </button>
+                                </div>
                                 {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                             </div>
                         </div>

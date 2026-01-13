@@ -1,0 +1,89 @@
+/* Claim Form Page Styles */
+
+.claim-form-page {
+    min-height: 100vh;
+    background: var(--background-body);
+    padding: 140px 20px 60px;
+}
+
+.claim-form-page .form-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.claim-form {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.875rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.alert-warning {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    color: #92400e;
+}
+
+.info-note {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--background-body);
+    border-radius: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .claim-form-page {
+        padding: 100px 15px 40px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

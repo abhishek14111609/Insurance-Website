@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { loginCustomer, isCustomerLoggedIn } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { login, isAuthenticated } = useAuth();
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -13,13 +15,14 @@ const Login = () => {
     });
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Redirect if already logged in
     useEffect(() => {
-        if (isCustomerLoggedIn()) {
+        if (isAuthenticated) {
             navigate('/');
         }
-    }, [navigate]);
+    }, [isAuthenticated, navigate]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -30,7 +33,7 @@ const Login = () => {
         setError(''); // Clear error on input change
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
@@ -42,15 +45,27 @@ const Login = () => {
             return;
         }
 
-        // Attempt login
-        const result = loginCustomer(formData.email, formData.password);
+        try {
+            // Use login from AuthContext
+            const response = await login({
+                email: formData.email,
+                password: formData.password
+            });
 
-        if (result.success) {
-            // Get the return URL from location state, or default to home
-            const from = location.state?.from || '/';
+            // Dispatch custom event to notify navbar
+            window.dispatchEvent(new Event('customerLogin'));
+
+            // Check if user is agent
+            if (response.data?.user?.role === 'agent') {
+                navigate('/agent/dashboard');
+                return;
+            }
+
+            // Get the return URL from location state, or default to dashboard
+            const from = location.state?.from || '/dashboard';
             navigate(from);
-        } else {
-            setError(result.message);
+        } catch (error) {
+            setError(error.message || 'Login failed. Please check your credentials.');
             setIsSubmitting(false);
         }
     };
@@ -65,7 +80,8 @@ const Login = () => {
 
                 {error && (
                     <div className="alert-error">
-                        {error}
+                        <span className="error-icon">⚠️</span>
+                        <span>{error}</span>
                     </div>
                 )}
 
@@ -86,15 +102,25 @@ const Login = () => {
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            placeholder="Enter your password"
-                            required
-                        />
+                        <div className="password-input-wrapper">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                placeholder="Enter your password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? "👁️" : "👁️‍🗨️"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="form-options">
