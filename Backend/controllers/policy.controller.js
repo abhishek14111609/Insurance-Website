@@ -85,8 +85,11 @@ export const getPolicies = async (req, res) => {
 
         const policies = await Policy.findAll({
             where,
+            attributes: {
+                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
+            },
             include: [
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
+                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] },
                 { model: Payment, as: 'payments' }
             ],
             order: [['createdAt', 'DESC']]
@@ -201,9 +204,12 @@ export const getPendingPolicies = async (req, res) => {
                     { status: 'PENDING_APPROVAL' }
                 ]
             },
+            attributes: {
+                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
+            },
             include: [
-                { model: User, as: 'customer' },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] }
+                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] },
+                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] }
             ],
             order: [['createdAt', 'DESC']]
         });

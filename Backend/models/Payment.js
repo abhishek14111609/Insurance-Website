@@ -89,7 +89,15 @@ const Payment = sequelize.define('Payment', {
 }, {
     tableName: 'payments',
     timestamps: true,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+            fields: ['policy_id']
+        },
+        {
+            fields: ['customer_id']
+        }
+    ]
 });
 
 export default Payment;

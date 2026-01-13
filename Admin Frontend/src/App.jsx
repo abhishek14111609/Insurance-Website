@@ -27,6 +27,7 @@ import WithdrawalApprovals from './pages/WithdrawalApprovals';
 import ClaimApprovals from './pages/ClaimApprovals';
 import AllCustomers from './pages/AllCustomers';
 import CommissionHistory from './pages/CommissionHistory';
+import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
 import DatabaseSetup from './pages/DatabaseSetup';
 
@@ -136,6 +137,14 @@ const AdminLayout = ({ children }) => {
           </NavLink>
 
           <NavLink
+            to="/commission-approvals"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">💰</span>
+            Commission Approvals
+          </NavLink>
+
+          <NavLink
             to="/withdrawal-approvals"
             className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
           >
@@ -210,6 +219,7 @@ const App = () => {
                   {/* Financial */}
                   <Route path="/commission-settings" element={<CommissionSettings />} />
                   <Route path="/commission-history" element={<CommissionHistory />} />
+                  <Route path="/commission-approvals" element={<CommissionApprovals />} />
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
                   <Route path="/database-setup" element={<DatabaseSetup />} />

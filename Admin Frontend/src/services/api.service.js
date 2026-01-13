@@ -266,6 +266,17 @@ export const adminAPI = {
         return handleResponse(response);
     },
 
+    approveCommission: async (id) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/admin/commissions/${id}/approve`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
     updateCommissionSettings: async (settings) => {
         const token = getToken();
         const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {

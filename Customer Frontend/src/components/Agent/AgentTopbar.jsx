@@ -13,9 +13,9 @@ const AgentTopbar = () => {
 
     return (
         <header className="agent-topbar">
-            <div className="topbar-search">
+            {/* <div className="topbar-search">
                 <input type="text" placeholder="Search policies, customers..." />
-            </div>
+            </div> */}
 
             <div className="topbar-actions">
                 <button className="icon-btn">🔔</button>

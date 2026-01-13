@@ -207,7 +207,15 @@ const Policy = sequelize.define('Policy', {
 }, {
     tableName: 'policies',
     timestamps: true,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+            fields: ['customer_id', 'created_at']
+        },
+        {
+            fields: ['agent_id', 'created_at']
+        }
+    ]
 });
 
 export default Policy;

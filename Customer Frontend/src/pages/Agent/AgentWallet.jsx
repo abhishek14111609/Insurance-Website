@@ -55,8 +55,8 @@ const AgentWallet = () => {
             return;
         }
 
-        if (amount < 500) {
-            setMessage({ type: 'error', text: 'Minimum withdrawal amount is ₹500' });
+        if (amount < 100) {
+            setMessage({ type: 'error', text: 'Minimum withdrawal amount is ₹100' });
             return;
         }
 
@@ -91,9 +91,9 @@ const AgentWallet = () => {
             pending: { class: 'status-pending', text: 'Pending' },
             approved: { class: 'status-approved', text: 'Approved' },
             rejected: { class: 'status-rejected', text: 'Rejected' },
-            completed: { class: 'status-completed', text: 'Completed' }
+            paid: { class: 'status-paid', text: 'Paid' }
         };
-        return badges[status] || badges.pending;
+        return badges[status] || { class: 'status-pending', text: status };
     };
 
     if (loading) {
@@ -130,10 +130,20 @@ const AgentWallet = () => {
                 <button
                     className="btn btn-primary"
                     onClick={() => setShowWithdrawModal(true)}
-                    disabled={!walletData?.balance || walletData.balance < 500}
+                    disabled={!walletData?.balance || walletData.balance < 100 || !walletData?.bankDetails?.accountNumber}
                 >
                     Request Withdrawal
                 </button>
+                {(!walletData?.balance || walletData.balance < 100) && (
+                    <p className="withdrawal-notice">
+                        Need minimum ₹100 balance to withdraw
+                    </p>
+                )}
+                {walletData?.balance >= 100 && !walletData?.bankDetails?.accountNumber && (
+                    <p className="withdrawal-notice">
+                        Please update bank details in Profile to withdraw
+                    </p>
+                )}
             </div>
 
             {/* Stats Grid */}
@@ -214,11 +224,15 @@ const AgentWallet = () => {
                                         max={walletData?.balance}
                                         required
                                     />
-                                    <small>Minimum: ₹500 | Maximum: ₹{walletData?.balance?.toLocaleString()}</small>
+                                    <small>Minimum: ₹100 | Maximum: ₹{walletData?.balance?.toLocaleString()}</small>
                                 </div>
                                 <div className="info-box">
                                     <p>📌 Withdrawal requests are processed within 3-5 business days</p>
-                                    <p>📌 Amount will be credited to your registered bank account</p>
+                                    <div className="bank-preview">
+                                        <p><strong>Credited to:</strong></p>
+                                        <p>{walletData?.bankDetails?.bankName} ({walletData?.bankDetails?.accountNumber})</p>
+                                        <p>A/C Holder: {walletData?.bankDetails?.accountHolderName}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="modal-footer">

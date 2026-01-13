@@ -118,6 +118,15 @@ export const approveCommission = async (commissionId, adminId) => {
 
         await transaction.commit();
 
+        // Send notification to agent
+        try {
+            const { notifyCommissionEarned } = await import('./notification.util.js');
+            await notifyCommissionEarned(commission, agent);
+        } catch (notifyError) {
+            console.error('Error sending commission approval notification:', notifyError);
+            // Don't fail the approval if notification fails
+        }
+
         console.log(`Commission ${commissionId} approved. Agent ${agent.id} wallet updated.`);
         return commission;
     } catch (error) {

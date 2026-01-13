@@ -41,7 +41,9 @@ export const getDashboardStats = async (req, res) => {
         const pendingWithdrawals = await Withdrawal.sum('amount', { where: { status: 'pending' } }) || 0;
         const totalWithdrawals = await Withdrawal.sum('amount', { where: { status: 'approved' } }) || 0;
 
-        // Recent activities
+        // Remove or optimize recent activities if they cause performance issues
+        // The current frontend doesn't use these in the stats object
+        /*
         const recentPolicies = await Policy.findAll({
             limit: 5,
             order: [['createdAt', 'DESC']],
@@ -53,6 +55,7 @@ export const getDashboardStats = async (req, res) => {
             order: [['createdAt', 'DESC']],
             include: [{ model: User, as: 'customer' }, { model: Policy, as: 'policy' }]
         });
+        */
 
         const stats = {
             customers: {
@@ -79,10 +82,6 @@ export const getDashboardStats = async (req, res) => {
                 paidCommissions: parseFloat(paidCommissions),
                 pendingWithdrawals: parseFloat(pendingWithdrawals),
                 totalWithdrawals: parseFloat(totalWithdrawals)
-            },
-            recentActivities: {
-                policies: recentPolicies,
-                claims: recentClaims
             }
         };
 
@@ -122,9 +121,12 @@ export const getAllPolicies = async (req, res) => {
 
         const { count, rows: policies } = await Policy.findAndCountAll({
             where,
+            attributes: {
+                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
+            },
             include: [
-                { model: User, as: 'customer' },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
+                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] },
+                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] },
                 { model: Payment, as: 'payments' }
             ],
             order: [['createdAt', 'DESC']],
@@ -747,14 +749,17 @@ export const getAllCustomers = async (req, res) => {
 // @access  Private (admin)
 export const getCustomerById = async (req, res) => {
     try {
-        const customer = await User.findByPk(req.params.id, {
-            where: { role: 'customer' },
+        const customer = await User.findOne({
+            where: {
+                id: req.params.id,
+                role: 'customer'
+            },
             attributes: { exclude: ['password'] },
             include: [
                 { model: Policy, as: 'policies' },
                 { model: Claim, as: 'claims' },
                 { model: Payment, as: 'payments' },
-                { model: Notification, as: 'notifications', limit: 10 }
+                { model: Notification, as: 'notifications' }
             ]
         });
 

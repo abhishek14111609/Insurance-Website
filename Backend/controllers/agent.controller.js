@@ -445,7 +445,11 @@ export const getWallet = async (req, res) => {
         // Get recent transactions (commissions and withdrawals)
         const commissions = await Commission.findAll({
             where: { agentId: agent.id },
-            include: [{ model: Policy, as: 'policy' }],
+            include: [{
+                model: Policy,
+                as: 'policy',
+                attributes: ['id', 'policyNumber', 'status'] // Only need basic info
+            }],
             order: [['createdAt', 'DESC']],
             limit: 20
         });
@@ -481,7 +485,12 @@ export const getWallet = async (req, res) => {
             totalEarnings: parseFloat(agent.totalEarnings),
             totalWithdrawn: parseFloat(agent.totalWithdrawals),
             pendingWithdrawals: parseFloat(pendingWithdrawalsAmount),
-            thisMonthEarnings: parseFloat(thisMonthEarnings)
+            thisMonthEarnings: parseFloat(thisMonthEarnings),
+            bankDetails: {
+                bankName: agent.bankName,
+                accountNumber: agent.accountNumber,
+                accountHolderName: agent.accountHolderName
+            }
         };
 
         res.json({
@@ -533,8 +542,8 @@ export const requestWithdrawal = async (req, res) => {
             });
         }
 
-        // Check minimum withdrawal amount (e.g., ₹500)
-        const minWithdrawal = 500;
+        // Check minimum withdrawal amount (e.g., ₹100)
+        const minWithdrawal = 100;
         if (parseFloat(amount) < minWithdrawal) {
             return res.status(400).json({
                 success: false,
@@ -688,7 +697,10 @@ export const getPoliciesSold = async (req, res) => {
 
         const policies = await Policy.findAll({
             where,
-            include: [{ model: User, as: 'customer' }],
+            attributes: {
+                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
+            },
+            include: [{ model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] }],
             order: [['createdAt', 'DESC']]
         });
 
@@ -722,25 +734,28 @@ export const getAgentCustomers = async (req, res) => {
         }
 
         // Get all unique users who have a policy sold by this agent with policy count
-        const policies = await Policy.findAll({
-            where: { agentId: agent.id },
+        const customers = await User.findAll({
+            include: [{
+                model: Policy,
+                as: 'policies',
+                where: { agentId: agent.id },
+                attributes: [] // Don't fetch policy fields in the select
+            }],
             attributes: [
-                'customerId',
-                [sequelize.fn('COUNT', sequelize.col('Policy.id')), 'policyCount'],
-                [sequelize.fn('MAX', sequelize.col('Policy.createdAt')), 'lastPurchaseDate']
+                'id',
+                'fullName',
+                'email',
+                'phone',
+                'city',
+                'state',
+                'followUpNotes',
+                [sequelize.fn('COUNT', sequelize.col('policies.id')), 'policyCount'],
+                [sequelize.fn('MAX', sequelize.col('policies.created_at')), 'lastPurchaseDate']
             ],
-            include: [{ model: User, as: 'customer', attributes: { exclude: ['password'] } }],
-            group: ['customerId', 'customer.id'],
-            raw: true,
-            nest: true
+            group: ['User.id'],
+            subQuery: false,
+            raw: true
         });
-
-        const customers = policies.map(p => ({
-            ...p.customer,
-            policyCount: p.policyCount,
-            lastPurchaseDate: p.lastPurchaseDate,
-            followUpNotes: p.customer.followUpNotes
-        }));
 
         res.json({
             success: true,

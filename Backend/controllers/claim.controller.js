@@ -80,9 +80,16 @@ export const getClaims = async (req, res) => {
 
         const claims = await Claim.findAll({
             where,
+            attributes: {
+                exclude: ['documents', 'description', 'adminNotes', 'rejectionReason']
+            },
             include: [
-                { model: Policy, as: 'policy' },
-                { model: User, as: 'reviewer' }
+                {
+                    model: Policy,
+                    as: 'policy',
+                    attributes: ['id', 'policyNumber', 'status']
+                },
+                { model: User, as: 'reviewer', attributes: ['id', 'fullName'] }
             ],
             order: [['createdAt', 'DESC']]
         });
@@ -155,10 +162,17 @@ export const getAllClaims = async (req, res) => {
 
         const { count, rows: claims } = await Claim.findAndCountAll({
             where,
+            attributes: {
+                exclude: ['documents', 'description', 'adminNotes', 'rejectionReason']
+            },
             include: [
-                { model: Policy, as: 'policy' },
-                { model: User, as: 'customer' },
-                { model: User, as: 'reviewer' }
+                {
+                    model: Policy,
+                    as: 'policy',
+                    attributes: ['id', 'policyNumber', 'status']
+                },
+                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email'] },
+                { model: User, as: 'reviewer', attributes: ['id', 'fullName'] }
             ],
             order: [['createdAt', 'DESC']],
             limit: parseInt(limit),

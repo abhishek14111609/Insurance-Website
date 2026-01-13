@@ -10,6 +10,7 @@ const CommissionHistory = () => {
         pending: 0,
         paid: 0
     });
+    const [processingId, setProcessingId] = useState(null);
 
     useEffect(() => {
         loadCommissions();
@@ -41,6 +42,35 @@ const CommissionHistory = () => {
         }
     };
 
+    const handleApprove = async (id) => {
+        try {
+            setProcessingId(id);
+            const response = await adminAPI.approveCommission(id);
+            if (response.success) {
+                // Update local state instead of refetching
+                setCommissions(prev => prev.map(c =>
+                    c.id === id ? { ...c, status: 'approved' } : c
+                ));
+                // Update stats
+                const commission = commissions.find(c => c.id === id);
+                if (commission) {
+                    setStats(prev => ({
+                        ...prev,
+                        pending: prev.pending - parseFloat(commission.amount),
+                        paid: prev.paid + parseFloat(commission.amount)
+                    }));
+                }
+            } else {
+                alert(response.message || 'Failed to approve commission');
+            }
+        } catch (error) {
+            console.error('Approve error:', error);
+            alert('An error occurred during approval');
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
     if (loading) return <div className="loading-state">Loading commission history...</div>;
 
     return (
@@ -50,6 +80,14 @@ const CommissionHistory = () => {
                     <h1>💰 Commission History</h1>
                     <p>Track all earnings and distribution across the agent network</p>
                 </div>
+                {stats.pending > 0 && (
+                    <button
+                        className="go-approvals-btn"
+                        onClick={() => window.location.href = '/commission-approvals'}
+                    >
+                        🚀 Process Pending ({commissions.filter(c => c.status === 'pending').length})
+                    </button>
+                )}
             </div>
 
             <div className="summary-cards">
@@ -109,6 +147,15 @@ const CommissionHistory = () => {
                                         <span className={`status-pill ${item.status}`}>
                                             {item.status}
                                         </span>
+                                        {item.status === 'pending' && (
+                                            <button
+                                                className="quick-approve-btn"
+                                                onClick={() => handleApprove(item.id)}
+                                                disabled={processingId === item.id}
+                                            >
+                                                {processingId === item.id ? '...' : 'Approve'}
+                                            </button>
+                                        )}
                                     </td>
                                     <td>{new Date(item.createdAt).toLocaleDateString()}</td>
                                 </tr>

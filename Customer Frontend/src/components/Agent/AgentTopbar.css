@@ -3,7 +3,7 @@
     background: var(--background-white);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: end;
     padding: 0 2.5rem;
     box-shadow: var(--shadow-sm);
     position: sticky;

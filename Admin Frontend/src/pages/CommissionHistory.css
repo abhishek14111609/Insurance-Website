@@ -127,6 +127,58 @@
     color: #a16207;
 }
 
+.status-pill.approved {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.quick-approve-btn {
+    margin-left: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.quick-approve-btn:hover {
+    background: #059669;
+}
+
+.quick-approve-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+.go-approvals-btn {
+    padding: 0.6rem 1.2rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.go-approvals-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
 .loading-state,
 .no-data {
     text-align: center;
