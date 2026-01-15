@@ -16,13 +16,6 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loadUser = async () => {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            setLoading(false);
-            return;
-        }
-
         try {
             const response = await authAPI.getProfile();
             if (response.success) {
@@ -33,8 +26,8 @@ export const AuthProvider = ({ children }) => {
                 setUser(userData);
             }
         } catch (err) {
-            console.error('Failed to load user:', err);
-            localStorage.removeItem('token');
+            // Authentication failed - user is not logged in
+            setUser(null);
         } finally {
             setLoading(false);
         }

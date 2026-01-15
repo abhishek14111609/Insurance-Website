@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { contactAPI } from '../services/api.service';
 import './ContactUs.css';
 
 const ContactUs = () => {
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -10,10 +12,18 @@ const ContactUs = () => {
         message: ''
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert('Thank you for contacting us! We will get back to you soon.');
-        setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+        setLoading(true);
+        try {
+            await contactAPI.submit(formData);
+            alert('Thank you for contacting us! We will get back to you soon.');
+            setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+        } catch (error) {
+            alert(error.message || 'Failed to send message. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleChange = (e) => {
@@ -102,7 +112,9 @@ const ContactUs = () => {
                                         required
                                     ></textarea>
                                 </div>
-                                <button type="submit" className="btn btn-primary">Send Message</button>
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? 'Sending...' : 'Send Message'}
+                                </button>
                             </form>
                         </div>
 

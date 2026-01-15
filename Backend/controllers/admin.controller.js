@@ -386,12 +386,29 @@ export const getAllAgents = async (req, res) => {
             offset: parseInt(offset)
         });
 
+        // Helper to clean paths
+        const cleanPath = (path) => {
+            if (!path) return null;
+            const normalized = path.replace(/\\/g, '/');
+            const uploadIndex = normalized.indexOf('uploads/');
+            return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
+        };
+
+        const cleanedAgents = agents.map(agent => {
+            const agentJSON = agent.toJSON();
+            agentJSON.panPhoto = cleanPath(agentJSON.panPhoto);
+            agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
+            agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
+            agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
+            return agentJSON;
+        });
+
         res.json({
             success: true,
             count,
             totalPages: Math.ceil(count / limit),
             currentPage: parseInt(page),
-            data: { agents }
+            data: { agents: cleanedAgents }
         });
     } catch (error) {
         console.error('Get all agents error:', error);
@@ -687,15 +704,78 @@ export const getAgentById = async (req, res) => {
             });
         }
 
+        // Helper to clean paths
+        const cleanPath = (path) => {
+            if (!path) return null;
+            const normalized = path.replace(/\\/g, '/');
+            const uploadIndex = normalized.indexOf('uploads/');
+            return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
+        };
+
+        const agentJSON = agent.toJSON();
+        agentJSON.panPhoto = cleanPath(agentJSON.panPhoto);
+        agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
+        agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
+        agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
+
         res.json({
             success: true,
-            data: { agent }
+            data: { agent: agentJSON }
         });
     } catch (error) {
         console.error('Get agent error:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching agent details',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Verify agent KYC
+// @route   PATCH /api/admin/agents/:id/verify-kyc
+// @access  Private (admin)
+export const verifyAgentKYC = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, reason } = req.body; // 'verified' or 'rejected'
+
+        const agent = await Agent.findByPk(id, {
+            include: [{ model: User, as: 'user' }]
+        });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agent not found'
+            });
+        }
+
+        const updateData = { kycStatus: status };
+        if (status === 'rejected') {
+            updateData.kycRejectionReason = reason;
+        } else if (status === 'verified') {
+            updateData.kycRejectionReason = null;
+            // Optionally auto-activate agent if KYC is verified and they were pending
+            if (agent.status === 'pending') {
+                updateData.status = 'active';
+                updateData.approvedAt = new Date();
+                updateData.approvedBy = req.user.id;
+            }
+        }
+
+        await agent.update(updateData);
+
+        res.json({
+            success: true,
+            message: `KYC ${status} successfully`,
+            data: { agent }
+        });
+    } catch (error) {
+        console.error('Verify KYC error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verifying KYC',
             error: error.message
         });
     }

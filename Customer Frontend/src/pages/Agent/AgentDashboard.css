@@ -624,3 +624,61 @@
         transform: scale(1);
     }
 }
+
+/* Mandatory KYC Card */
+.mandatory-kyc-card {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 2px solid #f59e0b;
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.1);
+}
+
+.kyc-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.kyc-icon {
+    font-size: 3rem;
+    background: white;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.kyc-info h2 {
+    font-size: 1.5rem;
+    color: #92400e;
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+}
+
+.kyc-info p {
+    color: #b45309;
+    font-size: 1rem;
+    margin: 0;
+    max-width: 600px;
+}
+
+@media (max-width: 768px) {
+    .mandatory-kyc-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+
+    .kyc-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}

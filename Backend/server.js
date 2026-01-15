@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,6 +19,7 @@ import adminRoutes from './routes/admin.route.js';
 import claimRoutes from './routes/claim.route.js';
 import notificationRoutes from './routes/notification.route.js';
 import policyPlanRoutes from './routes/policyPlan.route.js';
+import contactRoutes from './routes/contact.route.js';
 
 // Utilities
 import { initializeCommissionSettings } from './utils/commission.util.js';
@@ -36,9 +38,28 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Middleware
+app.use(cookieParser());
 app.use(cors({
-    origin: true,
-    credentials: true
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow any localhost origin
+        if (origin.startsWith('http://localhost:')) {
+            return callback(null, true);
+        }
+
+        // Allow other specific origins if needed
+        const allowedOrigins = ['http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -85,6 +106,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/plans', policyPlanRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

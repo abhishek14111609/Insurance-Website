@@ -38,16 +38,25 @@ export const register = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
+        // Set Cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
             data: {
                 user: user.toJSON(),
-                token,
+                token, // Optional: Keep returning token for non-browser clients, or remove if strict
                 refreshToken
             }
         });
     } catch (error) {
+        // ... (existing error handling)
         console.error('Register error:', error);
         res.status(500).json({
             success: false,
@@ -149,7 +158,6 @@ export const login = async (req, res) => {
         console.log('Login attempt:', { email, hasPassword: !!password });
 
         if (!email || !password) {
-            console.log('Missing email or password');
             return res.status(400).json({
                 success: false,
                 message: 'Please provide both email and password'
@@ -186,6 +194,17 @@ export const login = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
+        // Use different cookie names based on role to prevent cross-portal auth
+        const cookieName = user.role === 'admin' ? 'admin_token' : 'token';
+
+        // Set Cookie with role-specific name
+        res.cookie(cookieName, token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         // If user is an agent, include agent profile
         let agentProfile = null;
         if (user.role === 'agent') {
@@ -210,6 +229,29 @@ export const login = async (req, res) => {
             error: error.message
         });
     }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Public
+export const logout = async (req, res) => {
+    // Clear both possible cookie names to ensure complete logout
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
+
+    res.clearCookie('admin_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
+
+    res.json({
+        success: true,
+        message: 'Logged out successfully'
+    });
 };
 
 // @desc    Get current user profile

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { isAdminLoggedIn, logoutAdmin } from './utils/authUtils';
+import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth
@@ -30,14 +30,16 @@ import CommissionHistory from './pages/CommissionHistory';
 import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
 import DatabaseSetup from './pages/DatabaseSetup';
+import Inquiries from './pages/Inquiries';
 
 import './App.css';
 
 const AdminLayout = ({ children }) => {
+  const { logout, user } = useAuth();
+
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      logoutAdmin();
-      window.location.href = '/login';
+      logout();
     }
   };
 
@@ -90,6 +92,14 @@ const AdminLayout = ({ children }) => {
           >
             <span className="icon">👤</span>
             All Customers
+          </NavLink>
+
+          <NavLink
+            to="/inquiries"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">📨</span>
+            Inquiries
           </NavLink>
 
           <div className="nav-section">Policy Management</div>
@@ -183,13 +193,24 @@ const AdminLayout = ({ children }) => {
 };
 
 const App = () => {
+  const { isAuthenticated, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loader"></div>
+        <p>Loading Admin Panel...</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
         <Route
           path="/login"
-          element={isAdminLoggedIn() ? <Navigate to="/" replace /> : <AdminLogin />}
+          element={isAuthenticated && isAdmin ? <Navigate to="/" replace /> : <AdminLogin />}
         />
 
         {/* Protected Routes */}
@@ -223,6 +244,7 @@ const App = () => {
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
                   <Route path="/database-setup" element={<DatabaseSetup />} />
+                  <Route path="/inquiries" element={<Inquiries />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>

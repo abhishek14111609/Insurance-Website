@@ -23,7 +23,7 @@ const NotificationBell = () => {
             const response = await notificationAPI.getAll({ limit: 10 });
             if (response.success) {
                 setNotifications(response.data.notifications || []);
-                setUnreadCount(response.data.unreadCount || 0);
+                setUnreadCount(response.unreadCount || 0);
             }
         } catch (error) {
             console.error('Error loading notifications:', error);
@@ -60,17 +60,15 @@ const NotificationBell = () => {
 
     const getNotificationIcon = (type) => {
         const icons = {
-            policy_approved: '✅',
-            policy_rejected: '❌',
-            commission_earned: '💰',
-            withdrawal_approved: '✅',
-            withdrawal_rejected: '❌',
-            claim_status: '🏥',
-            agent_approved: '🤝',
-            payment_success: '💳',
-            broadcast: '📢'
+            policy: '📄',
+            payment: '💳',
+            commission: '💰',
+            withdrawal: '💸',
+            claim: '🏥',
+            agent: '👤',
+            system: '📢'
         };
-        return icons[type] || '📢';
+        return icons[type] || '🔔';
     };
 
     const getTimeAgo = (date) => {

@@ -288,4 +288,107 @@
     .separator {
         transform: rotate(90deg);
     }
+
+    .separator {
+        transform: rotate(90deg);
+    }
+}
+
+/* KYC Specific Styles */
+.kyc-documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.kyc-doc-item {
+    background: #f8fafc;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+.doc-label {
+    display: block;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.doc-value {
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.doc-value strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.view-doc-link {
+    display: inline-block;
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background: #e0e7ff;
+    transition: background 0.2s;
+    margin-right: 0.5rem;
+}
+
+.view-doc-link:hover {
+    background: #c7d2fe;
+}
+
+.status-badge {
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.status-badge.verified {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.pending {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.status-badge.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.not_submitted {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.rejection-reason {
+    background: #fee2e2;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+    border: 1px solid #fca5a5;
+}
+
+.text-error {
+    color: #b91c1c !important;
+}
+
+.doc-links {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../../services/api.service';
+import { useAuth } from '../../context/AuthContext';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -33,28 +34,26 @@ const AdminLogin = () => {
         }
 
         try {
-            // Note: Backend expects 'email' not 'username', but we can check if username is email
-            // If user enters 'admin', we might need to map it to 'admin@securelife.com' or modify backend to accept username.
-            // For now, let's assume username field accepts email.
-            // If the user enters 'admin', and backend only takes email, it will fail.
-            // The seeds created 'admin@securelife.com'.
-            // I'll assume the user enters the email or I'll handle simple 'admin' alias here.
-
-            let loginIdentifier = formData.username;
-            if (loginIdentifier === 'admin') {
-                loginIdentifier = 'admin@securelife.com';
+            // Map username to email if needed
+            let loginEmail = formData.username;
+            if (loginEmail === 'admin') {
+                loginEmail = 'admin@insurance.com';
+            } else if (!loginEmail.includes('@')) {
+                loginEmail = `${loginEmail}@insurance.com`;
             }
 
-            const result = await authAPI.login({
-                email: loginIdentifier,
+            const response = await login({
+                email: loginEmail,
                 password: formData.password
             });
 
-            if (result.success) {
+            if (response && response.success) {
+                // Navigate to dashboard - no localStorage needed!
                 navigate('/');
             }
         } catch (err) {
-            setError(err.message || 'Login failed. Please check credentials.');
+            console.error('Login error:', err);
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setIsSubmitting(false);
         }
@@ -85,7 +84,7 @@ const AdminLogin = () => {
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            placeholder="Enter email (admin@securelife.com)"
+                            placeholder="admin@insurance.com or just 'admin'"
                             autoFocus
                         />
                     </div>
@@ -123,7 +122,7 @@ const AdminLogin = () => {
                 <div className="login-footer">
                     <p className="demo-credentials">
                         <strong>Demo Credentials:</strong><br />
-                        Email: admin@securelife.com (or admin)<br />
+                        Email: admin@insurance.com (or type "admin")<br />
                         Password: admin123
                     </p>
                 </div>

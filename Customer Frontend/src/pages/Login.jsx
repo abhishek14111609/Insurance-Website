@@ -52,6 +52,13 @@ const Login = () => {
                 password: formData.password
             });
 
+            // Check if user is admin - reject on customer side
+            if (response.data?.user?.role === 'admin') {
+                setError('Admin accounts cannot login here. Please use the Admin Panel.');
+                setIsSubmitting(false);
+                return;
+            }
+
             // Dispatch custom event to notify navbar
             window.dispatchEvent(new Event('customerLogin'));
 
