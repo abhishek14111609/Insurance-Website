@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { isAdminLoggedIn, logoutAdmin } from './utils/authUtils';
+import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth
@@ -35,10 +35,11 @@ import Inquiries from './pages/Inquiries';
 import './App.css';
 
 const AdminLayout = ({ children }) => {
+  const { logout, user } = useAuth();
+
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      logoutAdmin();
-      window.location.href = '/login';
+      logout();
     }
   };
 
@@ -192,13 +193,24 @@ const AdminLayout = ({ children }) => {
 };
 
 const App = () => {
+  const { isAuthenticated, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loader"></div>
+        <p>Loading Admin Panel...</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
         <Route
           path="/login"
-          element={isAdminLoggedIn() ? <Navigate to="/" replace /> : <AdminLogin />}
+          element={isAuthenticated && isAdmin ? <Navigate to="/" replace /> : <AdminLogin />}
         />
 
         {/* Protected Routes */}

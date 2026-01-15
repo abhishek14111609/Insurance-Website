@@ -3,8 +3,10 @@ import { User } from '../models/index.js';
 
 export const authenticate = async (req, res, next) => {
     try {
-        // Get token from header
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+        // Get token from header or cookies (check both cookie names)
+        const token = req.header('Authorization')?.replace('Bearer ', '')
+            || req.cookies?.token
+            || req.cookies?.admin_token;
 
         if (!token) {
             return res.status(401).json({

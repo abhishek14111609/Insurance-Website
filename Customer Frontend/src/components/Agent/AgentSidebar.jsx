@@ -4,8 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import './AgentSidebar.css';
 
 const AgentSidebar = () => {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const isKycVerified = user?.kycStatus?.toLowerCase() === 'verified';
 
     const handleLogout = (e) => {
         e.preventDefault();
@@ -33,7 +34,7 @@ const AgentSidebar = () => {
                         <span className="icon">👥</span> Customers
                     </NavLink>
                     <NavLink to="/agent/wallet" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
-                        <span className="icon">💰</span> Wallet
+                        <span className="icon">💰</span> Wallet {!isKycVerified && <span className="restricted-badge">!</span>}
                     </NavLink>
                     <NavLink to="/agent/team" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">🌳</span> My Team

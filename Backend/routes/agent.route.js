@@ -13,9 +13,11 @@ import {
     getPoliciesSold,
     getAgentCustomers,
     updateCustomerNotes,
-    updateSubAgentTraining
+    updateSubAgentTraining,
+    submitKYC
 } from '../controllers/agent.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
+import { uploadAgentDocs } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -28,6 +30,14 @@ router.post('/register', registerAgent);
 // Agent-only routes
 router.get('/profile', authorize('agent', 'admin'), getAgentProfile);
 router.put('/profile', authorize('agent'), updateAgentProfile);
+
+// KYC Submission
+router.post('/submit-kyc', authorize('agent'), uploadAgentDocs.fields([
+    { name: 'panPhoto', maxCount: 1 },
+    { name: 'aadharPhotoFront', maxCount: 1 },
+    { name: 'aadharPhotoBack', maxCount: 1 },
+    { name: 'bankProofPhoto', maxCount: 1 }
+]), submitKYC);
 router.get('/hierarchy', authorize('agent'), getAgentHierarchy);
 router.get('/team', authorize('agent'), getTeam);
 router.get('/stats', authorize('agent'), getAgentStats);

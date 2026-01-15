@@ -19,7 +19,8 @@ import {
     updateCommissionSettings,
     updateAgent,
     createAgent,
-    setupDatabase
+    setupDatabase,
+    verifyAgentKYC
 } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -44,6 +45,7 @@ router.get('/agents/:id', getAgentById); // Added route
 router.post('/agents', createAgent);
 router.patch('/agents/:id/approve', approveAgent);
 router.patch('/agents/:id/reject', rejectAgent);
+router.patch('/agents/:id/verify-kyc', verifyAgentKYC);
 router.put('/agents/:id', updateAgent);
 
 // Customers

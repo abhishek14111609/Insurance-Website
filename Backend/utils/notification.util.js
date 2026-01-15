@@ -44,7 +44,7 @@ export const notifyPolicyApproval = async (policy) => {
             coverageAmount: policy.coverageAmount
         },
         priority: 'high',
-        actionUrl: `/policies/${policy.id}`
+        actionUrl: `/policy/${policy.id}`
     });
 };
 
@@ -65,7 +65,7 @@ export const notifyPolicyRejection = async (policy) => {
             rejectionReason: policy.rejectionReason
         },
         priority: 'high',
-        actionUrl: `/policies/${policy.id}`
+        actionUrl: `/policy/${policy.id}`
     });
 };
 
@@ -221,7 +221,7 @@ export const notifyPaymentSuccess = async (payment, policy) => {
             amount: payment.amount
         },
         priority: 'high',
-        actionUrl: `/policies/${policy.id}`
+        actionUrl: `/policy/${policy.id}`
     });
 };
 

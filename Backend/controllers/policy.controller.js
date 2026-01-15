@@ -21,6 +21,13 @@ export const createPolicy = async (req, res) => {
         if (agentCode) {
             const agent = await Agent.findOne({ where: { agentCode } });
             if (agent) {
+                // Check KYC status before allowing sale
+                if (agent.kycStatus !== 'verified') {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Agent is not authorized to sell policies yet. KYC verification is pending.'
+                    });
+                }
                 agentId = agent.id;
             }
         }

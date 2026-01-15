@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { adminAPI } from '../services/api.service';
+import { adminAPI, BASE_URL } from '../services/api.service';
 import './AgentApprovals.css';
 
 const AgentApprovals = () => {
@@ -20,7 +20,11 @@ const AgentApprovals = () => {
             setLoading(true);
             const response = await adminAPI.getAllAgents();
             if (response.success) {
-                const pending = (response.data.agents || []).filter(a => (a.status || 'PENDING').toUpperCase() === 'PENDING');
+                // Filter agents that are either pending status OR pending KYC
+                const pending = (response.data.agents || []).filter(a =>
+                    (a.status || 'PENDING').toUpperCase() === 'PENDING' ||
+                    a.kycStatus === 'pending'
+                );
                 setAgents(pending);
             }
         } catch (error) {
@@ -32,13 +36,13 @@ const AgentApprovals = () => {
 
     const handleApproveClick = (agent) => {
         setSelectedAgent(agent);
-        setModalType('approve');
+        setModalType(agent.kycStatus === 'pending' ? 'approve_kyc' : 'approve');
         setShowModal(true);
     };
 
     const handleRejectClick = (agent) => {
         setSelectedAgent(agent);
-        setModalType('reject');
+        setModalType(agent.kycStatus === 'pending' ? 'reject_kyc' : 'reject');
         setShowModal(true);
     };
 
@@ -55,6 +59,22 @@ const AgentApprovals = () => {
         } catch (error) {
             console.error('Approval error:', error);
             alert('An error occurred during approval');
+        }
+    };
+
+    const handleConfirmKYCApprove = async () => {
+        try {
+            const result = await adminAPI.verifyAgentKYC(selectedAgent.id, 'verified');
+            if (result.success) {
+                alert('KYC verified successfully!');
+                loadAgents();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to verify KYC');
+            }
+        } catch (error) {
+            console.error('KYC Verification error:', error);
+            alert('An error occurred during KYC verification');
         }
     };
 
@@ -77,6 +97,27 @@ const AgentApprovals = () => {
         } catch (error) {
             console.error('Rejection error:', error);
             alert('An error occurred during rejection');
+        }
+    };
+
+    const handleConfirmKYCReject = async () => {
+        if (!rejectionReason.trim()) {
+            alert('Please provide a rejection reason');
+            return;
+        }
+
+        try {
+            const result = await adminAPI.verifyAgentKYC(selectedAgent.id, 'rejected', rejectionReason);
+            if (result.success) {
+                alert('KYC rejected.');
+                loadAgents();
+                closeModal();
+            } else {
+                alert(result.message || 'Failed to reject KYC');
+            }
+        } catch (error) {
+            console.error('KYC Rejection error:', error);
+            alert('An error occurred during KYC rejection');
         }
     };
 
@@ -164,20 +205,21 @@ const AgentApprovals = () => {
                                     <span className="label">A/C:</span>
                                     <span className="value">{agent.accountNumber}</span>
                                 </div>
+                                <div className="detail-divider"></div>
+                                <div className="detail-row">
+                                    <span className="label">KYC Status:</span>
+                                    <span className={`status-badge ${agent.kycStatus || 'not_submitted'}`}>
+                                        {agent.kycStatus?.replace('_', ' ') || 'NOT SUBMITTED'}
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="agent-actions">
                                 <button
-                                    className="btn btn-success"
+                                    className="btn btn-primary"
                                     onClick={() => handleApproveClick(agent)}
                                 >
-                                    ✅ Approve
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={() => handleRejectClick(agent)}
-                                >
-                                    ❌ Reject
+                                    🔍 Review & Verify
                                 </button>
                             </div>
                         </div>
@@ -187,51 +229,111 @@ const AgentApprovals = () => {
 
             {showModal && (
                 <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>{modalType === 'approve' ? '✅ Approve Agent' : '❌ Reject Agent'}</h2>
+                            <h2>Review Agent: {selectedAgent?.user?.fullName}</h2>
                             <button className="close-btn" onClick={closeModal}>×</button>
                         </div>
 
                         <div className="modal-body">
-                            <div className="agent-summary">
-                                <p><strong>Agent Code:</strong> {selectedAgent?.agentCode || 'N/A'}</p>
-                                <p><strong>Name:</strong> {selectedAgent?.user?.fullName}</p>
+                            <div className="review-grid">
+                                <div className="review-section">
+                                    <h3>Information</h3>
+                                    <p><strong>Agent Code:</strong> {selectedAgent?.agentCode || 'N/A'}</p>
+                                    <p><strong>Email:</strong> {selectedAgent?.user?.email}</p>
+                                    <p><strong>Phone:</strong> {selectedAgent?.user?.phone}</p>
+                                    <p><strong>Address:</strong> {selectedAgent?.user?.address || 'N/A'}</p>
+                                    <p><strong>Bank Details:</strong> {selectedAgent?.bankName} - {selectedAgent?.accountNumber} ({selectedAgent?.ifscCode})</p>
+                                </div>
+
+                                <div className="review-section">
+                                    <h3>KYC Documents</h3>
+                                    <div className="document-previews">
+                                        {selectedAgent?.panPhoto ? (
+                                            <div className="doc-item">
+                                                <span>PAN Number: {selectedAgent.panNumber}</span>
+                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.panPhoto}`} target="_blank" className="btn-link">View PAN Photo</a>
+                                            </div>
+                                        ) : <p className="text-muted">No PAN photo uploaded</p>}
+
+                                        {selectedAgent?.aadharPhotoFront ? (
+                                            <div className="doc-item">
+                                                <span>Aadhaar Number: {selectedAgent.aadharNumber}</span>
+                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.aadharPhotoFront}`} target="_blank" className="btn-link">View Aadhaar Front</a>
+                                            </div>
+                                        ) : <p className="text-muted">No Aadhaar front uploaded</p>}
+
+                                        {selectedAgent?.aadharPhotoBack ? (
+                                            <div className="doc-item">
+                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.aadharPhotoBack}`} target="_blank" className="btn-link">View Aadhaar Back</a>
+                                            </div>
+                                        ) : null}
+
+                                        {selectedAgent?.bankProofPhoto ? (
+                                            <div className="doc-item">
+                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.bankProofPhoto}`} target="_blank" className="btn-link">View Bank Proof</a>
+                                            </div>
+                                        ) : <p className="text-muted">No bank proof uploaded</p>}
+                                    </div>
+                                </div>
                             </div>
 
-                            {modalType === 'approve' ? (
-                                <div className="form-group">
-                                    <p>Are you sure you want to approve this agent? They will become active immediately.</p>
+                            <hr />
+
+                            <div className="action-selection">
+                                <label>Decision:</label>
+                                <div className="btn-group">
+                                    <button
+                                        className={`btn ${['approve', 'approve_kyc'].includes(modalType) ? 'btn-success' : 'btn-outline-success'}`}
+                                        onClick={() => setModalType(selectedAgent?.kycStatus === 'pending' ? 'approve_kyc' : 'approve')}
+                                    >{selectedAgent?.kycStatus === 'pending' ? 'Approve KYC' : 'Approve Agent'}</button>
+                                    <button
+                                        className={`btn ${['reject', 'reject_kyc'].includes(modalType) ? 'btn-danger' : 'btn-outline-danger'}`}
+                                        onClick={() => setModalType(selectedAgent?.kycStatus === 'pending' ? 'reject_kyc' : 'reject')}
+                                    >{selectedAgent?.kycStatus === 'pending' ? 'Reject KYC' : 'Reject Application'}</button>
+                                </div>
+                            </div>
+
+                            {['approve', 'approve_kyc'].includes(modalType) ? (
+                                <div className="form-group mt-3">
+                                    <p>{modalType === 'approve_kyc' ? 'Are you sure you want to verify this agent\'s KYC? Their status will be updated.' : 'Are you sure you want to approve this agent? They will become active immediately.'}</p>
                                     <label>Admin Notes (Optional):</label>
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Add any notes..."
-                                        rows="3"
+                                        rows="2"
                                     />
                                 </div>
-                            ) : (
-                                <div className="form-group">
+                            ) : ['reject', 'reject_kyc'].includes(modalType) ? (
+                                <div className="form-group mt-3">
                                     <label>Rejection Reason *:</label>
                                     <textarea
                                         value={rejectionReason}
                                         onChange={(e) => setRejectionReason(e.target.value)}
-                                        placeholder="Provide reason..."
-                                        rows="4"
+                                        placeholder="Provide reason for rejection..."
+                                        rows="2"
                                         required
                                     />
                                 </div>
-                            )}
+                            ) : null}
                         </div>
 
                         <div className="modal-footer">
                             <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                            <button
-                                className={`btn ${modalType === 'approve' ? 'btn-success' : 'btn-danger'}`}
-                                onClick={modalType === 'approve' ? handleConfirmApprove : handleConfirmReject}
-                            >
-                                {modalType === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}
-                            </button>
+                            {modalType && (
+                                <button
+                                    className={`btn ${['approve', 'approve_kyc'].includes(modalType) ? 'btn-success' : 'btn-danger'}`}
+                                    onClick={() => {
+                                        if (modalType === 'approve') handleConfirmApprove();
+                                        else if (modalType === 'approve_kyc') handleConfirmKYCApprove();
+                                        else if (modalType === 'reject') handleConfirmReject();
+                                        else if (modalType === 'reject_kyc') handleConfirmKYCReject();
+                                    }}
+                                >
+                                    {['approve', 'approve_kyc'].includes(modalType) ? 'Confirm Approval' : 'Confirm Rejection'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,11 +1,7 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Helper to get raw base url for static files
 export const BASE_URL = API_BASE_URL.replace('/api', '');
-
-// Helper function to get auth token
-const getToken = () => {
-    return localStorage.getItem('admin_token');
-};
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -23,8 +19,6 @@ const handleResponse = async (response) => {
     if (!response.ok) {
         // Handle authentication errors
         if (response.status === 401) {
-            localStorage.removeItem('admin_token');
-            localStorage.removeItem('admin_user');
             // Prevent redirect loop if already on login page
             if (!window.location.pathname.includes('/login')) {
                 window.location.href = '/login';
@@ -36,37 +30,60 @@ const handleResponse = async (response) => {
     return data;
 };
 
+// Helper for making requests with credentials
+const apiClient = async (endpoint, options = {}) => {
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+
+    // Default headers
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    // Remove Content-Type if body is FormData (let browser set it)
+    if (options.body instanceof FormData) {
+        delete headers['Content-Type'];
+    }
+
+    const config = {
+        ...options,
+        headers,
+        credentials: 'include' // Important: Send cookies with every request
+    };
+
+    const response = await fetch(url, config);
+    return handleResponse(response);
+};
+
 // Authentication API
 export const authAPI = {
+    // Get current admin user profile
+    getProfile: async () => {
+        return apiClient('/auth/me');
+    },
+
     // Admin Login uses the same endpoint but we verify role in frontend or backend
     login: async (credentials) => {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const data = await apiClient('/auth/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(credentials)
         });
-        const data = await handleResponse(response);
 
         // Verify it is an admin
         if (data.success && data.data.user.role !== 'admin') {
             throw new Error('Unauthorized access. Admin privileges required.');
         }
 
-        // Save token and user data
-        if (data.success && data.data.token) {
-            localStorage.setItem('admin_token', data.data.token);
-            localStorage.setItem('admin_user', JSON.stringify(data.data.user));
-        }
-
         return data;
     },
 
     // Logout
-    logout: () => {
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+    logout: async () => {
+        try {
+            await apiClient('/auth/logout', { method: 'POST' });
+        } catch (err) {
+            console.error('Logout error:', err);
+        }
         window.location.href = '/login';
     }
 };
@@ -75,44 +92,23 @@ export const authAPI = {
 export const policyAPI = {
     // Get pending policies
     getPending: async () => {
-        const token = getToken();
-        // Since getPendingPolicies in backend requires filtering logic that might be specific to approval page
-        // We use the specific admin endpoint if available or filter on client side if general get is used.
-        // Backend has /api/policies/admin/pending
-        const response = await fetch(`${API_BASE_URL}/policies/admin/pending`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/policies/admin/pending');
     },
 
     // Approve policy
     approve: async (policyId, adminNotes) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/policies/${policyId}/approve`, {
+        return apiClient(`/admin/policies/${policyId}/approve`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ adminNotes })
         });
-        return handleResponse(response);
     },
 
     // Reject policy
     reject: async (policyId, rejectionReason) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/policies/${policyId}/reject`, {
+        return apiClient(`/admin/policies/${policyId}/reject`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ rejectionReason })
         });
-        return handleResponse(response);
     }
 };
 
@@ -120,291 +116,176 @@ export const policyAPI = {
 export const adminAPI = {
     // Dashboard Stats
     getDashboardStats: async () => {
-        const token = getToken();
-        // Since backend endpoint is GET /api/admin/dashboard
-        const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/dashboard');
     },
 
     // Agent Management
     getAllAgents: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/agents');
     },
 
     getAgentById: async (id) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        return handleResponse(response);
+        return apiClient(`/admin/agents/${id}`);
     },
 
     createAgent: async (agentData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents`, {
+        return apiClient('/admin/agents', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(agentData)
         });
-        return handleResponse(response);
     },
 
     approveAgent: async (agentId, adminNotes = '') => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/approve`, {
+        return apiClient(`/admin/agents/${agentId}/approve`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ adminNotes })
         });
-        return handleResponse(response);
     },
 
     rejectAgent: async (agentId, rejectionReason = '') => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}/reject`, {
+        return apiClient(`/admin/agents/${agentId}/reject`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ rejectionReason })
         });
-        return handleResponse(response);
     },
 
+    verifyAgentKYC: async (agentId, status, reason = '') => {
+        return apiClient(`/admin/agents/${agentId}/verify-kyc`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, reason })
+        });
+    },
 
     updateAgent: async (agentId, agentData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/agents/${agentId}`, {
+        return apiClient(`/admin/agents/${agentId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(agentData)
         });
-        return handleResponse(response);
     },
 
-    // Policy Management (Already heavily covered by policyAPI but adding admin specifics)
+    // Policy Management
     getAllPolicies: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/policies`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/policies');
     },
 
     // Financials
     getWithdrawals: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/withdrawals`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/withdrawals');
     },
 
     processWithdrawal: async (withdrawalId, action, reasonOrHash = null) => {
-        const token = getToken();
         const body = { action };
-
         if (action === 'approve') {
             body.adminNotes = reasonOrHash;
         } else {
             body.rejectionReason = reasonOrHash;
         }
 
-        const response = await fetch(`${API_BASE_URL}/admin/withdrawals/${withdrawalId}`, {
+        return apiClient(`/admin/withdrawals/${withdrawalId}`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(body)
         });
-        return handleResponse(response);
     },
 
     // Commission Settings
     getCommissionSettings: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/commission-settings');
     },
 
     getAllCommissions: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/commissions`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/commissions');
     },
 
     approveCommission: async (id) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/commissions/${id}/approve`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        return apiClient(`/admin/commissions/${id}/approve`, {
+            method: 'PATCH'
         });
-        return handleResponse(response);
     },
 
     updateCommissionSettings: async (settings) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/commission-settings`, {
+        return apiClient('/admin/commission-settings', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(settings)
         });
-        return handleResponse(response);
     },
 
     // Customer Management
     getAllCustomers: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/customers`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/admin/customers');
     },
+
     getCustomerById: async (id) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/customers/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        return handleResponse(response);
+        return apiClient(`/admin/customers/${id}`);
     },
 
     setupDatabase: async (force = false) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/admin/setup-db`, {
+        return apiClient('/admin/setup-db', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ force })
         });
-        return handleResponse(response);
     }
 };
 
 // Policy Plans API
 export const policyPlanAPI = {
     getAll: async () => {
-        const response = await fetch(`${API_BASE_URL}/plans`);
-        return handleResponse(response);
+        return apiClient('/plans');
     },
 
     getById: async (id) => {
-        const response = await fetch(`${API_BASE_URL}/plans/${id}`);
-        return handleResponse(response);
+        return apiClient(`/plans/${id}`);
     },
 
     create: async (planData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/plans`, {
+        return apiClient('/plans', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(planData)
         });
-        return handleResponse(response);
     },
 
     update: async (id, planData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+        return apiClient(`/plans/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(planData)
         });
-        return handleResponse(response);
     },
 
     delete: async (id) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        return apiClient(`/plans/${id}`, {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     }
 };
 
 // Claims API
 export const claimAPI = {
     getAllPending: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/claims/admin/all?status=pending`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
+        return apiClient('/claims/admin/all?status=pending');
     },
 
     updateStatus: async (claimId, statusData) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/claims/${claimId}/status`, {
+        return apiClient(`/claims/${claimId}/status`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(statusData)
         });
-        return handleResponse(response);
     },
 
     getById: async (id) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/claims/${id}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        return apiClient(`/claims/${id}`);
+    }
+};
+
+// Contact/Inquiries API
+export const contactAPI = {
+    getAll: async () => {
+        return apiClient('/contact/all');
+    },
+
+    reply: async (id, message) => {
+        return apiClient(`/contact/reply/${id}`, {
+            method: 'POST',
+            body: JSON.stringify({ message })
         });
-        return handleResponse(response);
     }
 };
 

@@ -69,10 +69,40 @@ const Agent = sequelize.define('Agent', {
         allowNull: true,
         field: 'pan_number'
     },
+    panPhoto: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        field: 'pan_photo'
+    },
     aadharNumber: {
         type: DataTypes.STRING(20),
         allowNull: true,
         field: 'aadhar_number'
+    },
+    aadharPhotoFront: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        field: 'aadhar_photo_front'
+    },
+    aadharPhotoBack: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        field: 'aadhar_photo_back'
+    },
+    bankProofPhoto: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        field: 'bank_proof_photo'
+    },
+    kycStatus: {
+        type: DataTypes.ENUM('not_submitted', 'pending', 'verified', 'rejected'),
+        defaultValue: 'not_submitted',
+        field: 'kyc_status'
+    },
+    kycRejectionReason: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        field: 'kyc_rejection_reason'
     },
     // Wallet
     walletBalance: {

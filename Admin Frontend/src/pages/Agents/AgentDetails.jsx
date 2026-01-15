@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { adminAPI } from '../../services/api.service';
+import { adminAPI, BASE_URL } from '../../services/api.service';
 import './AgentDetails.css';
 
 const AgentDetails = () => {
@@ -14,6 +14,34 @@ const AgentDetails = () => {
     useEffect(() => {
         loadData();
     }, [id]);
+
+    const handleVerifyKYC = async (status) => {
+        let reason = '';
+        if (status === 'rejected') {
+            reason = prompt('Please enter the reason for rejection:');
+            if (reason === null) return; // Cancelled
+            if (!reason.trim()) {
+                alert('Rejection reason is required');
+                return;
+            }
+        }
+
+        try {
+            setLoading(true);
+            const response = await adminAPI.verifyAgentKYC(agent.id, status, reason);
+            if (response.success) {
+                alert(`KYC ${status === 'verified' ? 'Approved' : 'Rejected'} successfully`);
+                loadData();
+            } else {
+                alert(response.message || 'Failed to update KYC status');
+            }
+        } catch (error) {
+            console.error('Error verifying KYC:', error);
+            alert('Error updating status');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -103,25 +131,104 @@ const AgentDetails = () => {
                 </div>
             </div>
 
-            {/* Sub-Agents */}
-            {subAgents.length > 0 && (
-                <div className="detail-card">
-                    <h3>Sub-Agents ({subAgents.length})</h3>
-                    <div className="sub-agents-grid">
-                        {subAgents.map(sub => (
-                            <Link
-                                key={sub.id}
-                                to={`/agents/details/${sub.id}`}
-                                className="sub-agent-card"
+            {/* KYC Information */}
+            <div className="detail-card kyc-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #f1f5f9', paddingBottom: '1rem' }}>
+                    <h3 style={{ margin: 0, border: 'none', padding: 0 }}>KYC Information</h3>
+                    {agent.kycStatus === 'pending' && (
+                        <div className="kyc-actions" style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleVerifyKYC('verified')}
+                                style={{ background: '#10b981', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                             >
-                                <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
-                                <div className="sub-agent-name">{sub.user?.fullName}</div>
-                                <div className="sub-agent-status">{sub.status}</div>
-                            </Link>
-                        ))}
+                                ✅ Approve
+                            </button>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleVerifyKYC('rejected')}
+                                style={{ background: '#ef4444', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                                ❌ Reject
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="detail-row">
+                    <span className="label">KYC Status:</span>
+                    <span className={`badge status-badge ${agent.kycStatus || 'not_submitted'}`}>
+                        {(agent.kycStatus || 'NOT SUBMITTED').replace('_', ' ').toUpperCase()}
+                    </span>
+                </div>
+                {agent.kycStatus === 'rejected' && (
+                    <div className="detail-row rejection-reason">
+                        <span className="label">Rejection Reason:</span>
+                        <span className="value text-error">{agent.kycRejectionReason}</span>
+                    </div>
+                )}
+
+                <div className="kyc-documents-grid">
+                    <div className="kyc-doc-item">
+                        <span className="doc-label">PAN Card:</span>
+                        <div className="doc-value">
+                            {agent.panNumber ? <strong>{agent.panNumber}</strong> : <span className="text-muted">Not provided</span>}
+                            {agent.panPhoto && (
+                                <a href={`${BASE_URL}/${agent.panPhoto}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">View Photo</a>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="kyc-doc-item">
+                        <span className="doc-label">Aadhaar Card:</span>
+                        <div className="doc-value">
+                            {agent.aadharNumber ? <strong>{agent.aadharNumber}</strong> : <span className="text-muted">Not provided</span>}
+                            <div className="doc-links">
+                                {agent.aadharPhotoFront && (
+                                    <a href={`${BASE_URL}/${agent.aadharPhotoFront}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">Front</a>
+                                )}
+                                {agent.aadharPhotoBack && (
+                                    <a href={`${BASE_URL}/${agent.aadharPhotoBack}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">Back</a>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="kyc-doc-item">
+                        <span className="doc-label">Bank Proof:</span>
+                        <div className="doc-value">
+                            {agent.bankName && agent.accountNumber ? (
+                                <span>{agent.bankName} - {agent.accountNumber}</span>
+                            ) : <span className="text-muted">No Bank Details</span>}
+                            {agent.bankProofPhoto && (
+                                <a href={`${BASE_URL}/${agent.bankProofPhoto}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">View Proof</a>
+                            )}
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Sub-Agents */}
+            {
+                subAgents.length > 0 && (
+                    <div className="detail-card">
+                        <h3>Sub-Agents ({subAgents.length})</h3>
+                        <div className="sub-agents-grid">
+                            {subAgents.map(sub => (
+                                <Link
+                                    key={sub.id}
+                                    to={`/agents/details/${sub.id}`}
+                                    className="sub-agent-card"
+                                >
+                                    <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
+                                    <div className="sub-agent-name">{sub.user?.fullName}</div>
+                                    <div className="sub-agent-status">{sub.status}</div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
 
             {/* Recent Policies */}
             <div className="detail-card">
@@ -155,7 +262,7 @@ const AgentDetails = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

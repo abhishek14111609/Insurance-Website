@@ -526,6 +526,14 @@ export const requestWithdrawal = async (req, res) => {
             });
         }
 
+        // Check KYC status
+        if (agent.kycStatus !== 'verified') {
+            return res.status(403).json({
+                success: false,
+                message: 'Withdrawals are restricted until your KYC is verified. Please complete your KYC in the profile section.'
+            });
+        }
+
         // Validate amount
         if (!amount || amount <= 0) {
             return res.status(400).json({
@@ -845,6 +853,70 @@ export const updateSubAgentTraining = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error updating training progress'
+        });
+    }
+};
+// @desc    Submit KYC documents
+// @route   POST /api/agents/submit-kyc
+// @access  Private (agent)
+export const submitKYC = async (req, res) => {
+    try {
+        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        if (!agent) {
+            return res.status(404).json({ success: false, message: 'Agent profile not found' });
+        }
+
+        const { panNumber, aadharNumber, bankName, accountNumber, ifscCode, accountHolderName } = req.body;
+        const files = req.files;
+
+        // Validation
+        if (panNumber && !/[A-Z]{5}[0-9]{4}[A-Z]{1}/.test(panNumber)) {
+            return res.status(400).json({ success: false, message: 'Invalid PAN Number format' });
+        }
+        if (aadharNumber && !/^[0-9]{12}$/.test(aadharNumber)) {
+            return res.status(400).json({ success: false, message: 'Invalid Aadhaar Number format' });
+        }
+        if (ifscCode && !/[A-Z]{4}0[A-Z0-9]{6}/.test(ifscCode)) {
+            return res.status(400).json({ success: false, message: 'Invalid IFSC Code format' });
+        }
+
+        const updateData = {
+            panNumber: panNumber || agent.panNumber,
+            aadharNumber: aadharNumber || agent.aadharNumber,
+            bankName: bankName || agent.bankName,
+            accountNumber: accountNumber || agent.accountNumber,
+            ifscCode: ifscCode || agent.ifscCode,
+            accountHolderName: accountHolderName || agent.accountHolderName,
+            kycStatus: 'pending'
+        };
+
+        if (files) {
+            // Store relative paths for easier serving (remove absolute path part)
+            const getRelativePath = (file) => {
+                const fullPath = file.path.replace(/\\/g, '/');
+                const uploadIndex = fullPath.indexOf('uploads/');
+                return uploadIndex !== -1 ? fullPath.substring(uploadIndex) : fullPath;
+            };
+
+            if (files.panPhoto) updateData.panPhoto = getRelativePath(files.panPhoto[0]);
+            if (files.aadharPhotoFront) updateData.aadharPhotoFront = getRelativePath(files.aadharPhotoFront[0]);
+            if (files.aadharPhotoBack) updateData.aadharPhotoBack = getRelativePath(files.aadharPhotoBack[0]);
+            if (files.bankProofPhoto) updateData.bankProofPhoto = getRelativePath(files.bankProofPhoto[0]);
+        }
+
+        await agent.update(updateData);
+
+        res.json({
+            success: true,
+            message: 'KYC documents submitted successfully. Pending verification.',
+            data: { agent }
+        });
+    } catch (error) {
+        console.error('Submit KYC error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting KYC documents',
+            error: error.message
         });
     }
 };

@@ -35,6 +35,10 @@
     gap: 1.5rem;
 }
 
+.notification-wrapper {
+    position: relative;
+}
+
 .icon-btn {
     background: transparent;
     border: none;
@@ -43,27 +47,187 @@
     position: relative;
     padding: 0.5rem;
     border-radius: 50%;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    color: var(--text-secondary);
 }
 
 .icon-btn:hover {
     background: var(--background-body);
+    color: var(--primary-color);
 }
 
-.badge {
+.notification-badge {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 2px;
+    right: 2px;
     background: var(--error-color);
     color: white;
-    font-size: 0.7rem;
-    width: 18px;
+    font-size: 0.65rem;
+    min-width: 18px;
     height: 18px;
+    padding: 0 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     font-weight: 700;
+    border: 2px solid var(--background-white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Notification Dropdown */
+.notification-dropdown {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: -100px;
+    width: 360px;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropdown-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.mark-all-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.mark-all-btn:hover {
+    text-decoration: underline;
+}
+
+.dropdown-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.dropdown-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.notification-item {
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    position: relative;
+}
+
+.notification-item:hover {
+    background: var(--background-body);
+}
+
+.notification-item.unread {
+    background: rgba(var(--primary-rgb), 0.03);
+}
+
+.notification-icon {
+    width: 42px;
+    height: 42px;
+    background: var(--background-body);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.notification-info {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.notification-message {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.4rem 0;
+    line-height: 1.4;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.unread-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+}
+
+.dropdown-footer {
+    padding: 0.75rem;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.view-all-btn {
+    width: 100%;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.view-all-btn:hover {
+    color: var(--primary-color);
+    background: var(--background-body);
 }
 
 .user-profile {
@@ -86,7 +250,7 @@
 
 .user-name {
     display: block;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
     font-size: 0.9rem;
 }
@@ -106,6 +270,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
 }

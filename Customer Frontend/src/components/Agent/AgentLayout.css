@@ -20,6 +20,47 @@
     overflow-x: hidden;
 }
 
+.kyc-banner {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-left: 4px solid #f59e0b;
+    padding: 1rem 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.banner-icon {
+    font-size: 1.5rem;
+}
+
+.banner-content {
+    color: #92400e;
+    font-size: 0.95rem;
+}
+
+.banner-content strong {
+    color: #78350f;
+    margin-right: 0.5rem;
+}
+
+.kyc-link {
+    display: inline-block;
+    margin-left: 1rem;
+    background: #f59e0b;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.kyc-link:hover {
+    background: #d97706;
+}
+
 @media (max-width: 1024px) {
     .agent-sidebar {
         transform: translateX(-100%);

@@ -73,6 +73,28 @@ const AgentDashboard = () => {
                 </div>
             </div>
 
+            {/* KYC Mandatory Card */}
+            {user?.kycStatus?.toLowerCase() !== 'verified' && (
+                <div className="mandatory-kyc-card">
+                    <div className="kyc-content">
+                        <div className="kyc-icon">📑</div>
+                        <div className="kyc-info">
+                            <h2>{user?.kycStatus === 'pending' ? 'KYC Under Review' : 'Complete Your KYC'}</h2>
+                            <p>
+                                {user?.kycStatus === 'pending'
+                                    ? 'Your KYC documents are being verified by our team. You will be notified once approved.'
+                                    : 'Please upload your identity and bank documents to start selling policies and withdrawing commissions.'}
+                            </p>
+                        </div>
+                    </div>
+                    {user?.kycStatus !== 'pending' && (
+                        <Link to="/agent/profile" className="btn btn-primary">
+                            Upload Documents Now
+                        </Link>
+                    )}
+                </div>
+            )}
+
             {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">

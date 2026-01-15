@@ -1,8 +1,14 @@
 import { Navigate } from 'react-router-dom';
-import { isAdminLoggedIn } from '../utils/authUtils';
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-    if (!isAdminLoggedIn()) {
+    const { isAuthenticated, loading, isAdmin } = useAuth();
+
+    if (loading) {
+        return <div className="loading-screen">Loading Admin Panel...</div>;
+    }
+
+    if (!isAuthenticated || !isAdmin) {
         return <Navigate to="/login" replace />;
     }
 

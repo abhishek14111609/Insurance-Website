@@ -134,6 +134,9 @@ const ContactUs = () => {
                                 <button type="submit" className="btn btn-primary" disabled={loading}>
                                     {loading ? 'Sending...' : 'Send Message'}
                                 </button>
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? 'Sending...' : 'Send Message'}
+                                </button>
                             </form>
                         </div>
 
