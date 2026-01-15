@@ -3,6 +3,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 // Helper to get raw base url for static files
 export const BASE_URL = API_BASE_URL.replace('/api', '');
 
+// Helper to get token from storage
+const getToken = () => localStorage.getItem('admin_token');
+
 // Helper function to handle API responses
 const handleResponse = async (response) => {
     let data;
@@ -35,8 +38,10 @@ const apiClient = async (endpoint, options = {}) => {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
     // Default headers
+    const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers
     };
 
@@ -74,6 +79,12 @@ export const authAPI = {
             throw new Error('Unauthorized access. Admin privileges required.');
         }
 
+        // Save token and user for utility functions
+        if (data.success && data.data.token) {
+            localStorage.setItem('admin_token', data.data.token);
+            localStorage.setItem('admin_user', JSON.stringify(data.data.user));
+        }
+
         return data;
     },
 
@@ -84,6 +95,8 @@ export const authAPI = {
         } catch (err) {
             console.error('Logout error:', err);
         }
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
         window.location.href = '/login';
     }
 };
@@ -286,32 +299,6 @@ export const contactAPI = {
             method: 'POST',
             body: JSON.stringify({ message })
         });
-    }
-};
-
-// Contact/Inquiries API
-export const contactAPI = {
-    getAll: async () => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/contact/all`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        return handleResponse(response);
-    },
-
-    reply: async (id, message) => {
-        const token = getToken();
-        const response = await fetch(`${API_BASE_URL}/contact/reply/${id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ message })
-        });
-        return handleResponse(response);
     }
 };
 
