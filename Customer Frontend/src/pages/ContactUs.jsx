@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { contactAPI } from '../services/api.service';
+import { useAuth } from '../context/AuthContext';
 import './ContactUs.css';
 
 const ContactUs = () => {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -10,17 +14,42 @@ const ContactUs = () => {
         message: ''
     });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        alert('Thank you for contacting us! We will get back to you soon.');
-        setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-    };
+    // Auto-fill user data if logged in
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.fullName || prev.name,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone
+            }));
+        }
+    }, [user]);
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await contactAPI.submit(formData);
+            alert('Thank you for contacting us! We will get back to you soon.');
+            setFormData(prev => ({
+                ...prev,
+                subject: '',
+                message: ''
+            }));
+        } catch (error) {
+            alert(error.message || 'Failed to send message. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -102,7 +131,9 @@ const ContactUs = () => {
                                         required
                                     ></textarea>
                                 </div>
-                                <button type="submit" className="btn btn-primary">Send Message</button>
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? 'Sending...' : 'Send Message'}
+                                </button>
                             </form>
                         </div>
 

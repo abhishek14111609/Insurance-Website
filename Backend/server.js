@@ -18,6 +18,7 @@ import adminRoutes from './routes/admin.route.js';
 import claimRoutes from './routes/claim.route.js';
 import notificationRoutes from './routes/notification.route.js';
 import policyPlanRoutes from './routes/policyPlan.route.js';
+import contactRoutes from './routes/contact.route.js';
 
 // Utilities
 import { initializeCommissionSettings } from './utils/commission.util.js';
@@ -85,6 +86,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/plans', policyPlanRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

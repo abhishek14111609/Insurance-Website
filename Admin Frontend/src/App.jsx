@@ -30,6 +30,7 @@ import CommissionHistory from './pages/CommissionHistory';
 import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
 import DatabaseSetup from './pages/DatabaseSetup';
+import Inquiries from './pages/Inquiries';
 
 import './App.css';
 
@@ -90,6 +91,14 @@ const AdminLayout = ({ children }) => {
           >
             <span className="icon">👤</span>
             All Customers
+          </NavLink>
+
+          <NavLink
+            to="/inquiries"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">📨</span>
+            Inquiries
           </NavLink>
 
           <div className="nav-section">Policy Management</div>
@@ -223,6 +232,7 @@ const App = () => {
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
                   <Route path="/database-setup" element={<DatabaseSetup />} />
+                  <Route path="/inquiries" element={<Inquiries />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>

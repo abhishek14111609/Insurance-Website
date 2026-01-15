@@ -8,6 +8,7 @@ import Claim from './Claim.js';
 import PolicyPlan from './PolicyPlan.js';
 import Notification from './Notification.js';
 import CommissionSettings from './CommissionSettings.js';
+import Inquiry from './Inquiry.js';
 
 // ============================================
 // USER ASSOCIATIONS
@@ -104,5 +105,6 @@ export {
     Claim,
     PolicyPlan,
     Notification,
-    CommissionSettings
+    CommissionSettings,
+    Inquiry
 };

@@ -555,6 +555,21 @@ export const policyPlanAPI = {
     }
 };
 
+// Contact API
+export const contactAPI = {
+    // Submit inquiry
+    submit: async (formData) => {
+        const response = await fetch(`${API_BASE_URL}/contact/submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        return handleResponse(response);
+    }
+};
+
 // Export all APIs
 export default {
     auth: authAPI,
@@ -563,5 +578,6 @@ export default {
     agent: agentAPI,
     claim: claimAPI,
     notification: notificationAPI,
-    policyPlan: policyPlanAPI
+    policyPlan: policyPlanAPI,
+    contact: contactAPI
 };

@@ -408,10 +408,37 @@ export const claimAPI = {
     }
 };
 
+// Contact/Inquiries API
+export const contactAPI = {
+    getAll: async () => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/contact/all`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    },
+
+    reply: async (id, message) => {
+        const token = getToken();
+        const response = await fetch(`${API_BASE_URL}/contact/reply/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ message })
+        });
+        return handleResponse(response);
+    }
+};
+
 export default {
     auth: authAPI,
     policy: policyAPI,
     admin: adminAPI,
     policyPlan: policyPlanAPI,
-    claim: claimAPI
+    claim: claimAPI,
+    contact: contactAPI
 };
