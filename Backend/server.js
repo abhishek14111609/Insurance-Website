@@ -139,8 +139,8 @@ const startServer = async () => {
             process.exit(1);
         }
 
-        // Sync database (only create tables if they don't exist)
-        await syncDatabase({ force: false });
+        // Sync database (automatically update schema to match models)
+        await syncDatabase({ alter: true });
 
 
         // Initialize commission settings
