@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { contactAPI } from '../services/api.service';
+import { useAuth } from '../context/AuthContext';
 import './ContactUs.css';
 
 const ContactUs = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -12,25 +14,42 @@ const ContactUs = () => {
         message: ''
     });
 
+    // Auto-fill user data if logged in
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.fullName || prev.name,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone
+            }));
+        }
+    }, [user]);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             await contactAPI.submit(formData);
             alert('Thank you for contacting us! We will get back to you soon.');
-            setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+            setFormData(prev => ({
+                ...prev,
+                subject: '',
+                message: ''
+            }));
         } catch (error) {
             alert(error.message || 'Failed to send message. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
     };
 
     return (

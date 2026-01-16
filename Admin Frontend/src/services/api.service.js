@@ -50,6 +50,12 @@ export const authAPI = {
             throw new Error('Unauthorized access. Admin privileges required.');
         }
 
+        // Save token and user for utility functions
+        if (data.success && data.data.token) {
+            localStorage.setItem('admin_token', data.data.token);
+            localStorage.setItem('admin_user', JSON.stringify(data.data.user));
+        }
+
         return data;
     },
 
@@ -60,6 +66,8 @@ export const authAPI = {
         } catch (err) {
             // Silently fail on logout
         }
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
         window.location.href = '/login';
     }
 };
