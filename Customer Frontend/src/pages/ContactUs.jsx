@@ -55,7 +55,7 @@ const ContactUs = () => {
     return (
         <div className="contact-us">
             {/* Hero Section */}
-            <section className="page-hero">
+            <section className="page-hero" style={{ marginTop: '150px', marginBottom: '10px' }}>
                 <div className="container">
                     <h1>Contact Us</h1>
                     <p>We're here to help! Reach out to us for any queries or assistance</p>
@@ -144,20 +144,20 @@ const ContactUs = () => {
                                 <div className="info-card">
                                     <div className="info-icon">📞</div>
                                     <h3>Call Us</h3>
-                                    <p>Customer Care: 1800-123-4567</p>
-                                    <p>Claims: 1800-123-7890</p>
+                                    <p style={{fontWeight: "bold"}}>Customer Care: 79903 39567</p>
+                                    <p style={{fontWeight: "bold"}}>For Claims: 83479 46718</p>
                                     <p>Mon-Sat: 9 AM - 7 PM</p>
                                 </div>
 
                                 <div className="info-card">
                                     <div className="info-icon">✉️</div>
                                     <h3>Email Us</h3>
-                                    <p>support@securelife.com</p>
-                                    <p>claims@securelife.com</p>
+                                    <p style={{fontWeight: "bold"}}>pashudhansuraksha2026@gmail.com</p>
+                                    
                                     <p>Response within 24 hours</p>
                                 </div>
 
-                                <div className="info-card">
+                                {/* <div className="info-card">
                                     <div className="info-icon">📍</div>
                                     <h3>Visit Us</h3>
                                     <p>SecureLife Insurance House</p>
@@ -171,7 +171,7 @@ const ContactUs = () => {
                                     <p>Chat with our experts</p>
                                     <p>Available 24/7</p>
                                     <button className="btn btn-secondary">Start Chat</button>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </div>
@@ -179,7 +179,7 @@ const ContactUs = () => {
             </section>
 
             {/* Branch Locator */}
-            <section className="section bg-light">
+            {/* <section className="section bg-light">
                 <div className="container">
                     <h2 className="section-title">Find a Branch Near You</h2>
                     <div className="locator-section">
@@ -209,12 +209,12 @@ const ContactUs = () => {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* FAQ Section */}
             <section className="section">
                 <div className="container">
-                    <h2 className="section-title">Frequently Asked Questions</h2>
+                    <h2 className="section-title" style={{justifyContent: "center"}}>Frequently Asked Questions</h2>
                     <div className="faq-grid">
                         <div className="faq-item">
                             <h3>How can I buy insurance online?</h3>
@@ -248,9 +248,9 @@ const ContactUs = () => {
             <section className="section bg-gradient">
                 <div className="container">
                     <div className="cta-content">
-                        <h2>Still Have Questions?</h2>
-                        <p>Our customer support team is available 24/7 to assist you</p>
-                        <button className="btn btn-outline">Call 1800-123-4567</button>
+                        <h2 style={{ color: "white" }}>Still Have Questions?</h2>
+                        <p style={{ color: "white" }}>Our customer support team is available 24/7 to assist you</p>
+                        <button className="btn btn-outline" style={{ color: "white", border: "8px solid white" }}>Call 83479 46718</button>
                     </div>
                 </div>
             </section>

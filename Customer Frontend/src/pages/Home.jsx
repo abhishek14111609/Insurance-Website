@@ -14,8 +14,8 @@ const Home = () => {
                         Comprehensive insurance for Cows and Buffaloes. Death, disease, and accident cover starting at just 4%.
                     </p>
                     <div className="hero-buttons fade-in-up">
-                        <Link to="/animal-insurance" className="btn btn-primary">Get Cattle Quote</Link>
-                        <Link to="/register" className="btn btn-outline">Farmer Registration</Link>
+                        <Link to="/animal-insurance" className="btn btn-primary" style={{ color: 'white', border: "1px solid white" }}>Get Cattle Quote</Link>
+                        <Link to="/register" className="btn btn-outline" style={{ color: 'white', border: "1px solid white" }}>Farmer Registration</Link>
                     </div>
                     <div className="hero-stats">
                         <div className="stat">
@@ -37,10 +37,7 @@ const Home = () => {
             {/* Main Product Section - Single Cattle Focus */}
             <section className="section">
                 <div className="container">
-                    <h2 className="section-title">Why Insure Your Livestock?</h2>
-                    <p className="section-subtitle">
-                        Your cattle are your biggest asset. Don't let disease or accidents wipe out your livelihood.
-                    </p>
+                    <h2 className="section-title" style={{ justifyContent: 'center', color: 'black' }}>Why Insure Your Livestock?</h2>
 
                     <div className="product-showcase-single">
                         <div className="featured-card-large animate-fade-in">
@@ -109,10 +106,10 @@ const Home = () => {
             {/* CTA Section */}
             <section className="cta-section">
                 <div className="container">
-                    <h2>Don't Wait for Mishaps</h2>
-                    <p>Insure your Cow or Buffalo in less than 5 minutes.</p>
+                    <h2 style={{ color: 'white' }}>Don't Wait for Mishaps</h2>
+                    <p style={{ color: 'white' }}>Insure your Cow or Buffalo in less than 5 minutes.</p>
                     <div className="cta-buttons">
-                        <Link to="/animal-insurance" className="btn btn-primary">Buy Policy Now</Link>
+                        <Link to="/animal-insurance" className="btn btn-primary" style={{ color: 'white', border: "8px solid white", fontSize: '20px' }}>Buy Policy Now</Link>
                     </div>
                 </div>
             </section>

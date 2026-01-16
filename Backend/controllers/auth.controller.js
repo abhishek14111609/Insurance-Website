@@ -1,5 +1,6 @@
 import { User, Agent } from '../models/index.js';
 import { generateToken, generateRefreshToken } from '../middleware/auth.middleware.js';
+import { sendEmail } from '../utils/email.util.js';
 import crypto from 'crypto';
 
 // @desc    Register new user
@@ -412,9 +413,19 @@ export const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = resetTokenExpiry;
         await user.save();
 
-        // TODO: Send email with reset link
-        // const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-        // await sendEmail({ to: email, subject: 'Password Reset', resetUrl });
+        // Send email with reset link
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        await sendEmail({
+            to: email,
+            subject: 'Password Reset - Pashudhan Suraksha',
+            html: `
+                <h1>Password Reset Request</h1>
+                <p>You requested a password reset. Please click the link below to reset your password:</p>
+                <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+                <p>This link will expire in 1 hour.</p>
+                <p>If you did not request this, please ignore this email.</p>
+            `
+        });
 
         res.json({
             success: true,
