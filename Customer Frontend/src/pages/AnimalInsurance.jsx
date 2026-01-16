@@ -62,16 +62,16 @@ const AnimalInsurance = () => {
                         </p>
                         <div className="hero-stats">
                             <div className="stat-item">
-                                <strong>10,000+</strong>
-                                <span>Farmers Protected</span>
+                                <strong style={{ color: 'white', fontSize: '2rem' }}>10,000+</strong>
+                                <span style={{ color: 'white' }}>Farmers Protected</span>
                             </div>
                             <div className="stat-item">
-                                <strong>₹5 Cr+</strong>
-                                <span>Claims Settled</span>
+                                <strong style={{ color: 'white', fontSize: '2rem' }}>₹5 Cr+</strong>
+                                <span style={{ color: 'white' }}>Claims Settled</span>
                             </div>
                             <div className="stat-item">
-                                <strong>7 Days</strong>
-                                <span>Claim Settlement</span>
+                                <strong style={{ color: 'white', fontSize: '2rem' }}>7 Days</strong>
+                                <span style={{ color: 'white' }}>Claim Settlement</span>
                             </div>
                         </div>
                     </div>
@@ -81,9 +81,9 @@ const AnimalInsurance = () => {
             {/* Plans Section */}
             <section className="plans-section">
                 <div className="container">
-                    <div className="section-header">
+                    <div className="section-header" style={{ justifyContent : 'center' }} >
                         <h2>Choose Your Protection Plan</h2>
-                        <p>Select from our specially designed livestock protection plans.</p>
+                        {/* <p>Select from our specially designed livestock protection plans.</p> */}
                     </div>
 
                     {loading ? (
@@ -154,7 +154,7 @@ const AnimalInsurance = () => {
             {/* Coverage Details */}
             <section className="coverage-section">
                 <div className="container">
-                    <h2 className="section-title">What's Covered?</h2>
+                    <h2 className="section-title" style={{ justifyContent: 'center' }}>What's Covered?</h2>
                     <div className="coverage-grid">
                         <div className="coverage-box covered">
                             <h3>✓ Covered</h3>
@@ -187,7 +187,8 @@ const AnimalInsurance = () => {
             {/* How It Works */}
             <section className="how-it-works-section">
                 <div className="container">
-                    <h2 className="section-title">How It Works</h2>
+                    <h2 className="section-title" style={{ justifyContent: 'center' }}>How It Works</h2>
+                    <br />  
                     <div className="steps-grid">
                         <div className="step-card">
                             <div className="step-number">1</div>
@@ -223,7 +224,7 @@ const AnimalInsurance = () => {
                     <div className="cta-content">
                         <h2>Secure Your Livelihood Today</h2>
                         <p>Join thousands of farmers who trust SecureLife for their cattle insurance</p>
-                        <button
+                        <button style={{ color: 'white', border: "8px solid white", fontSize: '20px' }}
                             className="btn btn-outline btn-large"
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         >

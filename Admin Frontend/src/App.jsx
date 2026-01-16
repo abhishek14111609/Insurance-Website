@@ -30,6 +30,7 @@ import CommissionHistory from './pages/CommissionHistory';
 import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
 import Inquiries from './pages/Inquiries';
+import DatabaseSetup from './pages/DatabaseSetup';
 
 import './App.css';
 
@@ -68,7 +69,7 @@ const AdminLayout = ({ children }) => {
             <span className="icon">👥</span>
             All Agents
           </NavLink>
-{/* 
+          {/* 
           <NavLink
             to="/agents/add"
             className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
@@ -232,6 +233,7 @@ const App = () => {
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
                   <Route path="/inquiries" element={<Inquiries />} />
+                  <Route path="/database-setup" element={<DatabaseSetup />} />
                 </Routes>
               </AdminLayout>
             </ProtectedRoute>

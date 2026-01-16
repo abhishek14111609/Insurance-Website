@@ -2,12 +2,12 @@ import './AboutUs.css';
 
 const AboutUs = () => {
     return (
-        <div className="about-us">
+        <div className="about-us" >
             {/* Hero Section */}
-            <section className="page-hero">
+            <section className="page-hero" style={{ marginTop: '150px', }}>
                 <div className="container">
-                    <h1>About SecureLife Insurance</h1>
-                    <p>Your trusted partner in protecting what matters most for over 20 years</p>
+                    <h1 style={{ textAlign: 'center' }}>About SecureLife Insurance</h1>
+                    <p style={{ textAlign: 'center' }}>Your trusted partner in protecting what matters most for over 20 years</p>
                 </div>
             </section>
 
@@ -187,9 +187,9 @@ const AboutUs = () => {
             <section className="section bg-gradient">
                 <div className="container">
                     <div className="cta-content">
-                        <h2>Join Our Family of 5M+ Happy Customers</h2>
-                        <p>Experience the best insurance services with us</p>
-                        <button className="btn btn-outline">Get Started</button>
+                        <h2 style={{ color: 'white' }}>Join Our Family of 5M+ Happy Customers</h2>
+                        <p style={{ color: 'white' }}>Experience the best insurance services with us</p>
+                        <button className="btn btn-outline" style={{ color: 'white', border: "8px solid white" }}>Get Started</button>
                     </div>
                 </div>
             </section>

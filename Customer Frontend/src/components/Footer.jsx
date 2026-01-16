@@ -8,20 +8,20 @@ const Footer = () => {
                 <div className="footer-grid">
                     <div className="footer-column">
                         <h3 className="footer-logo">🛡️ SecureLife Insurance</h3>
-                        <p className="footer-description">
+                        <p className="footer-description" style={{color: "white"}}>
                             India's most trusted Cattle Insurance provider. Protecting your livestock, securing your livelihood.
                         </p>
-                        <div className="footer-social">
-                            <a href="#" aria-label="Facebook">📘</a>
-                            <a href="#" aria-label="Twitter">🐦</a>
-                            <a href="#" aria-label="Instagram">📷</a>
-                        </div>
+                        {/* <div className="footer-social">
+                            <a href="#" aria-label="Facebook"></a>
+                            <a href="#" aria-label="Twitter"></a>
+                            <a href="#" aria-label="Instagram"></a>
+                        </div> */}
                     </div>
 
                     <div className="footer-column">
                         <h4>Our Product</h4>
                         <ul>
-                            <li><Link to="/animal-insurance">Cattle Insurance</Link></li>
+                            <li><Link to="/animal-insurance" style={{color: "white"}}>Cattle Insurance</Link></li>
                         </ul>
                     </div>
 
@@ -32,28 +32,28 @@ const Footer = () => {
                         </ul>
                         <h4 style={{ marginTop: '1.5rem' }}>Quick Links</h4>
                         <ul>
-                            <li><Link to="/about-us">About Us</Link></li>
-                            <li><Link to="/contact-us">Contact Us</Link></li>
-                            <li><Link to="/login">Farmer Login</Link></li>
+                            <li><Link to="/about-us" style={{color: "white"}}>About Us</Link></li>
+                            <li><Link to="/contact-us" style={{color: "white"}}>Contact Us</Link></li>
+                            <li><Link to="/login" style={{color: "white"}}>Farmer Login</Link></li>
                         </ul>
                     </div>
 
                     <div className="footer-column">
                         <h4>Support</h4>
                         <ul>
-                            <li><a href="tel:1800-123-4567">📞 1800-123-4567</a></li>
-                            <li><a href="mailto:support@securelife.com">✉️ support@securelife.com</a></li>
+                            <li><a href="tel:1800-123-4567" style={{color: "white"}}>📞 1800-123-4567</a></li>
+                            <li><a href="mailto:support@securelife.com" style={{color: "white"}}>✉️ support@securelife.com</a></li>
                             <li>🕐 24/7 Farmer Support</li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="footer-legal">
-                    <p>&copy; 2026 SecureLife Insurance. All rights reserved.</p>
+                    <p style={{color: "white"}}>&copy; 2026 SecureLife Insurance. All rights reserved.</p>
                     <div className="footer-links">
-                        <a href="#">Privacy Policy</a>
+                        <a href="#" style={{color: "white"}}>Privacy Policy</a>
                         <span>|</span>
-                        <a href="#">Terms & Conditions</a>
+                        <a href="#" style={{color: "white"}}>Terms & Conditions</a>
                     </div>
                 </div>
             </div>

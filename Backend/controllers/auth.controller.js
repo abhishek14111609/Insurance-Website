@@ -1,5 +1,6 @@
 import { User, Agent } from '../models/index.js';
 import { generateToken, generateRefreshToken } from '../middleware/auth.middleware.js';
+import { sendEmail } from '../utils/email.util.js';
 import crypto from 'crypto';
 
 // @desc    Register new user
@@ -36,23 +37,22 @@ export const register = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Set HTTP-only cookie for security (XSS protection)
-        // Token is NOT sent in response body - only in cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        // Set role-specific cookie name to prevent cross-portal auth issues
-        const roleCookieName = user.role === 'admin' ? 'admin_token' : 'token';
-        res.cookie(roleCookieName, token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        // Set HTTP-only cookie based on role
+        if (user.role === 'admin') {
+            res.cookie('admin_token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+        } else {
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+        }
 
         res.status(201).json({
             success: true,
@@ -203,23 +203,22 @@ export const login = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Set HTTP-only cookies for security (XSS protection)
-        // Token is NOT sent in response body - only in cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        // Set role-specific cookie name to prevent cross-portal auth issues
-        const roleCookieName = user.role === 'admin' ? 'admin_token' : 'token';
-        res.cookie(roleCookieName, token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        // Set HTTP-only cookie based on role
+        if (user.role === 'admin') {
+            res.cookie('admin_token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+        } else {
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+        }
 
         // If user is an agent, include agent profile
         let agentProfile = null;
@@ -412,9 +411,19 @@ export const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = resetTokenExpiry;
         await user.save();
 
-        // TODO: Send email with reset link
-        // const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-        // await sendEmail({ to: email, subject: 'Password Reset', resetUrl });
+        // Send email with reset link
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        await sendEmail({
+            to: email,
+            subject: 'Password Reset - Pashudhan Suraksha',
+            html: `
+                <h1>Password Reset Request</h1>
+                <p>You requested a password reset. Please click the link below to reset your password:</p>
+                <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+                <p>This link will expire in 1 hour.</p>
+                <p>If you did not request this, please ignore this email.</p>
+            `
+        });
 
         res.json({
             success: true,

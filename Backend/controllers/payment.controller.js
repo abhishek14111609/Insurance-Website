@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { Payment, Policy, Commission, Agent } from '../models/index.js';
+import { calculateAndDistributeCommissions } from '../utils/commission.util.js';
 
 // Initialize Razorpay only if keys are present
 let razorpay = null;
@@ -138,7 +139,7 @@ export const verifyPayment = async (req, res) => {
 
             // Calculate and create commissions if agent involved
             if (policy.agentId) {
-                await calculateCommissions(policy);
+                await calculateAndDistributeCommissions(policy);
             }
         }
 
@@ -229,67 +230,10 @@ export const handleWebhook = async (req, res) => {
     }
 };
 
-// Helper function to calculate commissions
-async function calculateCommissions(policy) {
-    try {
-        const agent = await Agent.findById(policy.agentId);
-        if (!agent) return;
-
-        // Commission settings (can be fetched from database)
-        const commissionRates = {
-            level1: 15, // 15%
-            level2: 10, // 10%
-            level3: 5   // 5%
-        };
-
-        const commissions = [];
-
-        // Level 1 - Direct agent
-        commissions.push({
-            policyId: policy._id,
-            agentId: agent._id,
-            level: 1,
-            percentage: commissionRates.level1,
-            amount: (policy.premium * commissionRates.level1) / 100,
-            status: 'pending'
-        });
-
-        // Level 2 - Parent agent
-        if (agent.parentAgentId) {
-            const parentAgent = await Agent.findById(agent.parentAgentId);
-            if (parentAgent) {
-                commissions.push({
-                    policyId: policy._id,
-                    agentId: parentAgent._id,
-                    level: 2,
-                    percentage: commissionRates.level2,
-                    amount: (policy.premium * commissionRates.level2) / 100,
-                    status: 'pending'
-                });
-
-                // Level 3 - Grandparent agent
-                if (parentAgent.parentAgentId) {
-                    const grandparentAgent = await Agent.findById(parentAgent.parentAgentId);
-                    if (grandparentAgent) {
-                        commissions.push({
-                            policyId: policy._id,
-                            agentId: grandparentAgent._id,
-                            level: 3,
-                            percentage: commissionRates.level3,
-                            amount: (policy.premium * commissionRates.level3) / 100,
-                            status: 'pending'
-                        });
-                    }
-                }
-            }
-        }
-
-        // Create commission records
-        await Commission.insertMany(commissions);
-    } catch (error) {
-        console.error('Calculate commissions error:', error);
-    }
-}
+// Helper function to calculate commissions - REPLACED by centralized utility
+// async function calculateCommissions(policy) {
+//     // ... Logic moved to utils/commission.util.js
+// }
 
 // Helper function for payment captured event
 async function handlePaymentCaptured(paymentEntity) {
