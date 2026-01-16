@@ -1,11 +1,15 @@
 // Admin Utility Functions
+// SECURITY: Business data should come from API, not localStorage
+// These utility functions are kept for backward compatibility during migration
 
-// ============================================
-// POLICY MANAGEMENT
-// ============================================
+// Storage key namespace for admin data
+const ADMIN_STORAGE_PREFIX = 'admin:';
 
+// Get all policies (BACKWARD COMPATIBILITY - use API instead in production)
 export const getAllPolicies = () => {
-    return JSON.parse(localStorage.getItem('customer_policies') || '[]');
+    // SECURITY: This is a fallback, real implementation should use API
+    console.warn('getAllPolicies: Using localStorage fallback. Use policyAPI.getAll() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'customer_policies') || '[]');
 };
 
 export const getPendingPolicies = () => {
@@ -23,7 +27,7 @@ export const approvePolicy = (policyId, adminNotes = '') => {
         policies[policyIndex].approvedBy = 'admin';
         policies[policyIndex].adminNotes = adminNotes;
 
-        localStorage.setItem('customer_policies', JSON.stringify(policies));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'customer_policies', JSON.stringify(policies));
         return { success: true, policy: policies[policyIndex] };
     }
 
@@ -40,7 +44,7 @@ export const rejectPolicy = (policyId, reason = '') => {
         policies[policyIndex].rejectedBy = 'admin';
         policies[policyIndex].rejectionReason = reason;
 
-        localStorage.setItem('customer_policies', JSON.stringify(policies));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'customer_policies', JSON.stringify(policies));
         return { success: true, policy: policies[policyIndex] };
     }
 
@@ -52,7 +56,8 @@ export const rejectPolicy = (policyId, reason = '') => {
 // ============================================
 
 export const getAllAgents = () => {
-    return JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getAllAgents: Using localStorage fallback. Use adminAPI.getAllAgents() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
 };
 
 export const getPendingAgents = () => {
@@ -70,7 +75,7 @@ export const approveAgent = (agentId, adminNotes = '') => {
         agents[agentIndex].approvedBy = 'admin';
         agents[agentIndex].adminNotes = adminNotes;
 
-        localStorage.setItem('agent_hierarchy', JSON.stringify(agents));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(agents));
         return { success: true, agent: agents[agentIndex] };
     }
 
@@ -87,7 +92,7 @@ export const rejectAgent = (agentId, reason = '') => {
         agents[agentIndex].rejectedBy = 'admin';
         agents[agentIndex].rejectionReason = reason;
 
-        localStorage.setItem('agent_hierarchy', JSON.stringify(agents));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(agents));
         return { success: true, agent: agents[agentIndex] };
     }
 
@@ -99,7 +104,8 @@ export const rejectAgent = (agentId, reason = '') => {
 // ============================================
 
 export const getAllCustomers = () => {
-    return JSON.parse(localStorage.getItem('customer_users') || '[]');
+    console.warn('getAllCustomers: Using localStorage fallback. Use adminAPI.getAllCustomers() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'customer_users') || '[]');
 };
 
 export const getCustomerById = (customerId) => {
@@ -123,16 +129,17 @@ export const getCommissionSettings = () => {
         level3: 5
     };
 
-    return JSON.parse(localStorage.getItem('commission_settings') || JSON.stringify(defaultSettings));
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'commission_settings') || JSON.stringify(defaultSettings));
 };
 
 export const updateCommissionSettings = (settings) => {
-    localStorage.setItem('commission_settings', JSON.stringify(settings));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'commission_settings', JSON.stringify(settings));
     return { success: true };
 };
 
 export const getAllCommissionRecords = () => {
-    return JSON.parse(localStorage.getItem('commission_records') || '[]');
+    console.warn('getAllCommissionRecords: Using localStorage fallback. Use adminAPI.getAllCommissions() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'commission_records') || '[]');
 };
 
 // ============================================
@@ -140,7 +147,8 @@ export const getAllCommissionRecords = () => {
 // ============================================
 
 export const getAllWithdrawals = () => {
-    return JSON.parse(localStorage.getItem('withdrawal_requests') || '[]');
+    console.warn('getAllWithdrawals: Using localStorage fallback. Use adminAPI.getWithdrawals() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'withdrawal_requests') || '[]');
 };
 
 export const getPendingWithdrawals = () => {
@@ -158,7 +166,7 @@ export const approveWithdrawal = (withdrawalId, adminNotes = '') => {
         withdrawals[withdrawalIndex].approvedBy = 'admin';
         withdrawals[withdrawalIndex].adminNotes = adminNotes;
 
-        localStorage.setItem('withdrawal_requests', JSON.stringify(withdrawals));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'withdrawal_requests', JSON.stringify(withdrawals));
         return { success: true, withdrawal: withdrawals[withdrawalIndex] };
     }
 
@@ -175,7 +183,7 @@ export const rejectWithdrawal = (withdrawalId, reason = '') => {
         withdrawals[withdrawalIndex].rejectedBy = 'admin';
         withdrawals[withdrawalIndex].rejectionReason = reason;
 
-        localStorage.setItem('withdrawal_requests', JSON.stringify(withdrawals));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'withdrawal_requests', JSON.stringify(withdrawals));
         return { success: true, withdrawal: withdrawals[withdrawalIndex] };
     }
 
@@ -187,7 +195,8 @@ export const rejectWithdrawal = (withdrawalId, reason = '') => {
 // ============================================
 
 export const sendNotification = (notification) => {
-    const notifications = JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+    console.warn('sendNotification: Using localStorage fallback. Use notification API instead.');
+    const notifications = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'admin_notifications') || '[]');
 
     const newNotification = {
         id: Date.now(),
@@ -197,13 +206,13 @@ export const sendNotification = (notification) => {
     };
 
     notifications.push(newNotification);
-    localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'admin_notifications', JSON.stringify(notifications));
 
     return { success: true, notification: newNotification };
 };
 
 export const getAllNotifications = () => {
-    return JSON.parse(localStorage.getItem('admin_notifications') || '[]');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'admin_notifications') || '[]');
 };
 
 // ============================================
@@ -211,17 +220,18 @@ export const getAllNotifications = () => {
 // ============================================
 
 export const sendEmail = (emailData) => {
+    console.warn('sendEmail: Using localStorage fallback. Use email API instead.');
     // Simulate email sending
     console.log('Email sent:', emailData);
 
     // Store email log
-    const emailLogs = JSON.parse(localStorage.getItem('email_logs') || '[]');
+    const emailLogs = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'email_logs') || '[]');
     emailLogs.push({
         id: Date.now(),
         ...emailData,
         sentAt: new Date().toISOString()
     });
-    localStorage.setItem('email_logs', JSON.stringify(emailLogs));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'email_logs', JSON.stringify(emailLogs));
 
     return { success: true, message: 'Email sent successfully' };
 };

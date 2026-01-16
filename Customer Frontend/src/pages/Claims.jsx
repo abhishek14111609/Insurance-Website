@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { claimAPI } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/numberUtils';
 import './Claims.css';
 
 const Claims = () => {
@@ -150,12 +151,12 @@ const Claims = () => {
                                         </div>
                                         <div className="claim-detail">
                                             <span>Claimed Amount:</span>
-                                            <strong>₹{claim.claimAmount?.toLocaleString()}</strong>
+                                            <strong>{formatCurrency(claim.claimAmount)}</strong>
                                         </div>
                                         {claim.approvedAmount && (
                                             <div className="claim-detail">
                                                 <span>Approved Amount:</span>
-                                                <strong className="text-success">₹{claim.approvedAmount?.toLocaleString()}</strong>
+                                                <strong className="text-success">{formatCurrency(claim.approvedAmount)}</strong>
                                             </div>
                                         )}
                                         <div className="claim-detail">

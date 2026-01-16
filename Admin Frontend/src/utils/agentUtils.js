@@ -1,4 +1,8 @@
 // Agent Management Utilities
+// SECURITY: Business data should come from API, not localStorage
+
+// Storage key namespace for admin data
+const ADMIN_STORAGE_PREFIX = 'admin:';
 
 // Generate unique agent code
 export const generateAgentCode = (parentCode = null) => {
@@ -34,9 +38,10 @@ export const getAgentLevel = (code) => {
     return parts.length;
 };
 
-// Get all agents
+// Get all agents (BACKWARD COMPATIBILITY - use API instead)
 export const getAllAgents = () => {
-    return JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getAllAgents: Using localStorage fallback. Use adminAPI.getAllAgents() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
 };
 
 // Get agent by ID
@@ -79,6 +84,7 @@ export const getAgentHierarchy = (agentId) => {
 
 // Add new agent
 export const addAgent = (agentData) => {
+    console.warn('addAgent: Using localStorage. Use adminAPI.createAgent() instead.');
     const agents = getAllAgents();
 
     const newAgent = {
@@ -106,7 +112,7 @@ export const addAgent = (agentData) => {
     };
 
     agents.push(newAgent);
-    localStorage.setItem('agent_hierarchy', JSON.stringify(agents));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(agents));
 
     return { success: true, agent: newAgent };
 };
@@ -127,7 +133,7 @@ export const updateAgent = (agentId, updates) => {
         updatedBy: 'admin'
     };
 
-    localStorage.setItem('agent_hierarchy', JSON.stringify(agents));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(agents));
 
     return { success: true, agent: agents[agentIndex] };
 };
@@ -143,15 +149,16 @@ export const deleteAgent = (agentId) => {
     }
 
     const filteredAgents = agents.filter(a => a.id !== agentId);
-    localStorage.setItem('agent_hierarchy', JSON.stringify(filteredAgents));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(filteredAgents));
 
     return { success: true };
 };
 
 // Get agent statistics
 export const getAgentStats = (agentId) => {
-    const policies = JSON.parse(localStorage.getItem('customer_policies') || '[]');
-    const commissions = JSON.parse(localStorage.getItem('commission_records') || '[]');
+    console.warn('getAgentStats: Using localStorage fallback. Use API instead.');
+    const policies = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'customer_policies') || '[]');
+    const commissions = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'commission_records') || '[]');
 
     const agentPolicies = policies.filter(p => p.agentId === agentId);
     const agentCommissions = commissions.filter(c => c.agentId === agentId);

@@ -162,7 +162,22 @@ const policySchema = new mongoose.Schema(
         }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            transform: function(doc, ret) {
+                // Convert Decimal128 to regular numbers
+                if (ret.coverageAmount instanceof mongoose.Types.Decimal128) {
+                    ret.coverageAmount = parseFloat(ret.coverageAmount.toString());
+                }
+                if (ret.premium instanceof mongoose.Types.Decimal128) {
+                    ret.premium = parseFloat(ret.premium.toString());
+                }
+                if (ret.milkYield instanceof mongoose.Types.Decimal128) {
+                    ret.milkYield = parseFloat(ret.milkYield.toString());
+                }
+                return ret;
+            }
+        }
     }
 );
 

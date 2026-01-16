@@ -36,7 +36,7 @@ const Inquiries = () => {
 
         try {
             setReplyLoading(true);
-            const response = await contactAPI.reply(selectedInquiry.id, replyMessage);
+            const response = await contactAPI.reply(selectedInquiry._id, replyMessage);
             if (response.success) {
                 alert('Reply sent successfully!');
                 setReplyMessage('');
@@ -64,7 +64,7 @@ const Inquiries = () => {
                     <p className="no-data">No inquiries found.</p>
                 ) : (
                     inquiries.map(inquiry => (
-                        <div key={inquiry.id} className={`inquiry-card ${inquiry.status}`}>
+                        <div key={inquiry._id} className={`inquiry-card ${inquiry.status}`}>
                             <div className="inquiry-header">
                                 <div>
                                     <h3 className="inquiry-subject">{inquiry.subject}</h3>

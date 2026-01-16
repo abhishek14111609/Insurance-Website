@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { policyAPI } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/numberUtils';
 import './MyPolicies.css';
 
 const MyPolicies = () => {
@@ -143,11 +144,11 @@ const MyPolicies = () => {
                                         <div className="policy-details">
                                             <div className="detail-row">
                                                 <span>Coverage:</span>
-                                                <strong>₹{policy.coverageAmount?.toLocaleString()}</strong>
+                                                <strong>{formatCurrency(policy.coverageAmount)}</strong>
                                             </div>
                                             <div className="detail-row">
                                                 <span>Premium:</span>
-                                                <strong>₹{policy.premium?.toLocaleString()}</strong>
+                                                <strong>{formatCurrency(policy.premium)}</strong>
                                             </div>
                                             <div className="detail-row">
                                                 <span>Period:</span>

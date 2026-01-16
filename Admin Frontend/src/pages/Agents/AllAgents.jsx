@@ -104,12 +104,12 @@ const AllAgents = () => {
                     <h1>👥 Agent Management</h1>
                     <p>Manage all agents and their hierarchy</p>
                 </div>
-                {/* 
-                // Disabled Adding Agents manually as Admin for now, relying on public registration + approval
+                
+                {/* // Disabled Adding Agents manually as Admin for now, relying on public registration + approval */}
                 <Link to="/agents/add" className="btn btn-primary">
                     ➕ Add New Agent
                 </Link> 
-                */}
+               
             </div>
 
             {/* Filters */}

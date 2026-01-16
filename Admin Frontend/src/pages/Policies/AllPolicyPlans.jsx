@@ -68,7 +68,7 @@ const AllPolicyPlans = () => {
             ) : (
                 <div className="plans-grid">
                     {plans.map(plan => (
-                        <div key={plan.id} className="plan-card">
+                        <div key={plan._id || plan.id} className="plan-card">
                             <div className="plan-header">
                                 <h3>{plan.name}</h3>
                                 <span className={`status-badge ${plan.isActive ? 'active' : 'inactive'}`}>
@@ -79,11 +79,11 @@ const AllPolicyPlans = () => {
                             <div className="plan-pricing">
                                 <div className="premium">
                                     <span className="label">Premium</span>
-                                    <span className="amount">₹{plan.premium}</span>
+                                    <span className="amount">₹{parseFloat(plan.premium?.$numberDecimal || plan.premium || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="coverage">
                                     <span className="label">Coverage</span>
-                                    <span className="amount">₹{parseFloat(plan.coverageAmount).toLocaleString()}</span>
+                                    <span className="amount">₹{parseFloat(plan.coverageAmount?.$numberDecimal || plan.coverageAmount || 0).toLocaleString()}</span>
                                 </div>
                             </div>
 
@@ -112,13 +112,13 @@ const AllPolicyPlans = () => {
 
                             <div className="plan-actions">
                                 <Link
-                                    to={`/policy-plans/edit/${plan.id}`}
+                                    to={`/policy-plans/edit/${plan._id}`}
                                     className="btn btn-secondary"
                                 >
                                     ✏️ Edit
                                 </Link>
                                 <button
-                                    onClick={() => handleDelete(plan.id, plan.name)}
+                                    onClick={() => handleDelete(plan._id, plan.name)}
                                     className="btn btn-danger"
                                 >
                                     🗑️ Delete

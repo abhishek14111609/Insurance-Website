@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { policyAPI, BASE_URL } from '../services/api.service';
+import { formatCurrency } from '../utils/numberUtils';
 import './PolicyApprovals.css';
 
 const PolicyApprovals = () => {
@@ -181,11 +182,11 @@ const PolicyApprovals = () => {
                                     </div>
                                     <div className="detail-row">
                                         <span className="label">Coverage:</span>
-                                        <span className="value highlight">₹{parseInt(policy.coverageAmount).toLocaleString()}</span>
+                                        <span className="value highlight">{formatCurrency(policy.coverageAmount)}</span>
                                     </div>
                                     <div className="detail-row">
                                         <span className="label">Premium:</span>
-                                        <span className="value highlight">₹{parseInt(policy.premium).toLocaleString()}</span>
+                                        <span className="value highlight">{formatCurrency(policy.premium)}</span>
                                     </div>
                                     <div className="detail-row">
                                         <span className="label">Breed:</span>
@@ -286,8 +287,8 @@ const PolicyApprovals = () => {
                                 <section className="info-section">
                                     <h3>📄 Policy & Photos</h3>
                                     <div className="info-grid single-col">
-                                        <div className="info-item"><span className="label">Premium:</span> <span className="highlight">₹{parseInt(selectedPolicy.premium).toLocaleString()}</span></div>
-                                        <div className="info-item"><span className="label">Coverage:</span> <span className="highlight">₹{parseInt(selectedPolicy.coverageAmount).toLocaleString()}</span></div>
+                                        <div className="info-item"><span className="label">Premium:</span> <span className="highlight">{formatCurrency(selectedPolicy.premium)}</span></div>
+                                        <div className="info-item"><span className="label">Coverage:</span> <span className="highlight">{formatCurrency(selectedPolicy.coverageAmount)}</span></div>
                                     </div>
                                     <div className="policy-photos-view">
                                         <h4>Identification Photos:</h4>
@@ -353,7 +354,7 @@ const PolicyApprovals = () => {
                             <div className="policy-summary">
                                 <p><strong>Policy:</strong> {selectedPolicy?.policyNumber}</p>
                                 <p><strong>Customer:</strong> {selectedPolicy?.ownerName}</p>
-                                <p><strong>Coverage:</strong> ₹{parseInt(selectedPolicy?.coverageAmount || 0).toLocaleString()}</p>
+                                <p><strong>Coverage:</strong> {formatCurrency(selectedPolicy?.coverageAmount)}</p>
                             </div>
 
                             {modalType === 'approve' ? (

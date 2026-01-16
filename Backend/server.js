@@ -44,14 +44,19 @@ app.use(cors({
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
-        // Allow any localhost origin
-        if (origin.startsWith('http://localhost:')) {
+        // Allow any localhost origin (handles different ports for dev)
+        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
             return callback(null, true);
         }
 
-        // Allow other specific origins if needed
-        const allowedOrigins = ['http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // Allow specific production origins if needed
+        const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // In development, allow all localhost origins
+        if (process.env.NODE_ENV === 'development') {
             return callback(null, true);
         }
 

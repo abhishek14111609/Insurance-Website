@@ -20,14 +20,18 @@ axiosInstance.interceptors.response.use(
         return response.data; // Return only the data
     },
     error => {
-        // Handle 401 errors
+        // Handle 401 errors - redirect to admin login
         if (error.response?.status === 401) {
-            // Only redirect if not already on the login page
-            if (!window.location.pathname.includes('/login')) {
+            // Don't redirect if already on the login page
+            if (window.location.pathname !== '/login') {
+                // Clear all admin localStorage items (no token to clear - it's in cookie)
+                localStorage.removeItem('admin:auth_user');
+                // Token in HTTP-only cookie will be cleared by backend on logout
+                // Redirect to admin login
                 window.location.href = '/login';
             }
         }
-        
+
         // Re-throw the error for the caller to handle
         const message = error.response?.data?.message || error.message || 'API request failed';
         throw new Error(message);
@@ -50,10 +54,17 @@ export const authAPI = {
             throw new Error('Unauthorized access. Admin privileges required.');
         }
 
-        // Save token and user for utility functions
-        if (data.success && data.data.token) {
-            localStorage.setItem('admin_token', data.data.token);
-            localStorage.setItem('admin_user', JSON.stringify(data.data.user));
+        // Token is now stored in HTTP-only cookie by backend
+        // No localStorage token handling needed - XSS safe!
+        // Only store minimal user data for UI purposes
+        if (data.success) {
+            const minimalUser = {
+                id: data.data.user.id,
+                email: data.data.user.email,
+                fullName: data.data.user.fullName,
+                role: data.data.user.role
+            };
+            localStorage.setItem('admin:auth_user', JSON.stringify(minimalUser));
         }
 
         return data;
@@ -63,11 +74,12 @@ export const authAPI = {
     logout: async () => {
         try {
             await axiosInstance.post('/auth/logout');
-        } catch (err) {
-            // Silently fail on logout
+        } catch {
+            // Silently fail on logout - cookie will still be cleared
         }
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        // Clear localStorage (no token to remove - it's in HTTP-only cookie)
+        localStorage.removeItem('admin:auth_user');
+        // Token in HTTP-only cookie is cleared by the backend
         window.location.href = '/login';
     }
 };

@@ -1,4 +1,8 @@
 // Commission Calculation Utilities
+// SECURITY: Business data should come from API, not localStorage
+
+// Storage key namespace for admin data
+const ADMIN_STORAGE_PREFIX = 'admin:';
 
 // Commission rates by level (percentage of premium)
 const COMMISSION_RATES = {
@@ -54,7 +58,8 @@ export const calculateCommissions = (policyData) => {
 
 // Get agent hierarchy for commission calculation
 const getAgentHierarchyForCommission = (agentId) => {
-    const agents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getAgentHierarchyForCommission: Using localStorage fallback. Use API instead.');
+    const agents = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     const hierarchy = [];
     let currentAgent = agents.find(a => a.id === agentId);
 
@@ -68,9 +73,10 @@ const getAgentHierarchyForCommission = (agentId) => {
 
 // Save commission records
 export const saveCommissionRecords = (commissions) => {
-    const existingCommissions = JSON.parse(localStorage.getItem('commission_records') || '[]');
+    console.warn('saveCommissionRecords: Using localStorage. Use API instead for production.');
+    const existingCommissions = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'commission_records') || '[]');
     const updatedCommissions = [...existingCommissions, ...commissions];
-    localStorage.setItem('commission_records', JSON.stringify(updatedCommissions));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'commission_records', JSON.stringify(updatedCommissions));
 
     // Update agent wallets
     commissions.forEach(commission => {
@@ -82,7 +88,7 @@ export const saveCommissionRecords = (commissions) => {
 
 // Update agent wallet
 const updateAgentWallet = (agentId, amount) => {
-    const agents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    const agents = JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     const agentIndex = agents.findIndex(a => a.id === agentId);
 
     if (agentIndex !== -1) {
@@ -97,13 +103,13 @@ const updateAgentWallet = (agentId, amount) => {
         agents[agentIndex].wallet.balance += amount;
         agents[agentIndex].wallet.totalEarned += amount;
 
-        localStorage.setItem('agent_hierarchy', JSON.stringify(agents));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(agents));
     }
 };
 
 // Get all commission records
 export const getAllCommissions = () => {
-    return JSON.parse(localStorage.getItem('commission_records') || '[]');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'commission_records') || '[]');
 };
 
 // Get commission by agent
@@ -128,7 +134,7 @@ export const approveCommission = (commissionId) => {
         commissions[commissionIndex].approvedAt = new Date().toISOString();
         commissions[commissionIndex].approvedBy = 'admin';
 
-        localStorage.setItem('commission_records', JSON.stringify(commissions));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'commission_records', JSON.stringify(commissions));
         return { success: true, commission: commissions[commissionIndex] };
     }
 

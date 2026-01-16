@@ -1,7 +1,12 @@
 // Policy Management Utilities
+// SECURITY: Business data should come from API, not localStorage
+
+// Storage key namespace for admin data
+const ADMIN_STORAGE_PREFIX = 'admin:';
 
 // Get all policy plans
 export const getAllPolicyPlans = () => {
+    console.warn('getAllPolicyPlans: Using localStorage fallback. Use policyPlanAPI.getAll() instead.');
     const defaultPlans = [
         {
             id: 'plan-1yr',
@@ -38,9 +43,9 @@ export const getAllPolicyPlans = () => {
         }
     ];
 
-    const plans = localStorage.getItem('policy_plans');
+    const plans = localStorage.getItem(ADMIN_STORAGE_PREFIX + 'policy_plans');
     if (!plans) {
-        localStorage.setItem('policy_plans', JSON.stringify(defaultPlans));
+        localStorage.setItem(ADMIN_STORAGE_PREFIX + 'policy_plans', JSON.stringify(defaultPlans));
         return defaultPlans;
     }
 
@@ -55,6 +60,7 @@ export const getPolicyPlanById = (planId) => {
 
 // Add policy plan
 export const addPolicyPlan = (planData) => {
+    console.warn('addPolicyPlan: Using localStorage. Use policyPlanAPI.create() instead.');
     const plans = getAllPolicyPlans();
 
     const newPlan = {
@@ -71,7 +77,7 @@ export const addPolicyPlan = (planData) => {
     };
 
     plans.push(newPlan);
-    localStorage.setItem('policy_plans', JSON.stringify(plans));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'policy_plans', JSON.stringify(plans));
 
     return { success: true, plan: newPlan };
 };
@@ -92,7 +98,7 @@ export const updatePolicyPlan = (planId, updates) => {
         updatedBy: 'admin'
     };
 
-    localStorage.setItem('policy_plans', JSON.stringify(plans));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'policy_plans', JSON.stringify(plans));
 
     return { success: true, plan: plans[planIndex] };
 };
@@ -102,14 +108,15 @@ export const deletePolicyPlan = (planId) => {
     const plans = getAllPolicyPlans();
     const filteredPlans = plans.filter(p => p.id !== planId);
 
-    localStorage.setItem('policy_plans', JSON.stringify(filteredPlans));
+    localStorage.setItem(ADMIN_STORAGE_PREFIX + 'policy_plans', JSON.stringify(filteredPlans));
 
     return { success: true };
 };
 
-// Get all customer policies
+// Get all customer policies (BACKWARD COMPATIBILITY - use API instead)
 export const getAllCustomerPolicies = () => {
-    return JSON.parse(localStorage.getItem('customer_policies') || '[]');
+    console.warn('getAllCustomerPolicies: Using localStorage fallback. Use policyAPI.getAll() instead.');
+    return JSON.parse(localStorage.getItem(ADMIN_STORAGE_PREFIX + 'customer_policies') || '[]');
 };
 
 // Get policy by ID

@@ -129,8 +129,8 @@ const AnimalInsurance = () => {
 
                                     <div className="plan-features">
                                         <ul>
-                                            {(plan.features || []).map((feature, index) => (
-                                                <li key={index}>
+                                            {(plan.features || []).map((feature) => (
+                                                <li key={`${plan.id}-${feature.replace(/\s+/g, '-').toLowerCase()}`}>
                                                     <span className="check-icon">✓</span>
                                                     {feature}
                                                 </li>

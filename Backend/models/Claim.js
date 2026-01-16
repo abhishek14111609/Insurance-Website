@@ -82,7 +82,22 @@ const claimSchema = new mongoose.Schema(
         }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            transform: function(doc, ret) {
+                // Convert Decimal128 to regular numbers
+                if (ret.claimAmount instanceof mongoose.Types.Decimal128) {
+                    ret.claimAmount = parseFloat(ret.claimAmount.toString());
+                }
+                if (ret.approvedAmount instanceof mongoose.Types.Decimal128) {
+                    ret.approvedAmount = parseFloat(ret.approvedAmount.toString());
+                }
+                if (ret.paidAmount instanceof mongoose.Types.Decimal128) {
+                    ret.paidAmount = parseFloat(ret.paidAmount.toString());
+                }
+                return ret;
+            }
+        }
     }
 );
 

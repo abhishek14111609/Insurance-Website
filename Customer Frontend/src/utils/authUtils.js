@@ -1,20 +1,20 @@
-// Authentication Utility Functions - Backend API Version
-// Only stores JWT token in localStorage, all data comes from backend
+// Authentication Utility Functions
+// SECURITY: Tokens are now stored in HTTP-only cookies, not localStorage
+// Only minimal user data is stored in localStorage for UI purposes
 
-// Check if user is logged in (has valid token)
+// Storage key namespace for customer data
+const CUSTOMER_STORAGE_PREFIX = 'customer:';
+
+// Check if user is logged in
 export const isCustomerLoggedIn = () => {
-    const token = localStorage.getItem('token');
-    return token !== null && token !== undefined && token !== '';
+    // Token is in HTTP-only cookie, check via API or presence of user data
+    const user = localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'auth_user');
+    return !!user;
 };
 
-// Get JWT token
-export const getAuthToken = () => {
-    return localStorage.getItem('token');
-};
-
-// Get current user from localStorage (temporary until page refresh)
+// Get current minimal customer data from localStorage
 export const getCurrentCustomer = () => {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'auth_user');
     if (!userStr) return null;
 
     try {
@@ -27,6 +27,12 @@ export const getCurrentCustomer = () => {
 
 // Logout customer
 export const logoutCustomer = () => {
+    // Token is in HTTP-only cookie, cleared by backend
+    // Just clear localStorage items
+    localStorage.removeItem(CUSTOMER_STORAGE_PREFIX + 'auth_user');
+    localStorage.removeItem(CUSTOMER_STORAGE_PREFIX + 'agentProfile');
+    // Legacy keys (for backward compatibility during migration)
+    localStorage.removeItem('auth_user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('agentProfile');

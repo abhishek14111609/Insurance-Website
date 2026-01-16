@@ -18,14 +18,26 @@ axiosInstance.interceptors.response.use(
         return response.data; // Return only the data
     },
     error => {
-        // Handle 401 errors
+        // Handle 401 errors - redirect to appropriate login
         if (error.response?.status === 401) {
-            // Only redirect if not already on the login page
-            if (!window.location.pathname.includes('/login')) {
+            // Get current path to determine correct redirect
+            const path = window.location.pathname;
+
+            // Don't redirect if already on a login page
+            if (path.includes('/login') || path.includes('/agent/login')) {
+                return Promise.reject(error);
+            }
+
+            // Determine correct login route based on current path
+            if (path.startsWith('/agent')) {
+                // Agent routes - redirect to agent login
+                window.location.href = '/agent/login';
+            } else {
+                // Customer routes - redirect to customer login
                 window.location.href = '/login';
             }
         }
-        
+
         // Re-throw the error for the caller to handle
         const message = error.response?.data?.message || error.message || 'API request failed';
         throw new Error(message);
@@ -42,6 +54,7 @@ export const authAPI = {
     // Login user
     login: async (credentials) => {
         return axiosInstance.post('/auth/login', credentials);
+        // Token is now stored in HTTP-only cookie by backend - no localStorage handling needed!
     },
 
     // Get current user profile
@@ -78,9 +91,13 @@ export const authAPI = {
     logout: async () => {
         try {
             await axiosInstance.post('/auth/logout');
-        } catch (error) {
-            // Silently fail on logout error
+        } catch {
+            // Silently fail on logout error - cookie will still be cleared
         }
+        // Clear localStorage (no token to remove - it's in HTTP-only cookie)
+        localStorage.removeItem('customer:auth_user');
+        localStorage.removeItem('auth_user'); // Legacy key
+        // Token in HTTP-only cookie is cleared by the backend
         window.location.href = '/login';
     }
 };

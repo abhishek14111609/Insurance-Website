@@ -36,8 +36,18 @@ export const register = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Set Cookie
+        // Set HTTP-only cookie for security (XSS protection)
+        // Token is NOT sent in response body - only in cookie
         res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // Set role-specific cookie name to prevent cross-portal auth issues
+        const roleCookieName = user.role === 'admin' ? 'admin_token' : 'token';
+        res.cookie(roleCookieName, token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -48,9 +58,9 @@ export const register = async (req, res) => {
             success: true,
             message: 'User registered successfully',
             data: {
-                user: user.toJSON(),
-                token, // Optional: Keep returning token for non-browser clients, or remove if strict
-                refreshToken
+                user: user.toJSON()
+                // Token NOT included in response body - only in HTTP-only cookie
+                // This prevents XSS attacks from stealing tokens
             }
         });
     } catch (error) {
@@ -193,11 +203,18 @@ export const login = async (req, res) => {
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Use different cookie names based on role to prevent cross-portal auth
-        const cookieName = user.role === 'admin' ? 'admin_token' : 'token';
+        // Set HTTP-only cookies for security (XSS protection)
+        // Token is NOT sent in response body - only in cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
-        // Set Cookie with role-specific name
-        res.cookie(cookieName, token, {
+        // Set role-specific cookie name to prevent cross-portal auth issues
+        const roleCookieName = user.role === 'admin' ? 'admin_token' : 'token';
+        res.cookie(roleCookieName, token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -215,9 +232,9 @@ export const login = async (req, res) => {
             message: 'Login successful',
             data: {
                 user: user.toJSON(),
-                agentProfile: agentProfile ? agentProfile.toJSON() : null,
-                token,
-                refreshToken
+                agentProfile: agentProfile ? agentProfile.toJSON() : null
+                // Token NOT included in response body - only in HTTP-only cookie
+                // This prevents XSS attacks from stealing tokens
             }
         });
     } catch (error) {

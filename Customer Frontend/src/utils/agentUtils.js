@@ -1,7 +1,11 @@
 /**
  * Agent Utility Functions
  * Handles agent code generation, commission calculations, and hierarchy management
+ * SECURITY: Business data should come from API, not localStorage
  */
+
+// Storage key namespace for customer data
+const CUSTOMER_STORAGE_PREFIX = 'customer:';                                                             
 
 /**
  * Generate agent code based on parent code
@@ -55,7 +59,8 @@ export const getCommissionRate = (level) => {
  * @returns {Array} Array of descendant agents
  */
 export const getAgentHierarchy = (agentId) => {
-    const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getAgentHierarchy: Using localStorage fallback. Use agentAPI.getHierarchy() instead.');
+    const allAgents = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     
     const findDescendants = (parentId, depth = 0) => {
         const children = allAgents.filter(agent => agent.parentId === parentId);
@@ -78,7 +83,8 @@ export const getAgentHierarchy = (agentId) => {
  * @returns {Array} Array of ancestor agents
  */
 export const getAgentAncestors = (agentId) => {
-    const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getAgentAncestors: Using localStorage fallback. Use API instead.');
+    const allAgents = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     const ancestors = [];
     
     let currentAgent = allAgents.find(a => a.id === agentId);
@@ -115,7 +121,8 @@ export const validateAgentCode = (code) => {
  * @returns {Object|null} Agent object or null
  */
 export const findAgentByCode = (code) => {
-    const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('findAgentByCode: Using localStorage fallback. Use authAPI.verifyAgentCode() instead.');
+    const allAgents = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     return allAgents.find(agent => agent.code === code) || null;
 };
 
@@ -126,8 +133,9 @@ export const findAgentByCode = (code) => {
  * @returns {Array} Commission distribution array
  */
 export const calculateCommissionDistribution = (premium, agentId) => {
-    const agent = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]')
-        .find(a => a.id === agentId);
+    console.warn('calculateCommissionDistribution: Using localStorage fallback. Use API instead.');
+    const allAgents = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
+    const agent = allAgents.find(a => a.id === agentId);
     
     if (!agent) return [];
     
@@ -189,7 +197,8 @@ export const formatCurrency = (amount) => {
  * @returns {number} Next sequence number
  */
 export const getNextSequence = (parentCode) => {
-    const allAgents = JSON.parse(localStorage.getItem('agent_hierarchy') || '[]');
+    console.warn('getNextSequence: Using localStorage fallback. Use API instead.');
+    const allAgents = JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy') || '[]');
     const siblings = allAgents.filter(agent => 
         agent.code.startsWith(parentCode + '-')
     );
@@ -208,7 +217,7 @@ export const getNextSequence = (parentCode) => {
  * Initialize mock agent hierarchy data
  */
 export const initializeMockAgentData = () => {
-    const existingData = localStorage.getItem('agent_hierarchy');
+    const existingData = localStorage.getItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy');
     
     if (!existingData) {
         const mockAgents = [
@@ -274,7 +283,7 @@ export const initializeMockAgentData = () => {
             }
         ];
         
-        localStorage.setItem('agent_hierarchy', JSON.stringify(mockAgents));
+        localStorage.setItem(CUSTOMER_STORAGE_PREFIX + 'agent_hierarchy', JSON.stringify(mockAgents));
     }
 };
 

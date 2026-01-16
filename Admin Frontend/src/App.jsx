@@ -29,13 +29,12 @@ import AllCustomers from './pages/AllCustomers';
 import CommissionHistory from './pages/CommissionHistory';
 import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
-import DatabaseSetup from './pages/DatabaseSetup';
 import Inquiries from './pages/Inquiries';
 
 import './App.css';
 
 const AdminLayout = ({ children }) => {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -69,14 +68,14 @@ const AdminLayout = ({ children }) => {
             <span className="icon">👥</span>
             All Agents
           </NavLink>
-
+{/* 
           <NavLink
             to="/agents/add"
             className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
           >
             <span className="icon">➕</span>
             Add Agent
-          </NavLink>
+          </NavLink> */}
 
           <NavLink
             to="/agent-approvals"
@@ -162,16 +161,6 @@ const AdminLayout = ({ children }) => {
             Withdrawals
           </NavLink>
 
-          <div className="nav-section">System</div>
-
-          <NavLink
-            to="/database-setup"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">🛠️</span>
-            Database Setup
-          </NavLink>
-
           <div className="nav-section">Account</div>
 
           <button
@@ -221,7 +210,6 @@ const App = () => {
               <AdminLayout>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
-
                   {/* Agents */}
                   <Route path="/agents" element={<AllAgents />} />
                   <Route path="/agents/add" element={<AddAgent />} />
@@ -243,7 +231,6 @@ const App = () => {
                   <Route path="/commission-approvals" element={<CommissionApprovals />} />
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
-                  <Route path="/database-setup" element={<DatabaseSetup />} />
                   <Route path="/inquiries" element={<Inquiries />} />
                 </Routes>
               </AdminLayout>
@@ -255,4 +242,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default App; 

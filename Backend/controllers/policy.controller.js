@@ -92,8 +92,8 @@ export const getPolicies = async (req, res) => {
         const policies = await Policy.find(where)
             .select('-photos -ownerAddress -adminNotes -rejectionReason')
             .populate({
-                path: 'agent',
-                populate: { path: 'user', select: 'fullName' }
+                path: 'agentId',
+                populate: { path: 'userId', select: 'fullName' }
             })
             .populate('payments')
             .sort({ createdAt: -1 });
@@ -123,8 +123,8 @@ export const getPolicyById = async (req, res) => {
             customerId: req.user._id
         })
             .populate({
-                path: 'agent',
-                populate: { path: 'user' }
+                path: 'agentId',
+                populate: { path: 'userId' }
             })
             .populate('payments')
             .populate('commissions');
@@ -203,10 +203,10 @@ export const getPendingPolicies = async (req, res) => {
             ]
         })
             .select('-photos -ownerAddress -adminNotes -rejectionReason')
-            .populate({ path: 'customer', select: 'fullName email phone' })
+            .populate({ path: 'customerId', select: 'fullName email phone' })
             .populate({
-                path: 'agent',
-                populate: { path: 'user', select: 'fullName' }
+                path: 'agentId',
+                populate: { path: 'userId', select: 'fullName' }
             })
             .sort({ createdAt: -1 });
 

@@ -42,22 +42,15 @@ import AgentLayout from './components/Agent/AgentLayout';
 import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
 
+// Role-based protected routes
+import { 
+    ProtectedRoute, 
+    ProtectedCustomerRoute, 
+    ProtectedAgentRoute,
+    GuestRoute 
+} from './components/ProtectedRoutes';
+
 import './App.css';
-
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <div className="loading-screen">Loading...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
 
 function App() {
   const location = useLocation();
@@ -78,133 +71,231 @@ function App() {
 
       <main className="main-content">
         <Routes>
-          {/* Public Routes */}
+          {/* Public Routes - Accessible to everyone */}
           <Route path="/" element={<Home />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/become-partner" element={<AgentLanding />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          {/* Cattle Insurance - Main route */}
           <Route path="/policies" element={<AnimalInsurance />} />
           {/* Backward compatibility */}
           <Route path="/animal-insurance" element={<AnimalInsurance />} />
 
-          {/* Protected Customer Routes */}
+          {/* Guest Routes - Only for unauthenticated users */}
+          <Route 
+            path="/login" 
+            element={
+              <GuestRoute>
+                <Login />
+              </GuestRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <GuestRoute>
+                <Register />
+              </GuestRoute>
+            } 
+          />
+          <Route 
+            path="/forgot-password" 
+            element={
+              <GuestRoute>
+                <ForgotPassword />
+              </GuestRoute>
+            } 
+          />
+
+          {/* Agent Public Routes */}
+          <Route path="/become-agent" element={<AgentLanding />} />
+          <Route 
+            path="/agent/login" 
+            element={
+              <GuestRoute allowedRoles={['agent']}>
+                <AgentLogin />
+              </GuestRoute>
+            } 
+          />
+
+          {/* ==================== CUSTOMER ROUTES ==================== */}
+          {/* Only customers can access these routes */}
+          
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <CustomerProfile />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <Dashboard />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/my-policies"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <MyPolicies />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/claims"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <Claims />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/renewals"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <Renewals />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/renew"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <RenewalForm />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/claims/new"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <ClaimForm />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/animal-policy-form"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <AnimalPolicyForm />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/payment"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <PaymentPage />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/payment-success"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <PaymentSuccess />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/payment-failure"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <PaymentFailure />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
           <Route
             path="/policy/:policyId"
             element={
-              <ProtectedRoute>
+              <ProtectedCustomerRoute>
                 <PolicyDetails />
-              </ProtectedRoute>
+              </ProtectedCustomerRoute>
             }
           />
 
-          {/* Agent Public Routes */}
-          <Route path="/become-agent" element={<AgentLanding />} />
-          <Route path="/agent/login" element={<AgentLogin />} />
-
-          {/* Agent Dashboard Routes (Protected) */}
-          <Route path="/agent" element={<AgentLayout />}>
-            <Route path="dashboard" element={<AgentDashboard />} />
-            <Route path="policies" element={<AgentPolicies />} />
-            <Route path="customers" element={<AgentCustomers />} />
-            <Route path="wallet" element={<AgentWallet />} />
-            <Route path="team" element={<AgentTeam />} />
-            <Route path="profile" element={<AgentProfile />} />
-            <Route path="reports" element={<AgentReports />} />
-            <Route path="commissions" element={<AgentCommissions />} />
+          {/* ==================== AGENT ROUTES ==================== */}
+          {/* Only agents can access these routes */}
+          
+          <Route 
+            path="/agent" 
+            element={
+              <ProtectedAgentRoute>
+                <AgentLayout />
+              </ProtectedAgentRoute>
+            }
+          >
+            <Route 
+              path="dashboard" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentDashboard />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="policies" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentPolicies />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="customers" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentCustomers />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="wallet" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentWallet />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="team" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentTeam />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="profile" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentProfile />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="reports" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentReports />
+                </ProtectedAgentRoute>
+              } 
+            />
+            <Route 
+              path="commissions" 
+              element={
+                <ProtectedAgentRoute>
+                  <AgentCommissions />
+                </ProtectedAgentRoute>
+              } 
+            />
           </Route>
+
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
@@ -214,3 +305,4 @@ function App() {
 }
 
 export default App;
+

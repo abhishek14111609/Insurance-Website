@@ -85,7 +85,7 @@ const AllCustomers = () => {
                     <tbody>
                         {filteredCustomers.length > 0 ? (
                             filteredCustomers.map(customer => (
-                                <tr key={customer.id}>
+                                <tr key={customer._id}>
                                     <td>
                                         <div className="customer-info">
                                             <div className="customer-avatar">
@@ -93,7 +93,7 @@ const AllCustomers = () => {
                                             </div>
                                             <div className="customer-name-wrap">
                                                 <span className="name">{customer.fullName}</span>
-                                                <span className="id">ID: #{customer.id}</span>
+                                                <span className="id">ID: #{customer._id}</span>
                                             </div>
                                         </div>
                                     </td>
@@ -116,7 +116,7 @@ const AllCustomers = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <Link to={`/customers/${customer.id}`} className="btn-view" title="View Details">👁️</Link>
+                                        <Link to={`/customers/${customer._id}`} className="btn-view" title="View Details">👁️</Link>
                                     </td>
                                 </tr>
                             ))

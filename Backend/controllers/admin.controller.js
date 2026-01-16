@@ -148,10 +148,10 @@ export const getAllPolicies = async (req, res) => {
         const count = await Policy.countDocuments(where);
         const policies = await Policy.find(where)
             .select('-photos -ownerAddress -adminNotes -rejectionReason')
-            .populate({ path: 'customer', select: 'fullName email phone' })
+            .populate({ path: 'customerId', select: 'fullName email phone' })
             .populate({
-                path: 'agent',
-                populate: { path: 'user', select: 'fullName' }
+                path: 'agentId',
+                populate: { path: 'userId', select: 'fullName' }
             })
             .populate('payments')
             .sort({ createdAt: -1 })
@@ -181,19 +181,19 @@ export const getAllPolicies = async (req, res) => {
 export const getPolicyDetails = async (req, res) => {
     try {
         const policy = await Policy.findById(req.params.id)
-            .populate('customer')
+            .populate('customerId')
             .populate({
-                path: 'agent',
-                populate: { path: 'user' }
+                path: 'agentId',
+                populate: { path: 'userId' }
             })
             .populate('payments')
             .populate({
                 path: 'commissions',
-                populate: { path: 'agent' }
+                populate: { path: 'agentId' }
             })
             .populate('claims')
-            .populate('approver')
-            .populate('rejecter');
+            .populate('approvedBy')
+            .populate('rejectedBy');
 
         if (!policy) {
             return res.status(404).json({
@@ -228,7 +228,7 @@ export const approvePolicy = async (req, res) => {
         const { adminNotes } = req.body;
 
         const policy = await Policy.findById(req.params.id)
-            .populate('customer')
+            .populate('customerId')
             .session(session);
 
         if (!policy) {
@@ -284,10 +284,10 @@ export const approvePolicy = async (req, res) => {
 
         // Reload policy to get the full state including associations for response
         const updatedPolicy = await Policy.findById(policy._id)
-            .populate('customer')
+            .populate('customerId')
             .populate({
-                path: 'agent',
-                populate: { path: 'user' }
+                path: 'agentId',
+                populate: { path: 'userId' }
             })
             .populate('payments');
 
@@ -366,7 +366,7 @@ export const rejectPolicy = async (req, res) => {
         await session.endSession();
 
         const updatedPolicy = await Policy.findById(policy._id)
-            .populate('customer');
+            .populate('customerId');
 
         res.json({
             success: true,
@@ -396,27 +396,27 @@ export const getAllAgents = async (req, res) => {
         if (status) where.status = status;
 
         const count = await Agent.countDocuments(where);
-        
+
         let query = Agent.find(where)
-            .populate('user')
+            .populate('userId')
             .populate({
-                path: 'parentAgent',
-                populate: { path: 'user' }
+                path: 'parentAgentId',
+                populate: { path: 'userId' }
             })
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
-        
+
         if (search) {
             // Apply search filter on populated user data
             const agents = await Agent.find(where)
-                .populate('user')
+                .populate('userId')
                 .populate({
-                    path: 'parentAgent',
-                    populate: { path: 'user' }
+                    path: 'parentAgentId',
+                    populate: { path: 'userId' }
                 });
             const filtered = agents.filter(agent => {
-                const user = agent.user;
+                const user = agent.userId;
                 return (user?.fullName?.includes(search) || user?.email?.includes(search));
             });
             const sliced = filtered.slice((page - 1) * limit, page * limit);
@@ -589,7 +589,7 @@ export const approveAgent = async (req, res) => {
         const { adminNotes } = req.body;
 
         const agent = await Agent.findById(req.params.id)
-            .populate('user');
+            .populate('userId');
 
         if (!agent) {
             return res.status(404).json({
@@ -637,7 +637,7 @@ export const rejectAgent = async (req, res) => {
         }
 
         const agent = await Agent.findById(req.params.id)
-            .populate('user');
+            .populate('userId');
 
         if (!agent) {
             return res.status(404).json({
@@ -680,7 +680,7 @@ export const updateAgent = async (req, res) => {
         const { fullName, phone, email, address, city, state, pincode, agentCode, status, commissionRate } = req.body;
 
         const agent = await Agent.findById(req.params.id)
-            .populate('user')
+            .populate('userId')
             .session(session);
 
         if (!agent) {
@@ -694,23 +694,23 @@ export const updateAgent = async (req, res) => {
 
         // Update User details
         if (fullName || phone || email || address || city || state || pincode) {
-            if (fullName) agent.user.fullName = fullName;
-            if (phone) agent.user.phone = phone;
-            if (address) agent.user.address = address;
-            if (city) agent.user.city = city;
-            if (state) agent.user.state = state;
-            if (pincode) agent.user.pincode = pincode;
+            if (fullName) agent.userId.fullName = fullName;
+            if (phone) agent.userId.phone = phone;
+            if (address) agent.userId.address = address;
+            if (city) agent.userId.city = city;
+            if (state) agent.userId.state = state;
+            if (pincode) agent.userId.pincode = pincode;
             // Handle email update carefully (uniqueness)
-            if (email && email !== agent.user.email) {
+            if (email && email !== agent.userId.email) {
                 const existing = await User.findOne({ email }).session(session);
                 if (existing) {
                     await session.abortTransaction();
                     await session.endSession();
                     return res.status(400).json({ success: false, message: 'Email already in use' });
                 }
-                agent.user.email = email;
+                agent.userId.email = email;
             }
-            await agent.user.save({ session });
+            await agent.userId.save({ session });
         }
 
         // Update Agent details
@@ -725,7 +725,7 @@ export const updateAgent = async (req, res) => {
 
         // Reload agent with user
         const updatedAgent = await Agent.findById(req.params.id)
-            .populate('user');
+            .populate('userId');
 
         res.json({
             success: true,
@@ -750,14 +750,14 @@ export const updateAgent = async (req, res) => {
 export const getAgentById = async (req, res) => {
     try {
         const agent = await Agent.findById(req.params.id)
-            .populate('user')
+            .populate('userId')
             .populate({
-                path: 'parentAgent',
-                populate: { path: 'user' }
+                path: 'parentAgentId',
+                populate: { path: 'userId' }
             })
             .populate({
                 path: 'subAgents',
-                populate: { path: 'user' }
+                populate: { path: 'userId' }
             })
             .populate('policies', null, null, { limit: 10 })
             .populate('commissions', null, null, { limit: 10 })
@@ -807,7 +807,7 @@ export const verifyAgentKYC = async (req, res) => {
         const { status, reason } = req.body; // 'verified' or 'rejected'
 
         const agent = await Agent.findById(id)
-            .populate('user');
+            .populate('userId');
 
         if (!agent) {
             return res.status(404).json({
@@ -939,10 +939,10 @@ export const getWithdrawalRequests = async (req, res) => {
         const count = await Withdrawal.countDocuments(where);
         const withdrawals = await Withdrawal.find(where)
             .populate({
-                path: 'agent',
-                populate: { path: 'user' }
+                path: 'agentId',
+                populate: { path: 'userId' }
             })
-            .populate('processor')
+            .populate('processedBy')
             .sort({ createdAt: -1 })
             .skip(offset)
             .limit(parseInt(limit));
@@ -984,7 +984,7 @@ export const processWithdrawal = async (req, res) => {
         }
 
         const withdrawal = await Withdrawal.findById(req.params.id)
-            .populate('agent')
+            .populate('agentId')
             .session(session);
 
         if (!withdrawal) {
@@ -1007,7 +1007,7 @@ export const processWithdrawal = async (req, res) => {
 
         if (action === 'approve') {
             // Deduct from agent wallet
-            const agent = withdrawal.agent;
+            const agent = withdrawal.agentId;
             const newBalance = parseFloat(agent.walletBalance) - parseFloat(withdrawal.amount);
 
             if (newBalance < 0) {
@@ -1051,7 +1051,7 @@ export const processWithdrawal = async (req, res) => {
             await withdrawal.save({ session });
 
             // Send notification
-            await notifyWithdrawalRejected(withdrawal, withdrawal.agent);
+            await notifyWithdrawalRejected(withdrawal, withdrawal.agentId);
         }
 
         await session.commitTransaction();
@@ -1110,10 +1110,10 @@ export const getAllCommissions = async (req, res) => {
         const count = await Commission.countDocuments(where);
         const commissions = await Commission.find(where)
             .populate({
-                path: 'agent',
-                populate: { path: 'user' }
+                path: 'agentId',
+                populate: { path: 'userId' }
             })
-            .populate('policy')
+            .populate('policyId')
             .sort({ createdAt: -1 })
             .skip(offset)
             .limit(parseInt(limit));

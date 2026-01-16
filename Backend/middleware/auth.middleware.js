@@ -3,15 +3,29 @@ import { User } from '../models/index.js';
 
 export const authenticate = async (req, res, next) => {
     try {
-        // Get token from header or cookies (check both cookie names)
-        const token = req.header('Authorization')?.replace('Bearer ', '')
-            || req.cookies?.token
-            || req.cookies?.admin_token;
+        // SECURITY: Prefer HTTP-only cookies over Authorization header
+        // This ensures tokens are protected from XSS attacks
+        // Authorization header support is maintained for API clients (non-browser)
+        
+        let token = null;
+
+        // First, try to get token from HTTP-only cookies (preferred - XSS safe)
+        if (req.cookies?.token) {
+            token = req.cookies.token;
+        } else if (req.cookies?.admin_token) {
+            token = req.cookies.admin_token;
+        }
+        
+        // Fallback to Authorization header only for API clients (non-browser)
+        // This is NOT recommended for browser apps due to XSS risks
+        if (!token && req.header('Authorization')) {
+            token = req.header('Authorization').replace('Bearer ', '');
+        }
 
         if (!token) {
             return res.status(401).json({
                 success: false,
-                message: 'Access denied. No token provided.'
+                message: 'Access denied. No token provided. Please login again.'
             });
         }
 

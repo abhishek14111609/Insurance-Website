@@ -3,6 +3,23 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { policyPlanAPI } from '../../services/api.service';
 import './AddPolicyPlan.css'; // Reuse add styles
 
+// Helper function to convert Decimal128 or other objects to string
+const toString = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'object') {
+        // Handle mongoose Decimal128 and other objects
+        if (value.toString && value.toString !== '[object Object]') {
+            return value.toString();
+        }
+        // Handle objects with value property (like Decimal128)
+        if (value.value !== undefined) return value.value.toString();
+        return '';
+    }
+    return '';
+};
+
 const EditPolicyPlan = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -23,8 +40,13 @@ const EditPolicyPlan = () => {
     });
 
     useEffect(() => {
+        if (!id) {
+            alert('Invalid plan ID');
+            navigate('/policy-plans');
+            return;
+        }
         loadPlan();
-    }, [id]);
+    }, [id, navigate]);
 
     const loadPlan = async () => {
         try {
@@ -38,8 +60,8 @@ const EditPolicyPlan = () => {
                     cattleType: plan.cattleType || 'both',
                     minAge: plan.minAge || 1,
                     maxAge: plan.maxAge || 15,
-                    premium: plan.premium || '',
-                    coverageAmount: plan.coverageAmount || '',
+                    premium: parseFloat(plan.premium?.$numberDecimal || plan.premium || 0),
+                    coverageAmount: parseFloat(plan.coverageAmount?.$numberDecimal || plan.coverageAmount || 0),
                     duration: plan.duration || '1 Year',
                     features: Array.isArray(plan.features) ? plan.features : [''],
                     isActive: plan.isActive !== undefined ? plan.isActive : true,
@@ -49,6 +71,7 @@ const EditPolicyPlan = () => {
         } catch (err) {
             console.error('Error loading plan:', err);
             alert('Failed to load plan details');
+            navigate('/policy-plans');
         } finally {
             setLoading(false);
         }
