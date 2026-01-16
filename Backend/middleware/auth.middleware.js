@@ -6,18 +6,33 @@ export const authenticate = async (req, res, next) => {
         // SECURITY: Prefer HTTP-only cookies over Authorization header
         // This ensures tokens are protected from XSS attacks
         // Authorization header support is maintained for API clients (non-browser)
-        
+
         let token = null;
 
-        // First, try to get token from HTTP-only cookies (preferred - XSS safe)
-        if (req.cookies?.token) {
-            token = req.cookies.token;
-        } else if (req.cookies?.admin_token) {
-            token = req.cookies.admin_token;
+        // Check Origin/Referer to guess context (robust for localhost)
+        const origin = req.headers.origin || req.headers.referer || '';
+        const isAdminFrontend = origin.includes('5175') || origin.includes('admin');
+
+        // Intelligent Token Selection
+        if (isAdminFrontend) {
+            // If accessing from Admin Frontend, prioritize admin_token
+            if (req.cookies?.admin_token) {
+                token = req.cookies.admin_token;
+            } else if (req.cookies?.token) {
+                // Fallback: mostly won't work for admin, but safely handled by role check later
+                token = req.cookies.token;
+            }
+        } else {
+            // If accessing from Customer Frontend, prioritize customer token
+            if (req.cookies?.token) {
+                token = req.cookies.token;
+            } else if (req.cookies?.admin_token) {
+                // Fallback
+                token = req.cookies.admin_token;
+            }
         }
-        
+
         // Fallback to Authorization header only for API clients (non-browser)
-        // This is NOT recommended for browser apps due to XSS risks
         if (!token && req.header('Authorization')) {
             token = req.header('Authorization').replace('Bearer ', '');
         }
