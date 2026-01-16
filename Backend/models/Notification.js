@@ -1,73 +1,60 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Notification = sequelize.define('Notification', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: 'user_id',
-        references: {
-            model: 'users',
-            key: 'id'
+const notificationSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
         },
-        comment: 'Null for broadcast notifications'
+        type: {
+            type: String,
+            enum: ['policy', 'payment', 'commission', 'withdrawal', 'claim', 'agent', 'system'],
+            required: true
+        },
+        title: {
+            type: String,
+            required: true
+        },
+        message: {
+            type: String,
+            required: true
+        },
+        data: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null
+        },
+        priority: {
+            type: String,
+            enum: ['low', 'medium', 'high', 'urgent'],
+            default: 'medium'
+        },
+        isRead: {
+            type: Boolean,
+            default: false
+        },
+        readAt: {
+            type: Date,
+            default: null
+        },
+        actionUrl: {
+            type: String,
+            default: null
+        },
+        expiresAt: {
+            type: Date,
+            default: null
+        },
+        isBroadcast: {
+            type: Boolean,
+            default: false
+        }
     },
-    type: {
-        type: DataTypes.ENUM('policy', 'payment', 'commission', 'withdrawal', 'claim', 'agent', 'system'),
-        allowNull: false
-    },
-    title: {
-        type: DataTypes.STRING(255),
-        allowNull: false
-    },
-    message: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    data: {
-        type: DataTypes.JSON,
-        allowNull: true,
-        comment: 'Additional data related to notification'
-    },
-    priority: {
-        type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
-        defaultValue: 'medium'
-    },
-    isRead: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        field: 'is_read'
-    },
-    readAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'read_at'
-    },
-    actionUrl: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-        field: 'action_url',
-        comment: 'URL to navigate when notification is clicked'
-    },
-    expiresAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'expires_at'
-    },
-    isBroadcast: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        field: 'is_broadcast'
+    {
+        timestamps: true
     }
-}, {
-    tableName: 'notifications',
-    timestamps: true,
-    underscored: true
-});
+);
+
+const Notification = mongoose.model('Notification', notificationSchema);
 
 export default Notification;

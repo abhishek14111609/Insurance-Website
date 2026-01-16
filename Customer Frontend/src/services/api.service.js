@@ -1,115 +1,85 @@
+import axios from 'axios';
+
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Helper function to handle API responses
-const handleResponse = async (response) => {
-    const data = await response.json();
+// Create axios instance
+const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true, // Send cookies with requests
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
 
-    if (!response.ok) {
-        // Handle authentication errors
-        if (response.status === 401) {
-            // Only redirect if not already on the login page to prevent refresh loops
+// Response interceptor to handle errors
+axiosInstance.interceptors.response.use(
+    response => {
+        return response.data; // Return only the data
+    },
+    error => {
+        // Handle 401 errors
+        if (error.response?.status === 401) {
+            // Only redirect if not already on the login page
             if (!window.location.pathname.includes('/login')) {
                 window.location.href = '/login';
             }
         }
-        throw new Error(data.message || 'API request failed');
+        
+        // Re-throw the error for the caller to handle
+        const message = error.response?.data?.message || error.message || 'API request failed';
+        throw new Error(message);
     }
-
-    return data;
-};
-
-// Helper for making requests with credentials
-const apiClient = async (endpoint, options = {}) => {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-
-    // Default headers
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
-    };
-
-    // Remove Content-Type if body is FormData (let browser set it)
-    if (options.body instanceof FormData) {
-        delete headers['Content-Type'];
-    }
-
-    const config = {
-        ...options,
-        headers,
-        credentials: 'include' // Important: Send cookies with every request
-    };
-
-    const response = await fetch(url, config);
-    return handleResponse(response);
-};
+);
 
 // Authentication API
 export const authAPI = {
     // Register new user
     register: async (userData) => {
-        return apiClient('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify(userData)
-        });
+        return axiosInstance.post('/auth/register', userData);
     },
 
     // Login user
     login: async (credentials) => {
-        return apiClient('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify(credentials)
-        });
+        return axiosInstance.post('/auth/login', credentials);
     },
 
     // Get current user profile
     getProfile: async () => {
-        return apiClient('/auth/me');
+        return axiosInstance.get('/auth/me');
     },
 
+    // Update profile
     updateProfile: async (profileData) => {
-        return apiClient('/auth/profile', {
-            method: 'PUT',
-            body: JSON.stringify(profileData)
-        });
+        return axiosInstance.put('/auth/profile', profileData);
     },
 
     // Verify agent code (Public)
     verifyAgentCode: async (code) => {
-        // Public endpoint, but apiClient is fine
-        return apiClient(`/auth/verify-code/${code}`);
+        return axiosInstance.get(`/auth/verify-code/${code}`);
     },
 
     // Change password
     changePassword: async (passwordData) => {
-        return apiClient('/auth/change-password', {
-            method: 'PUT',
-            body: JSON.stringify(passwordData)
-        });
+        return axiosInstance.put('/auth/change-password', passwordData);
     },
 
     // Forgot password
     forgotPassword: async (email) => {
-        return apiClient('/auth/forgot-password', {
-            method: 'POST',
-            body: JSON.stringify({ email })
-        });
+        return axiosInstance.post('/auth/forgot-password', { email });
     },
 
     // Reset password
     resetPassword: async (token, newPassword) => {
-        return apiClient(`/auth/reset-password/${token}`, {
-            method: 'POST',
-            body: JSON.stringify({ newPassword })
-        });
+        return axiosInstance.post(`/auth/reset-password/${token}`, { newPassword });
     },
 
     // Logout
     logout: async () => {
         try {
-            await apiClient('/auth/logout', { method: 'POST' });
+            await axiosInstance.post('/auth/logout');
         } catch (error) {
-            console.error('Logout error:', error);
+            // Silently fail on logout error
         }
         window.location.href = '/login';
     }
@@ -119,29 +89,22 @@ export const authAPI = {
 export const policyAPI = {
     // Create new policy
     create: async (policyData) => {
-        return apiClient('/policies', {
-            method: 'POST',
-            body: JSON.stringify(policyData)
-        });
+        return axiosInstance.post('/policies', policyData);
     },
 
     // Get all policies for current user
     getAll: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/policies${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/policies', { params: filters });
     },
 
     // Get single policy by ID
     getById: async (policyId) => {
-        return apiClient(`/policies/${policyId}`);
+        return axiosInstance.get(`/policies/${policyId}`);
     },
 
     // Update policy after payment
     updatePayment: async (policyId, paymentData) => {
-        return apiClient(`/policies/${policyId}/payment-complete`, {
-            method: 'PATCH',
-            body: JSON.stringify(paymentData)
-        });
+        return axiosInstance.patch(`/policies/${policyId}/payment-complete`, paymentData);
     }
 };
 
@@ -149,23 +112,17 @@ export const policyAPI = {
 export const paymentAPI = {
     // Create Razorpay order
     createOrder: async (orderData) => {
-        return apiClient('/payments/create-order', {
-            method: 'POST',
-            body: JSON.stringify(orderData)
-        });
+        return axiosInstance.post('/payments/create-order', orderData);
     },
 
     // Verify payment
     verifyPayment: async (paymentData) => {
-        return apiClient('/payments/verify', {
-            method: 'POST',
-            body: JSON.stringify(paymentData)
-        });
+        return axiosInstance.post('/payments/verify', paymentData);
     },
 
     // Get payment history
     getHistory: async () => {
-        return apiClient('/payments/history');
+        return axiosInstance.get('/payments/history');
     }
 };
 
@@ -173,98 +130,81 @@ export const paymentAPI = {
 export const agentAPI = {
     // Register as agent
     register: async (agentData) => {
-        return apiClient('/auth/register-agent', {
-            method: 'POST',
-            body: JSON.stringify(agentData)
-        });
+        return axiosInstance.post('/auth/register-agent', agentData);
     },
 
     // Get agent profile
     getProfile: async () => {
-        return apiClient('/agents/profile');
+        return axiosInstance.get('/agents/profile');
     },
 
     // Update agent profile
     updateProfile: async (profileData) => {
-        return apiClient('/agents/profile', {
-            method: 'PUT',
-            body: JSON.stringify(profileData)
-        });
+        return axiosInstance.put('/agents/profile', profileData);
     },
 
     // Get agent hierarchy
     getHierarchy: async () => {
-        return apiClient('/agents/hierarchy');
+        return axiosInstance.get('/agents/hierarchy');
     },
 
     // Get team (direct sub-agents)
     getTeam: async () => {
-        return apiClient('/agents/team');
+        return axiosInstance.get('/agents/team');
     },
 
     // Get agent statistics
     getStats: async () => {
-        return apiClient('/agents/stats');
+        return axiosInstance.get('/agents/stats');
     },
 
     // Get wallet information
     getWallet: async () => {
-        return apiClient('/agents/wallet');
+        return axiosInstance.get('/agents/wallet');
     },
 
     // Request withdrawal
     requestWithdrawal: async (withdrawalData) => {
         const body = typeof withdrawalData === 'object' ? withdrawalData : { amount: withdrawalData };
-        return apiClient('/agents/withdraw', {
-            method: 'POST',
-            body: JSON.stringify(body)
-        });
+        return axiosInstance.post('/agents/withdraw', body);
     },
 
     // Get withdrawal history
     getWithdrawals: async () => {
-        return apiClient('/agents/withdrawals');
+        return axiosInstance.get('/agents/withdrawals');
     },
 
     // Get commissions
     getCommissions: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/agents/commissions${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/agents/commissions', { params: filters });
     },
 
     // Get policies sold
     getPolicies: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/agents/policies${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/agents/policies', { params: filters });
     },
 
     // Get customers
     getCustomers: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/agents/customers${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/agents/customers', { params: filters });
     },
 
     // Update customer follow-up notes
     updateCustomerNotes: async (customerId, notes) => {
-        return apiClient(`/agents/customers/${customerId}/notes`, {
-            method: 'PATCH',
-            body: JSON.stringify({ notes })
-        });
+        return axiosInstance.patch(`/agents/customers/${customerId}/notes`, { notes });
     },
 
     // Update sub-agent training progress
     updateSubAgentTraining: async (agentId, trainingData) => {
-        return apiClient(`/agents/team/${agentId}/training`, {
-            method: 'PATCH',
-            body: JSON.stringify(trainingData)
-        });
+        return axiosInstance.patch(`/agents/team/${agentId}/training`, trainingData);
     },
 
     // Submit KYC documents
     submitKYC: async (formData) => {
-        return apiClient('/agents/submit-kyc', {
-            method: 'POST',
-            body: formData
+        return axiosInstance.post('/agents/submit-kyc', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         });
     }
 };
@@ -273,29 +213,22 @@ export const agentAPI = {
 export const claimAPI = {
     // Create new claim
     create: async (claimData) => {
-        return apiClient('/claims', {
-            method: 'POST',
-            body: JSON.stringify(claimData)
-        });
+        return axiosInstance.post('/claims', claimData);
     },
 
     // Get all claims for current user
     getAll: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/claims${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/claims', { params: filters });
     },
 
     // Get single claim by ID
     getById: async (claimId) => {
-        return apiClient(`/claims/${claimId}`);
+        return axiosInstance.get(`/claims/${claimId}`);
     },
 
     // Upload claim documents
     uploadDocuments: async (claimId, documents) => {
-        return apiClient(`/claims/${claimId}/documents`, {
-            method: 'POST',
-            body: JSON.stringify({ documents })
-        });
+        return axiosInstance.post(`/claims/${claimId}/documents`, { documents });
     }
 };
 
@@ -303,29 +236,22 @@ export const claimAPI = {
 export const notificationAPI = {
     // Get notifications
     getAll: async (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return apiClient(`/notifications${queryParams ? `?${queryParams}` : ''}`);
+        return axiosInstance.get('/notifications', { params: filters });
     },
 
     // Mark notification as read
     markAsRead: async (notificationId) => {
-        return apiClient(`/notifications/${notificationId}/read`, {
-            method: 'PATCH'
-        });
+        return axiosInstance.patch(`/notifications/${notificationId}/read`);
     },
 
     // Mark all as read
     markAllAsRead: async () => {
-        return apiClient('/notifications/read-all', {
-            method: 'PATCH'
-        });
+        return axiosInstance.patch('/notifications/read-all');
     },
 
     // Delete notification
     delete: async (notificationId) => {
-        return apiClient(`/notifications/${notificationId}`, {
-            method: 'DELETE'
-        });
+        return axiosInstance.delete(`/notifications/${notificationId}`);
     }
 };
 
@@ -333,12 +259,12 @@ export const notificationAPI = {
 export const policyPlanAPI = {
     // Get all plans
     getAll: async () => {
-        return apiClient('/plans');
+        return axiosInstance.get('/plans');
     },
 
     // Get plan by ID
     getById: async (id) => {
-        return apiClient(`/plans/${id}`);
+        return axiosInstance.get(`/plans/${id}`);
     }
 };
 
@@ -346,10 +272,7 @@ export const policyPlanAPI = {
 export const contactAPI = {
     // Submit inquiry
     submit: async (formData) => {
-        return apiClient('/contact/submit', {
-            method: 'POST',
-            body: JSON.stringify(formData)
-        });
+        return axiosInstance.post('/contact/submit', formData);
     }
 };
 

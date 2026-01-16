@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 import { User } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 
@@ -9,20 +9,18 @@ const resetAdmin = async () => {
     try {
         console.log('🔧 Resetting Admin User...');
 
-        await sequelize.authenticate();
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/insurance_db');
         console.log('✅ Connected to database');
 
         const email = 'admin@insurance.com';
         const password = 'admin123';
 
         // Find admin
-        let admin = await User.findOne({ where: { email } });
+        let admin = await User.findOne({ email });
 
         if (admin) {
             console.log('found admin, updating password...');
-            // Manually hash locally to be 100% sure, although model hook should work
-            // But using update() should trigger hook.
-            // Let's force update
+            // Password will be hashed by User model hook "pre" save
             admin.password = password;
             await admin.save();
             console.log('✅ Admin password updated to: admin123');

@@ -1,184 +1,142 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Agent = sequelize.define('Agent', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        unique: true,
-        field: 'user_id',
-        references: {
-            model: 'users',
-            key: 'id'
+const agentSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+            unique: true
+        },
+        agentCode: {
+            type: String,
+            required: true,
+            unique: true
+        },
+        parentAgentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Agent',
+            default: null
+        },
+        level: {
+            type: Number,
+            default: 1
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'active', 'inactive', 'rejected'],
+            default: 'pending'
+        },
+        // Bank Details
+        bankName: {
+            type: String,
+            default: null
+        },
+        accountNumber: {
+            type: String,
+            default: null
+        },
+        ifscCode: {
+            type: String,
+            default: null
+        },
+        accountHolderName: {
+            type: String,
+            default: null
+        },
+        // KYC Details
+        panNumber: {
+            type: String,
+            default: null
+        },
+        panPhoto: {
+            type: String,
+            default: null
+        },
+        aadharNumber: {
+            type: String,
+            default: null
+        },
+        aadharPhotoFront: {
+            type: String,
+            default: null
+        },
+        aadharPhotoBack: {
+            type: String,
+            default: null
+        },
+        bankProofPhoto: {
+            type: String,
+            default: null
+        },
+        kycStatus: {
+            type: String,
+            enum: ['not_submitted', 'pending', 'verified', 'rejected'],
+            default: 'not_submitted'
+        },
+        kycRejectionReason: {
+            type: String,
+            default: null
+        },
+        // Wallet
+        walletBalance: {
+            type: mongoose.Decimal128,
+            default: 0.00
+        },
+        totalEarnings: {
+            type: mongoose.Decimal128,
+            default: 0.00
+        },
+        totalWithdrawals: {
+            type: mongoose.Decimal128,
+            default: 0.00
+        },
+        // Approval
+        approvedAt: {
+            type: Date,
+            default: null
+        },
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        rejectedAt: {
+            type: Date,
+            default: null
+        },
+        rejectedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        rejectionReason: {
+            type: String,
+            default: null
+        },
+        adminNotes: {
+            type: String,
+            default: null
+        },
+        commissionRate: {
+            type: mongoose.Decimal128,
+            default: null
+        },
+        trainingStatus: {
+            type: String,
+            enum: ['not_started', 'in_progress', 'completed'],
+            default: 'not_started'
+        },
+        trainingProgress: {
+            type: Number,
+            default: 0
         }
     },
-    agentCode: {
-        type: DataTypes.STRING(50),
-        unique: true,
-        allowNull: false,
-        field: 'agent_code'
-    },
-    parentAgentId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: 'parent_agent_id',
-        references: {
-            model: 'agents',
-            key: 'id'
-        }
-    },
-    level: {
-        type: DataTypes.INTEGER,
-        defaultValue: 1,
-        allowNull: false
-    },
-    status: {
-        type: DataTypes.ENUM('pending', 'active', 'inactive', 'rejected'),
-        defaultValue: 'pending',
-        allowNull: false
-    },
-    // Bank Details
-    bankName: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'bank_name'
-    },
-    accountNumber: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        field: 'account_number'
-    },
-    ifscCode: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-        field: 'ifsc_code'
-    },
-    accountHolderName: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'account_holder_name'
-    },
-    // KYC Details
-    panNumber: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-        field: 'pan_number'
-    },
-    panPhoto: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'pan_photo'
-    },
-    aadharNumber: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-        field: 'aadhar_number'
-    },
-    aadharPhotoFront: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'aadhar_photo_front'
-    },
-    aadharPhotoBack: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'aadhar_photo_back'
-    },
-    bankProofPhoto: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'bank_proof_photo'
-    },
-    kycStatus: {
-        type: DataTypes.ENUM('not_submitted', 'pending', 'verified', 'rejected'),
-        defaultValue: 'not_submitted',
-        field: 'kyc_status'
-    },
-    kycRejectionReason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        field: 'kyc_rejection_reason'
-    },
-    // Wallet
-    walletBalance: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0.00,
-        field: 'wallet_balance'
-    },
-    totalEarnings: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0.00,
-        field: 'total_earnings'
-    },
-    totalWithdrawals: {
-        type: DataTypes.DECIMAL(12, 2),
-        defaultValue: 0.00,
-        field: 'total_withdrawals'
-    },
-    // Approval
-    approvedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'approved_at'
-    },
-    approvedBy: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: 'approved_by',
-        references: {
-            model: 'users',
-            key: 'id'
-        }
-    },
-    rejectedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'rejected_at'
-    },
-    rejectedBy: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: 'rejected_by',
-        references: {
-            model: 'users',
-            key: 'id'
-        }
-    },
-    rejectionReason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        field: 'rejection_reason'
-    },
-    adminNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        field: 'admin_notes'
-    },
-    commissionRate: {
-        type: DataTypes.DECIMAL(5, 2),
-        allowNull: true,
-        field: 'commission_rate',
-        comment: 'Custom commission rate override for this agent'
-    },
-    trainingStatus: {
-        type: DataTypes.ENUM('not_started', 'in_progress', 'completed'),
-        defaultValue: 'not_started',
-        field: 'training_status'
-    },
-    trainingProgress: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        field: 'training_progress'
+    {
+        timestamps: true
     }
-}, {
-    tableName: 'agents',
-    timestamps: true,
-    underscored: true
-});
+);
+
+const Agent = mongoose.model('Agent', agentSchema);
 
 export default Agent;

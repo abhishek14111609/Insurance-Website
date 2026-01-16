@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(userData);
             }
         } catch (err) {
-            // Authentication failed - user is not logged in
+            // Silently fail - user is not logged in, this is expected
             setUser(null);
         } finally {
             setLoading(false);

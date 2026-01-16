@@ -1,7 +1,5 @@
 import { User, Agent } from '../models/index.js';
 import { generateToken, generateRefreshToken } from '../middleware/auth.middleware.js';
-import { Op } from 'sequelize';
-import sequelize from '../config/database.js';
 import crypto from 'crypto';
 
 // @desc    Register new user
@@ -12,7 +10,7 @@ export const register = async (req, res) => {
         const { email, password, fullName, phone, address, city, state, pincode, role } = req.body;
 
         // Check if user already exists
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -70,14 +68,16 @@ export const register = async (req, res) => {
 // @route   POST /api/auth/register-agent
 // @access  Public
 export const registerAgent = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await User.startSession();
+    session.startTransaction();
     try {
         const { email, password, fullName, phone, address, city, state, pincode, referredByCode } = req.body;
 
         // Check if user already exists
-        const existingUser = await User.findOne({ where: { email } });
+        const existingUser = await User.findOne({ email }).session(session);
         if (existingUser) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'User with this email already exists'
@@ -85,7 +85,7 @@ export const registerAgent = async (req, res) => {
         }
 
         // Create user
-        const user = await User.create({
+        const [user] = await User.create([{
             email,
             password,
             fullName,
@@ -96,7 +96,7 @@ export const registerAgent = async (req, res) => {
             pincode: pincode || '',
             role: 'agent',
             status: 'active'
-        }, { transaction });
+        }], { session });
 
         // Generate unique agent code
         const agentCode = `AG${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -106,19 +106,16 @@ export const registerAgent = async (req, res) => {
         let level = 1;
 
         if (referredByCode) {
-            const parentAgent = await Agent.findOne({
-                where: { agentCode: referredByCode },
-                transaction
-            });
+            const parentAgent = await Agent.findOne({ agentCode: referredByCode }).session(session);
             if (parentAgent) {
-                parentAgentId = parentAgent.id;
+                parentAgentId = parentAgent._id;
                 level = parentAgent.level + 1;
             }
         }
 
         // Create agent profile
-        const agent = await Agent.create({
-            userId: user.id,
+        const [agent] = await Agent.create([{
+            userId: user._id,
             agentCode,
             parentAgentId,
             level,
@@ -126,9 +123,10 @@ export const registerAgent = async (req, res) => {
             walletBalance: 0,
             totalEarnings: 0,
             totalWithdrawals: 0
-        }, { transaction });
+        }], { session });
 
-        await transaction.commit();
+        await session.commitTransaction();
+        session.endSession();
 
         res.status(201).json({
             success: true,
@@ -139,7 +137,8 @@ export const registerAgent = async (req, res) => {
             }
         });
     } catch (error) {
-        if (transaction) await transaction.rollback();
+        await session.abortTransaction();
+        session.endSession();
         console.error('Register agent error:', error);
         res.status(500).json({
             success: false,
@@ -165,7 +164,7 @@ export const login = async (req, res) => {
         }
 
         // Find user
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -208,7 +207,7 @@ export const login = async (req, res) => {
         // If user is an agent, include agent profile
         let agentProfile = null;
         if (user.role === 'agent') {
-            agentProfile = await Agent.findOne({ where: { userId: user.id } });
+            agentProfile = await Agent.findOne({ userId: user._id });
         }
 
         res.json({
@@ -259,7 +258,7 @@ export const logout = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
     try {
-        const user = await User.findByPk(req.user.id);
+        const user = await User.findById(req.user.id);
 
         if (!user) {
             return res.status(404).json({
@@ -271,7 +270,7 @@ export const getMe = async (req, res) => {
         // If user is an agent, include agent profile
         let agentProfile = null;
         if (user.role === 'agent') {
-            agentProfile = await Agent.findOne({ where: { userId: user.id } });
+            agentProfile = await Agent.findOne({ userId: user._id });
         }
 
         res.json({
@@ -298,7 +297,7 @@ export const updateProfile = async (req, res) => {
     try {
         const { fullName, phone, address, city, state, pincode } = req.body;
 
-        const user = await User.findByPk(req.user.id);
+        const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -307,14 +306,13 @@ export const updateProfile = async (req, res) => {
         }
 
         // Update user
-        await user.update({
-            fullName: fullName || user.fullName,
-            phone: phone || user.phone,
-            address: address || user.address,
-            city: city || user.city,
-            state: state || user.state,
-            pincode: pincode || user.pincode
-        });
+        user.fullName = fullName || user.fullName;
+        user.phone = phone || user.phone;
+        user.address = address || user.address;
+        user.city = city || user.city;
+        user.state = state || user.state;
+        user.pincode = pincode || user.pincode;
+        await user.save();
 
         res.json({
             success: true,
@@ -338,7 +336,7 @@ export const changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
-        const user = await User.findByPk(req.user.id);
+        const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -356,7 +354,8 @@ export const changePassword = async (req, res) => {
         }
 
         // Update password (will be hashed automatically)
-        await user.update({ password: newPassword });
+        user.password = newPassword;
+        await user.save();
 
         res.json({
             success: true,
@@ -379,7 +378,7 @@ export const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
 
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ email });
         if (!user) {
             // Don't reveal if email exists
             return res.json({
@@ -392,10 +391,9 @@ export const forgotPassword = async (req, res) => {
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-        await user.update({
-            resetPasswordToken: resetToken,
-            resetPasswordExpires: resetTokenExpiry
-        });
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = resetTokenExpiry;
+        await user.save();
 
         // TODO: Send email with reset link
         // const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
@@ -440,11 +438,10 @@ export const resetPassword = async (req, res) => {
         }
 
         // Update password and clear reset token
-        await user.update({
-            password: newPassword,
-            resetPasswordToken: null,
-            resetPasswordExpires: null
-        });
+        user.password = newPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
 
         res.json({
             success: true,

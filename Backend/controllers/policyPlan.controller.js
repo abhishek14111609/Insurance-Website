@@ -1,5 +1,4 @@
 import { PolicyPlan, User } from '../models/index.js';
-import { Op } from 'sequelize';
 
 // @desc    Get all policy plans
 // @route   GET /api/plans
@@ -13,10 +12,8 @@ export const getAllPlans = async (req, res) => {
             where.isActive = isActive === 'true';
         }
 
-        const plans = await PolicyPlan.findAll({
-            where,
-            order: [['displayOrder', 'ASC'], ['premium', 'ASC']]
-        });
+        const plans = await PolicyPlan.find(where)
+            .sort({ displayOrder: 1, premium: 1 });
 
         res.json({
             success: true,
@@ -37,7 +34,7 @@ export const getAllPlans = async (req, res) => {
 // @access  Public
 export const getPlanById = async (req, res) => {
     try {
-        const plan = await PolicyPlan.findByPk(req.params.id);
+        const plan = await PolicyPlan.findById(req.params.id);
 
         if (!plan) {
             return res.status(404).json({
@@ -69,7 +66,7 @@ export const createPlan = async (req, res) => {
 
         const newPlan = await PolicyPlan.create({
             ...planData,
-            createdBy: req.user.id
+            createdBy: req.user._id
         });
 
         res.status(201).json({
@@ -92,7 +89,7 @@ export const createPlan = async (req, res) => {
 // @access  Private (admin)
 export const updatePlan = async (req, res) => {
     try {
-        const plan = await PolicyPlan.findByPk(req.params.id);
+        const plan = await PolicyPlan.findById(req.params.id);
 
         if (!plan) {
             return res.status(404).json({
@@ -101,10 +98,8 @@ export const updatePlan = async (req, res) => {
             });
         }
 
-        await plan.update({
-            ...req.body,
-            updatedBy: req.user.id
-        });
+        Object.assign(plan, req.body, { updatedBy: req.user._id });
+        await plan.save();
 
         res.json({
             success: true,
@@ -126,7 +121,7 @@ export const updatePlan = async (req, res) => {
 // @access  Private (admin)
 export const deletePlan = async (req, res) => {
     try {
-        const plan = await PolicyPlan.findByPk(req.params.id);
+        const plan = await PolicyPlan.findById(req.params.id);
 
         if (!plan) {
             return res.status(404).json({
@@ -135,7 +130,7 @@ export const deletePlan = async (req, res) => {
             });
         }
 
-        await plan.destroy();
+        await plan.deleteOne();
 
         res.json({
             success: true,

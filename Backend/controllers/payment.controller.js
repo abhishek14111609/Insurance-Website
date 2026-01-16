@@ -29,10 +29,8 @@ export const createOrder = async (req, res) => {
 
         // Verify policy belongs to user
         const policy = await Policy.findOne({
-            where: {
-                id: policyId,
-                customerId: req.user.id
-            }
+            _id: policyId,
+            customerId: req.user._id
         });
 
         if (!policy) {
@@ -60,7 +58,7 @@ export const createOrder = async (req, res) => {
         // Create payment record
         const payment = await Payment.create({
             policyId,
-            customerId: req.user.id,
+            customerId: req.user._id,
             razorpayOrderId: order.id,
             amount,
             currency: 'INR',
@@ -112,10 +110,8 @@ export const verifyPayment = async (req, res) => {
 
         // Update payment record
         const payment = await Payment.findOne({
-            where: {
-                razorpayOrderId: razorpay_order_id,
-                customerId: req.user.id
-            }
+            razorpayOrderId: razorpay_order_id,
+            customerId: req.user._id
         });
 
         if (!payment) {
@@ -125,22 +121,20 @@ export const verifyPayment = async (req, res) => {
             });
         }
 
-        await payment.update({
-            razorpayPaymentId: razorpay_payment_id,
-            razorpaySignature: razorpay_signature,
-            status: 'success',
-            paidAt: new Date()
-        });
+        payment.razorpayPaymentId = razorpay_payment_id;
+        payment.razorpaySignature = razorpay_signature;
+        payment.status = 'success';
+        payment.paidAt = new Date();
+        await payment.save();
 
         // Update policy status
-        const policy = await Policy.findByPk(policyId);
+        const policy = await Policy.findById(policyId);
         if (policy) {
-            await policy.update({
-                paymentStatus: 'PAID',
-                paymentId: razorpay_payment_id,
-                paymentDate: new Date(),
-                status: 'PENDING_APPROVAL'
-            });
+            policy.paymentStatus = 'PAID';
+            policy.paymentId = razorpay_payment_id;
+            policy.paymentDate = new Date();
+            policy.status = 'PENDING_APPROVAL';
+            await policy.save();
 
             // Calculate and create commissions if agent involved
             if (policy.agentId) {
@@ -171,11 +165,9 @@ export const verifyPayment = async (req, res) => {
 // @access  Private
 export const getPaymentHistory = async (req, res) => {
     try {
-        const payments = await Payment.findAll({
-            where: { customerId: req.user.id },
-            include: [{ model: Policy, as: 'policy' }],
-            order: [['createdAt', 'DESC']]
-        });
+        const payments = await Payment.find({ customerId: req.user._id })
+            .populate('policy')
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -240,7 +232,7 @@ export const handleWebhook = async (req, res) => {
 // Helper function to calculate commissions
 async function calculateCommissions(policy) {
     try {
-        const agent = await Agent.findByPk(policy.agentId);
+        const agent = await Agent.findById(policy.agentId);
         if (!agent) return;
 
         // Commission settings (can be fetched from database)
@@ -254,8 +246,8 @@ async function calculateCommissions(policy) {
 
         // Level 1 - Direct agent
         commissions.push({
-            policyId: policy.id,
-            agentId: agent.id,
+            policyId: policy._id,
+            agentId: agent._id,
             level: 1,
             percentage: commissionRates.level1,
             amount: (policy.premium * commissionRates.level1) / 100,
@@ -264,11 +256,11 @@ async function calculateCommissions(policy) {
 
         // Level 2 - Parent agent
         if (agent.parentAgentId) {
-            const parentAgent = await Agent.findByPk(agent.parentAgentId);
+            const parentAgent = await Agent.findById(agent.parentAgentId);
             if (parentAgent) {
                 commissions.push({
-                    policyId: policy.id,
-                    agentId: parentAgent.id,
+                    policyId: policy._id,
+                    agentId: parentAgent._id,
                     level: 2,
                     percentage: commissionRates.level2,
                     amount: (policy.premium * commissionRates.level2) / 100,
@@ -277,11 +269,11 @@ async function calculateCommissions(policy) {
 
                 // Level 3 - Grandparent agent
                 if (parentAgent.parentAgentId) {
-                    const grandparentAgent = await Agent.findByPk(parentAgent.parentAgentId);
+                    const grandparentAgent = await Agent.findById(parentAgent.parentAgentId);
                     if (grandparentAgent) {
                         commissions.push({
-                            policyId: policy.id,
-                            agentId: grandparentAgent.id,
+                            policyId: policy._id,
+                            agentId: grandparentAgent._id,
                             level: 3,
                             percentage: commissionRates.level3,
                             amount: (policy.premium * commissionRates.level3) / 100,
@@ -293,7 +285,7 @@ async function calculateCommissions(policy) {
         }
 
         // Create commission records
-        await Commission.bulkCreate(commissions);
+        await Commission.insertMany(commissions);
     } catch (error) {
         console.error('Calculate commissions error:', error);
     }
@@ -301,29 +293,23 @@ async function calculateCommissions(policy) {
 
 // Helper function for payment captured event
 async function handlePaymentCaptured(paymentEntity) {
-    const payment = await Payment.findOne({
-        where: { razorpayPaymentId: paymentEntity.id }
-    });
+    const payment = await Payment.findOne({ razorpayPaymentId: paymentEntity.id });
 
     if (payment && payment.status !== 'success') {
-        await payment.update({
-            status: 'success',
-            paidAt: new Date()
-        });
+        payment.status = 'success';
+        payment.paidAt = new Date();
+        await payment.save();
     }
 }
 
 // Helper function for payment failed event
 async function handlePaymentFailed(paymentEntity) {
-    const payment = await Payment.findOne({
-        where: { razorpayPaymentId: paymentEntity.id }
-    });
+    const payment = await Payment.findOne({ razorpayPaymentId: paymentEntity.id });
 
     if (payment) {
-        await payment.update({
-            status: 'failed',
-            errorCode: paymentEntity.error_code,
-            errorDescription: paymentEntity.error_description
-        });
+        payment.status = 'failed';
+        payment.errorCode = paymentEntity.error_code;
+        payment.errorDescription = paymentEntity.error_description;
+        await payment.save();
     }
 }

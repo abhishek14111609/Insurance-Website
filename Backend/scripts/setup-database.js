@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import sequelize, { testConnection } from '../config/database.js';
+import mongoose from 'mongoose';
 import '../models/index.js';
 import { initializeCommissionSettings } from '../utils/commission.util.js';
 import { User } from '../models/index.js';
@@ -11,31 +11,19 @@ const setupDatabase = async () => {
     try {
         console.log('🔧 Starting database setup...\n');
 
-        // Test connection
-        console.log('1️⃣ Testing database connection...');
-        const isConnected = await testConnection();
-
-        if (!isConnected) {
-            console.error('❌ Failed to connect to database.');
-            console.log('\n💡 Make sure MySQL is running and database exists:');
-            console.log('   mysql -u root -p');
-            console.log('   CREATE DATABASE insurance_db;');
-            process.exit(1);
-        }
-
-        // Sync database (create all tables)
-        console.log('\n2️⃣ Creating/updating database tables...');
-        await sequelize.sync({ force: true }); // WARNING: This will drop all existing tables!
-        console.log('✅ All tables created successfully');
+        // Connect to MongoDB
+        console.log('1️⃣ Connecting to MongoDB...');
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/insurance_db');
+        console.log('✅ Connected to MongoDB');
 
         // Initialize commission settings
-        console.log('\n3️⃣ Initializing commission settings...');
+        console.log('\n2️⃣ Initializing commission settings...');
         await initializeCommissionSettings();
         console.log('✅ Commission settings initialized');
 
         // Create default admin user
-        console.log('\n4️⃣ Creating default admin user...');
-        const adminExists = await User.findOne({ where: { email: 'admin@insurance.com' } });
+        console.log('\n3️⃣ Creating default admin user...');
+        const adminExists = await User.findOne({ email: 'admin@insurance.com' });
 
         if (!adminExists) {
             await User.create({
@@ -56,7 +44,7 @@ const setupDatabase = async () => {
 
         console.log('\n✅ Database setup complete!');
         console.log('\n📋 Summary:');
-        console.log('   - All tables created');
+        console.log('   - Connected to MongoDB');
         console.log('   - Commission settings initialized');
         console.log('   - Admin user ready');
         console.log('\n🚀 You can now start the server with: npm run dev\n');

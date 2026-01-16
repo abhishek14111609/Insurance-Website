@@ -1,118 +1,108 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const User = sequelize.define('User', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    email: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        unique: true,
-        validate: {
-            isEmail: true
-        }
-    },
-    password: {
-        type: DataTypes.STRING(255),
-        allowNull: false
-    },
-    fullName: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        field: 'full_name'
-    },
-    phone: {
-        type: DataTypes.STRING(20),
-        allowNull: true
-    },
-    address: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    city: {
-        type: DataTypes.STRING(100),
-        allowNull: true
-    },
-    state: {
-        type: DataTypes.STRING(100),
-        allowNull: true
-    },
-    pincode: {
-        type: DataTypes.STRING(10),
-        allowNull: true
-    },
-    role: {
-        type: DataTypes.ENUM('customer', 'agent', 'admin'),
-        defaultValue: 'customer',
-        allowNull: false
-    },
-    status: {
-        type: DataTypes.ENUM('active', 'inactive', 'blocked'),
-        defaultValue: 'active',
-        allowNull: false
-    },
-    emailVerified: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        field: 'email_verified'
-    },
-    verificationToken: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'verification_token'
-    },
-    resetPasswordToken: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'reset_password_token'
-    },
-    resetPasswordExpires: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'reset_password_expires'
-    },
-    followUpNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        field: 'follow_up_notes'
-    }
-}, {
-    tableName: 'users',
-    timestamps: true,
-    underscored: true,
-    hooks: {
-        beforeCreate: async (user) => {
-            if (user.password) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
+const userSchema = new mongoose.Schema(
+    {
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            match: /.+\@.+\..+/
         },
-        beforeUpdate: async (user) => {
-            if (user.changed('password')) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
+        password: {
+            type: String,
+            required: true
+        },
+        fullName: {
+            type: String,
+            required: true
+        },
+        phone: {
+            type: String,
+            default: null
+        },
+        address: {
+            type: String,
+            default: null
+        },
+        city: {
+            type: String,
+            default: null
+        },
+        state: {
+            type: String,
+            default: null
+        },
+        pincode: {
+            type: String,
+            default: null
+        },
+        role: {
+            type: String,
+            enum: ['customer', 'agent', 'admin'],
+            default: 'customer'
+        },
+        status: {
+            type: String,
+            enum: ['active', 'inactive', 'blocked'],
+            default: 'active'
+        },
+        emailVerified: {
+            type: Boolean,
+            default: false
+        },
+        verificationToken: {
+            type: String,
+            default: null
+        },
+        resetPasswordToken: {
+            type: String,
+            default: null
+        },
+        resetPasswordExpires: {
+            type: Date,
+            default: null
+        },
+        followUpNotes: {
+            type: String,
+            default: null
         }
+    },
+    {
+        timestamps: true
+    }
+);
+
+// Hash password before saving
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
+        return next();
+    }
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
     }
 });
 
-// Instance method to compare password
-User.prototype.comparePassword = async function (candidatePassword) {
+// Method to compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Instance method to generate JWT token
-User.prototype.toJSON = function () {
-    const values = Object.assign({}, this.get());
-    delete values.password;
-    delete values.verificationToken;
-    delete values.resetPasswordToken;
-    delete values.resetPasswordExpires;
-    return values;
+// Method to exclude sensitive fields
+userSchema.methods.toJSON = function () {
+    const user = this.toObject();
+    delete user.password;
+    delete user.verificationToken;
+    delete user.resetPasswordToken;
+    delete user.resetPasswordExpires;
+    return user;
 };
+
+const User = mongoose.model('User', userSchema);
 
 export default User;

@@ -1,29 +1,23 @@
 import { User } from '../models/index.js';
-import sequelize from '../config/database.js';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
 const createAdminSafe = async () => {
     try {
         console.log('Connecting to database...');
-        await sequelize.authenticate();
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/insurance_db');
         console.log('Database connected.');
 
-        // Ensure tables exist but DO NOT FORCE SYNC (preserve data)
-        // await sequelize.sync({ alter: true }); // Optional: uncomment if schema update is needed, but risky if not careful. 
-        // Better to assume app is running so tables exist.
-
         const adminEmail = 'admin@securelife.com';
-        const existingAdmin = await User.findOne({ where: { email: adminEmail } });
+        const existingAdmin = await User.findOne({ email: adminEmail });
 
         if (existingAdmin) {
             console.log('Admin user already exists.');
-            // Update password just in case?
-            // Optional: existingAdmin.password = await bcrypt.hash('admin123', 10); existingAdmin.save();
         } else {
-            // Password will be hashed by User model hook "beforeCreate"
+            // Password will be hashed by User model hook "pre" save
             const newAdmin = await User.create({
                 email: adminEmail,
                 password: 'admin123',
@@ -36,12 +30,12 @@ const createAdminSafe = async () => {
             });
 
             console.log('Admin user created successfully!');
-            console.log(`ID: ${newAdmin.id}`);
+            console.log(`ID: ${newAdmin._id}`);
             console.log(`Email: ${newAdmin.email}`);
             console.log(`Password: admin123`);
         }
 
-        await sequelize.close();
+        await mongoose.disconnect();
         process.exit(0);
     } catch (error) {
         console.error('Error creating admin:', error);

@@ -1,47 +1,46 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Inquiry = sequelize.define('Inquiry', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
+const inquirySchema = new mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true
+        },
+        email: {
+            type: String,
+            required: true
+        },
+        phone: {
+            type: String,
+            required: true
+        },
+        subject: {
+            type: String,
+            required: true
+        },
+        message: {
+            type: String,
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'replied'],
+            default: 'pending'
+        },
+        adminReply: {
+            type: String,
+            default: null
+        },
+        repliedAt: {
+            type: Date,
+            default: null
+        }
     },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    phone: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    subject: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    message: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    status: {
-        type: DataTypes.ENUM('pending', 'replied'),
-        defaultValue: 'pending'
-    },
-    adminReply: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    repliedAt: {
-        type: DataTypes.DATE,
-        allowNull: true
+    {
+        timestamps: true
     }
-}, {
-    tableName: 'inquiries',
-    timestamps: true
-});
+);
+
+const Inquiry = mongoose.model('Inquiry', inquirySchema);
 
 export default Inquiry;

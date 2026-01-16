@@ -1,5 +1,4 @@
 import { Policy, User, Agent, Payment, Commission } from '../models/index.js';
-import { Op } from 'sequelize';
 
 // @desc    Create new policy
 // @route   POST /api/policies
@@ -19,7 +18,7 @@ export const createPolicy = async (req, res) => {
         // Find agent if agent code provided
         let agentId = null;
         if (agentCode) {
-            const agent = await Agent.findOne({ where: { agentCode } });
+            const agent = await Agent.findOne({ agentCode });
             if (agent) {
                 // Check KYC status before allowing sale
                 if (agent.kycStatus !== 'verified') {
@@ -28,14 +27,14 @@ export const createPolicy = async (req, res) => {
                         message: 'Agent is not authorized to sell policies yet. KYC verification is pending.'
                     });
                 }
-                agentId = agent.id;
+                agentId = agent._id;
             }
         }
 
         // Create policy
         const policy = await Policy.create({
             policyNumber,
-            customerId: req.user.id,
+            customerId: req.user._id,
             agentId,
             planId,
             cattleType,
@@ -85,22 +84,19 @@ export const getPolicies = async (req, res) => {
     try {
         const { status, paymentStatus } = req.query;
 
-        const where = { customerId: req.user.id };
+        const where = { customerId: req.user._id };
 
         if (status) where.status = status;
         if (paymentStatus) where.paymentStatus = paymentStatus;
 
-        const policies = await Policy.findAll({
-            where,
-            attributes: {
-                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
-            },
-            include: [
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] },
-                { model: Payment, as: 'payments' }
-            ],
-            order: [['createdAt', 'DESC']]
-        });
+        const policies = await Policy.find(where)
+            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .populate({
+                path: 'agent',
+                populate: { path: 'user', select: 'fullName' }
+            })
+            .populate('payments')
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -123,16 +119,15 @@ export const getPolicies = async (req, res) => {
 export const getPolicyById = async (req, res) => {
     try {
         const policy = await Policy.findOne({
-            where: {
-                id: req.params.id,
-                customerId: req.user.id
-            },
-            include: [
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
-                { model: Payment, as: 'payments' },
-                { model: Commission, as: 'commissions' }
-            ]
-        });
+            _id: req.params.id,
+            customerId: req.user._id
+        })
+            .populate({
+                path: 'agent',
+                populate: { path: 'user' }
+            })
+            .populate('payments')
+            .populate('commissions');
 
         if (!policy) {
             return res.status(404).json({
@@ -163,10 +158,8 @@ export const updatePolicyPayment = async (req, res) => {
         const { paymentId, orderId } = req.body;
 
         const policy = await Policy.findOne({
-            where: {
-                id: req.params.id,
-                customerId: req.user.id
-            }
+            _id: req.params.id,
+            customerId: req.user._id
         });
 
         if (!policy) {
@@ -177,12 +170,11 @@ export const updatePolicyPayment = async (req, res) => {
         }
 
         // Update policy status
-        await policy.update({
-            paymentStatus: 'PAID',
-            paymentId,
-            paymentDate: new Date(),
-            status: 'PENDING_APPROVAL' // Waiting for admin approval
-        });
+        policy.paymentStatus = 'PAID';
+        policy.paymentId = paymentId;
+        policy.paymentDate = new Date();
+        policy.status = 'PENDING_APPROVAL'; // Waiting for admin approval
+        await policy.save();
 
         res.json({
             success: true,
@@ -204,22 +196,19 @@ export const updatePolicyPayment = async (req, res) => {
 // @access  Private (Admin)
 export const getPendingPolicies = async (req, res) => {
     try {
-        const policies = await Policy.findAll({
-            where: {
-                [Op.or]: [
-                    { status: 'PENDING' },
-                    { status: 'PENDING_APPROVAL' }
-                ]
-            },
-            attributes: {
-                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
-            },
-            include: [
-                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] }
-            ],
-            order: [['createdAt', 'DESC']]
-        });
+        const policies = await Policy.find({
+            $or: [
+                { status: 'PENDING' },
+                { status: 'PENDING_APPROVAL' }
+            ]
+        })
+            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .populate({ path: 'customer', select: 'fullName email phone' })
+            .populate({
+                path: 'agent',
+                populate: { path: 'user', select: 'fullName' }
+            })
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,

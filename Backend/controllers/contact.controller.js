@@ -37,9 +37,8 @@ export const submitInquiry = async (req, res) => {
 // @access  Private (Admin)
 export const getAllInquiries = async (req, res) => {
     try {
-        const inquiries = await Inquiry.findAll({
-            order: [['createdAt', 'DESC']]
-        });
+        const inquiries = await Inquiry.find()
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -67,7 +66,7 @@ export const replyToInquiry = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Reply message is required' });
         }
 
-        const inquiry = await Inquiry.findByPk(id);
+        const inquiry = await Inquiry.findById(id);
         if (!inquiry) {
             return res.status(404).json({ success: false, message: 'Inquiry not found' });
         }
@@ -80,11 +79,10 @@ export const replyToInquiry = async (req, res) => {
         await sendInquiryReply(inquiry, message);
 
         // Update Database
-        await inquiry.update({
-            status: 'replied',
-            adminReply: message,
-            repliedAt: new Date()
-        });
+        inquiry.status = 'replied';
+        inquiry.adminReply = message;
+        inquiry.repliedAt = new Date();
+        await inquiry.save();
 
         res.json({
             success: true,

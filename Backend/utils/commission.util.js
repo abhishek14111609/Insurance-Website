@@ -1,20 +1,18 @@
 import { Agent, Commission, CommissionSettings, Policy } from '../models/index.js';
-import { Op } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
+import { decimal128ToNumber } from './mongoose.util.js';
 
 /**
  * Calculate and distribute multi-level commissions for a policy
  * @param {Object} policy - The approved policy
  * @returns {Promise<Array>} Array of created commission records
  */
-export const calculateAndDistributeCommissions = async (policy, transaction = null) => {
+export const calculateAndDistributeCommissions = async (policy, session = null) => {
     try {
         // Get commission settings
-        const settings = await CommissionSettings.findAll({
-            where: { isActive: true },
-            order: [['level', 'ASC']],
-            transaction
-        });
+        const settings = await CommissionSettings.find({ isActive: true })
+            .sort({ level: 1 })
+            .session(session);
 
         if (!settings || settings.length === 0) {
             console.log('No active commission settings found');
@@ -28,7 +26,7 @@ export const calculateAndDistributeCommissions = async (policy, transaction = nu
         }
 
         const commissions = [];
-        let currentAgent = await Agent.findByPk(policy.agentId, { transaction });
+        let currentAgent = await Agent.findById(policy.agentId).session(session);
         let level = 1;
 
         // Traverse up the agent hierarchy
@@ -37,37 +35,37 @@ export const calculateAndDistributeCommissions = async (policy, transaction = nu
 
             if (setting) {
                 // Check if policy amount is within range
-                const policyAmount = parseFloat(policy.premium);
-                const minAmount = setting.minPolicyAmount ? parseFloat(setting.minPolicyAmount) : 0;
-                const maxAmount = setting.maxPolicyAmount ? parseFloat(setting.maxPolicyAmount) : Infinity;
+                const policyAmount = decimal128ToNumber(policy.premium);
+                const minAmount = setting.minPolicyAmount ? decimal128ToNumber(setting.minPolicyAmount) : 0;
+                const maxAmount = setting.maxPolicyAmount ? decimal128ToNumber(setting.maxPolicyAmount) : Infinity;
 
                 if (policyAmount >= minAmount && policyAmount <= maxAmount) {
                     // Use agent's custom percentage if level 1 and it exists
-                    let percentage = parseFloat(setting.percentage);
+                    let percentage = decimal128ToNumber(setting.percentage);
                     if (level === 1 && currentAgent.commissionRate) {
-                        percentage = parseFloat(currentAgent.commissionRate);
+                        percentage = decimal128ToNumber(currentAgent.commissionRate);
                     }
 
                     const commissionAmount = (policyAmount * percentage) / 100;
 
                     // Create commission record
-                    const commission = await Commission.create({
-                        policyId: policy.id,
-                        agentId: currentAgent.id,
+                    const commission = await Commission.create([{
+                        policyId: policy._id,
+                        agentId: currentAgent._id,
                         level: level,
                         amount: commissionAmount,
                         percentage: percentage,
                         status: 'pending'
-                    }, { transaction });
+                    }], { session });
 
-                    commissions.push(commission);
-                    console.log(`[CommissionUtil] Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ID ${currentAgent.id} (User: ${currentAgent.userId})`);
+                    commissions.push(commission[0]);
+                    console.log(`[CommissionUtil] Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ID ${currentAgent._id} (User: ${currentAgent.userId})`);
                 }
             }
 
             // Move to parent agent
             if (currentAgent.parentAgentId) {
-                currentAgent = await Agent.findByPk(currentAgent.parentAgentId, { transaction });
+                currentAgent = await Agent.findById(currentAgent.parentAgentId).session(session);
                 level++;
             } else {
                 break;
@@ -83,17 +81,18 @@ export const calculateAndDistributeCommissions = async (policy, transaction = nu
 
 /**
  * Approve commission and update agent wallet
- * @param {number} commissionId - Commission ID to approve
- * @param {number} adminId - Admin user ID
+ * @param {string} commissionId - Commission ID to approve
+ * @param {string} adminId - Admin user ID
  * @returns {Promise<Object>} Updated commission
  */
 export const approveCommission = async (commissionId, adminId) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
-        const commission = await Commission.findByPk(commissionId, {
-            include: [{ model: Agent, as: 'agent' }]
-        });
+        const commission = await Commission.findById(commissionId)
+            .populate('agent')
+            .session(session);
 
         if (!commission) {
             throw new Error('Commission not found');
@@ -104,19 +103,21 @@ export const approveCommission = async (commissionId, adminId) => {
         }
 
         // Update commission status
-        await commission.update({
-            status: 'approved',
-            paidAt: new Date()
-        }, { transaction });
+        commission.status = 'approved';
+        commission.paidAt = new Date();
+        await commission.save({ session });
 
         // Update agent wallet
-        const agent = commission.agent;
-        await agent.update({
-            walletBalance: parseFloat(agent.walletBalance) + parseFloat(commission.amount),
-            totalEarnings: parseFloat(agent.totalEarnings) + parseFloat(commission.amount)
-        }, { transaction });
+        const agent = await Agent.findById(commission.agentId).session(session);
+        const commissionAmount = decimal128ToNumber(commission.amount);
+        const currentWallet = decimal128ToNumber(agent.walletBalance);
+        const currentEarnings = decimal128ToNumber(agent.totalEarnings);
 
-        await transaction.commit();
+        agent.walletBalance = currentWallet + commissionAmount;
+        agent.totalEarnings = currentEarnings + commissionAmount;
+        await agent.save({ session });
+
+        await session.commitTransaction();
 
         // Send notification to agent
         try {
@@ -127,19 +128,21 @@ export const approveCommission = async (commissionId, adminId) => {
             // Don't fail the approval if notification fails
         }
 
-        console.log(`Commission ${commissionId} approved. Agent ${agent.id} wallet updated.`);
+        console.log(`Commission ${commissionId} approved. Agent ${agent._id} wallet updated.`);
         return commission;
     } catch (error) {
-        await transaction.rollback();
+        await session.abortTransaction();
         console.error('Error approving commission:', error);
         throw error;
+    } finally {
+        session.endSession();
     }
 };
 
 /**
  * Bulk approve commissions
- * @param {Array<number>} commissionIds - Array of commission IDs
- * @param {number} adminId - Admin user ID
+ * @param {Array<string>} commissionIds - Array of commission IDs
+ * @param {string} adminId - Admin user ID
  * @returns {Promise<Object>} Result summary
  */
 export const bulkApproveCommissions = async (commissionIds, adminId) => {
@@ -162,15 +165,13 @@ export const bulkApproveCommissions = async (commissionIds, adminId) => {
 
 /**
  * Get commission summary for an agent
- * @param {number} agentId - Agent ID
+ * @param {string} agentId - Agent ID
  * @returns {Promise<Object>} Commission summary
  */
 export const getAgentCommissionSummary = async (agentId) => {
     try {
-        const commissions = await Commission.findAll({
-            where: { agentId },
-            include: [{ model: Policy, as: 'policy' }]
-        });
+        const commissions = await Commission.find({ agentId })
+            .populate('policy');
 
         const summary = {
             total: commissions.length,
@@ -184,7 +185,7 @@ export const getAgentCommissionSummary = async (agentId) => {
         };
 
         commissions.forEach(commission => {
-            const amount = parseFloat(commission.amount);
+            const amount = decimal128ToNumber(commission.amount);
             summary.totalAmount += amount;
 
             switch (commission.status) {
@@ -216,7 +217,7 @@ export const getAgentCommissionSummary = async (agentId) => {
  */
 export const initializeCommissionSettings = async () => {
     try {
-        const existingSettings = await CommissionSettings.findAll();
+        const existingSettings = await CommissionSettings.find();
 
         if (existingSettings.length > 0) {
             console.log('Commission settings already exist');
@@ -244,7 +245,7 @@ export const initializeCommissionSettings = async () => {
             }
         ];
 
-        const settings = await CommissionSettings.bulkCreate(defaultSettings);
+        const settings = await CommissionSettings.insertMany(defaultSettings);
         console.log('Default commission settings created');
         return settings;
     } catch (error) {

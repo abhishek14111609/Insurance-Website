@@ -1,19 +1,22 @@
 import { User, PolicyPlan, CommissionSettings } from '../models/index.js';
-import sequelize from '../config/database.js';
 import { initializeCommissionSettings } from './commission.util.js';
 
 /**
  * Seed the database with initial data
- * @param {boolean} force - Whether to drop tables and recreate them
+ * @param {boolean} force - Whether to drop collections and recreate them
  * @returns {Promise<Object>} Status of the seeding operation
  */
 export const seedDatabase = async (force = false) => {
     try {
         console.log(`🔧 Starting database seeding (force: ${force})...`);
 
-        // Sync tables
-        await sequelize.sync({ force });
-        console.log('✅ Tables synchronized');
+        // Clear collections if force is true
+        if (force) {
+            await User.deleteMany({});
+            await PolicyPlan.deleteMany({});
+            await CommissionSettings.deleteMany({});
+            console.log('✅ Collections cleared');
+        }
 
         // Initialize commission settings
         await initializeCommissionSettings();
@@ -21,7 +24,7 @@ export const seedDatabase = async (force = false) => {
 
         // Create admin user if not exists
         const adminEmail = 'admin@securelife.com';
-        const adminExists = await User.findOne({ where: { email: adminEmail } });
+        const adminExists = await User.findOne({ email: adminEmail });
 
         if (!adminExists) {
             await User.create({

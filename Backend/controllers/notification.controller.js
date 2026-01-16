@@ -8,21 +8,20 @@ export const getNotifications = async (req, res) => {
         const { isRead, limit = 20 } = req.query;
 
         const where = {
-            userId: req.user.id
+            userId: req.user._id
         };
 
         if (isRead !== undefined) {
             where.isRead = isRead === 'true';
         }
 
-        const notifications = await Notification.findAll({
-            where,
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit)
-        });
+        const notifications = await Notification.find(where)
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit));
 
-        const unreadCount = await Notification.count({
-            where: { userId: req.user.id, isRead: false }
+        const unreadCount = await Notification.countDocuments({
+            userId: req.user._id,
+            isRead: false
         });
 
         res.json({
@@ -47,7 +46,8 @@ export const getNotifications = async (req, res) => {
 export const markAsRead = async (req, res) => {
     try {
         const notification = await Notification.findOne({
-            where: { id: req.params.id, userId: req.user.id }
+            _id: req.params.id,
+            userId: req.user._id
         });
 
         if (!notification) {
@@ -57,10 +57,9 @@ export const markAsRead = async (req, res) => {
             });
         }
 
-        await notification.update({
-            isRead: true,
-            readAt: new Date()
-        });
+        notification.isRead = true;
+        notification.readAt = new Date();
+        await notification.save();
 
         res.json({
             success: true,
@@ -83,7 +82,8 @@ export const markAsRead = async (req, res) => {
 export const deleteNotification = async (req, res) => {
     try {
         const notification = await Notification.findOne({
-            where: { id: req.params.id, userId: req.user.id }
+            _id: req.params.id,
+            userId: req.user._id
         });
 
         if (!notification) {
@@ -93,7 +93,7 @@ export const deleteNotification = async (req, res) => {
             });
         }
 
-        await notification.destroy();
+        await notification.deleteOne();
 
         res.json({
             success: true,
@@ -114,9 +114,9 @@ export const deleteNotification = async (req, res) => {
 // @access  Private
 export const markAllAsRead = async (req, res) => {
     try {
-        await Notification.update(
-            { isRead: true, readAt: new Date() },
-            { where: { userId: req.user.id, isRead: false } }
+        await Notification.updateMany(
+            { userId: req.user._id, isRead: false },
+            { isRead: true, readAt: new Date() }
         );
 
         res.json({

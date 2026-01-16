@@ -1,60 +1,48 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Commission = sequelize.define('Commission', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    policyId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: 'policy_id',
-        references: {
-            model: 'policies',
-            key: 'id'
+const commissionSchema = new mongoose.Schema(
+    {
+        policyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Policy',
+            required: true
+        },
+        agentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Agent',
+            required: true
+        },
+        level: {
+            type: Number,
+            required: true
+        },
+        amount: {
+            type: mongoose.Decimal128,
+            required: true
+        },
+        percentage: {
+            type: mongoose.Decimal128,
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'approved', 'paid', 'cancelled'],
+            default: 'pending'
+        },
+        paidAt: {
+            type: Date,
+            default: null
+        },
+        notes: {
+            type: String,
+            default: null
         }
     },
-    agentId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: 'agent_id',
-        references: {
-            model: 'agents',
-            key: 'id'
-        }
-    },
-    level: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    amount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
-    },
-    percentage: {
-        type: DataTypes.DECIMAL(5, 2),
-        allowNull: false
-    },
-    status: {
-        type: DataTypes.ENUM('pending', 'approved', 'paid', 'cancelled'),
-        defaultValue: 'pending',
-        allowNull: false
-    },
-    paidAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'paid_at'
-    },
-    notes: {
-        type: DataTypes.TEXT,
-        allowNull: true
+    {
+        timestamps: true
     }
-}, {
-    tableName: 'commissions',
-    timestamps: true,
-    underscored: true
-});
+);
+
+const Commission = mongoose.model('Commission', commissionSchema);
 
 export default Commission;

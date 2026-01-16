@@ -1,6 +1,5 @@
 import { User, Policy, Agent, Payment, Commission, Withdrawal, Claim, CommissionSettings } from '../models/index.js';
-import { Op } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 import { calculateAndDistributeCommissions, approveCommission } from '../utils/commission.util.js';
 import {
     notifyPolicyApproval,
@@ -18,28 +17,55 @@ import { seedDatabase } from '../utils/seed.js';
 export const getDashboardStats = async (req, res) => {
     try {
         // Get counts
-        const totalCustomers = await User.count({ where: { role: 'customer' } });
-        const totalAgents = await Agent.count();
-        const activeAgents = await Agent.count({ where: { status: 'active' } });
-        const pendingAgents = await Agent.count({ where: { status: 'pending' } });
+        const totalCustomers = await User.countDocuments({ role: 'customer' });
+        const totalAgents = await Agent.countDocuments();
+        const activeAgents = await Agent.countDocuments({ status: 'active' });
+        const pendingAgents = await Agent.countDocuments({ status: 'pending' });
 
-        const totalPolicies = await Policy.count();
-        const activePolicies = await Policy.count({ where: { status: 'APPROVED' } });
-        const pendingPolicies = await Policy.count({
-            where: { status: { [Op.in]: ['PENDING', 'PENDING_APPROVAL'] } }
+        const totalPolicies = await Policy.countDocuments();
+        const activePolicies = await Policy.countDocuments({ status: 'APPROVED' });
+        const pendingPolicies = await Policy.countDocuments({
+            status: { $in: ['PENDING', 'PENDING_APPROVAL'] }
         });
 
-        const totalClaims = await Claim.count();
-        const pendingClaims = await Claim.count({ where: { status: 'pending' } });
+        const totalClaims = await Claim.countDocuments();
+        const pendingClaims = await Claim.countDocuments({ status: 'pending' });
 
         // Get financial stats
-        const totalPremium = await Policy.sum('premium', { where: { status: 'APPROVED' } }) || 0;
-        const totalCommissions = await Commission.sum('amount') || 0;
-        const pendingCommissions = await Commission.sum('amount', { where: { status: 'pending' } }) || 0;
-        const paidCommissions = await Commission.sum('amount', { where: { status: 'approved' } }) || 0;
+        const premiumResult = await Policy.aggregate([
+            { $match: { status: 'APPROVED' } },
+            { $group: { _id: null, total: { $sum: '$premium' } } }
+        ]);
+        const totalPremium = premiumResult[0]?.total || 0;
 
-        const pendingWithdrawals = await Withdrawal.sum('amount', { where: { status: 'pending' } }) || 0;
-        const totalWithdrawals = await Withdrawal.sum('amount', { where: { status: 'approved' } }) || 0;
+        const commissionsResult = await Commission.aggregate([
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const totalCommissions = commissionsResult[0]?.total || 0;
+
+        const pendingCommissionsResult = await Commission.aggregate([
+            { $match: { status: 'pending' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const pendingCommissions = pendingCommissionsResult[0]?.total || 0;
+
+        const approvedCommissionsResult = await Commission.aggregate([
+            { $match: { status: 'approved' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const paidCommissions = approvedCommissionsResult[0]?.total || 0;
+
+        const pendingWithdrawalsResult = await Withdrawal.aggregate([
+            { $match: { status: 'pending' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const pendingWithdrawals = pendingWithdrawalsResult[0]?.total || 0;
+
+        const approvedWithdrawalsResult = await Withdrawal.aggregate([
+            { $match: { status: 'approved' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const totalWithdrawals = approvedWithdrawalsResult[0]?.total || 0;
 
         // Remove or optimize recent activities if they cause performance issues
         // The current frontend doesn't use these in the stats object
@@ -110,29 +136,27 @@ export const getAllPolicies = async (req, res) => {
         if (status) where.status = status;
         if (paymentStatus) where.paymentStatus = paymentStatus;
         if (search) {
-            where[Op.or] = [
-                { policyNumber: { [Op.like]: `%${search}%` } },
-                { ownerName: { [Op.like]: `%${search}%` } },
-                { ownerEmail: { [Op.like]: `%${search}%` } }
+            where.$or = [
+                { policyNumber: { $regex: search, $options: 'i' } },
+                { ownerName: { $regex: search, $options: 'i' } },
+                { ownerEmail: { $regex: search, $options: 'i' } }
             ];
         }
 
         const offset = (page - 1) * limit;
 
-        const { count, rows: policies } = await Policy.findAndCountAll({
-            where,
-            attributes: {
-                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
-            },
-            include: [
-                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user', attributes: ['id', 'fullName'] }] },
-                { model: Payment, as: 'payments' }
-            ],
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
+        const count = await Policy.countDocuments(where);
+        const policies = await Policy.find(where)
+            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .populate({ path: 'customer', select: 'fullName email phone' })
+            .populate({
+                path: 'agent',
+                populate: { path: 'user', select: 'fullName' }
+            })
+            .populate('payments')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
 
         res.json({
             success: true,
@@ -156,17 +180,20 @@ export const getAllPolicies = async (req, res) => {
 // @access  Private (admin)
 export const getPolicyDetails = async (req, res) => {
     try {
-        const policy = await Policy.findByPk(req.params.id, {
-            include: [
-                { model: User, as: 'customer' },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
-                { model: Payment, as: 'payments' },
-                { model: Commission, as: 'commissions', include: [{ model: Agent, as: 'agent' }] },
-                { model: Claim, as: 'claims' },
-                { model: User, as: 'approver' },
-                { model: User, as: 'rejecter' }
-            ]
-        });
+        const policy = await Policy.findById(req.params.id)
+            .populate('customer')
+            .populate({
+                path: 'agent',
+                populate: { path: 'user' }
+            })
+            .populate('payments')
+            .populate({
+                path: 'commissions',
+                populate: { path: 'agent' }
+            })
+            .populate('claims')
+            .populate('approver')
+            .populate('rejecter');
 
         if (!policy) {
             return res.status(404).json({
@@ -194,18 +221,20 @@ export const getPolicyDetails = async (req, res) => {
 // @access  Private (admin)
 export const approvePolicy = async (req, res) => {
     console.log(`[ApprovePolicy] Starting approval for policy ID: ${req.params.id}`);
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
         const { adminNotes } = req.body;
 
-        const policy = await Policy.findByPk(req.params.id, {
-            include: [{ model: User, as: 'customer' }]
-        });
+        const policy = await Policy.findById(req.params.id)
+            .populate('customer')
+            .session(session);
 
         if (!policy) {
             console.log(`[ApprovePolicy] Policy ${req.params.id} not found`);
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(404).json({
                 success: false,
                 message: 'Policy not found'
@@ -216,8 +245,9 @@ export const approvePolicy = async (req, res) => {
 
         // Prevent redundant approval
         if (policy.status === 'APPROVED') {
-            console.log(`[ApprovePolicy] Policy ${policy.id} already approved`);
-            await transaction.rollback();
+            console.log(`[ApprovePolicy] Policy ${policy._id} already approved`);
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Policy is already approved'
@@ -225,20 +255,19 @@ export const approvePolicy = async (req, res) => {
         }
 
         // Update policy status
-        console.log(`[ApprovePolicy] Updating policy status to APPROVED for ID: ${policy.id}`);
-        const adminId = (req.user && req.user.id) ? req.user.id : null;
+        console.log(`[ApprovePolicy] Updating policy status to APPROVED for ID: ${policy._id}`);
+        const adminId = (req.user && req.user._id) ? req.user._id : null;
 
-        await policy.update({
-            status: 'APPROVED',
-            approvedAt: new Date(),
-            approvedBy: adminId,
-            adminNotes
-        }, { transaction });
+        policy.status = 'APPROVED';
+        policy.approvedAt = new Date();
+        policy.approvedBy = adminId;
+        policy.adminNotes = adminNotes;
+        await policy.save({ session });
         console.log(`[ApprovePolicy] Policy status updated successfully`);
 
         // Calculate and distribute commissions
         console.log(`[ApprovePolicy] Calculating commissions for agent: ${policy.agentId}`);
-        const commissions = await calculateAndDistributeCommissions(policy, transaction);
+        const commissions = await calculateAndDistributeCommissions(policy, session);
         console.log(`[ApprovePolicy] Created ${commissions.length} commission records`);
 
         // Create notification (wrapped in try-catch to not fail the whole approval)
@@ -249,17 +278,18 @@ export const approvePolicy = async (req, res) => {
             console.error('[ApprovePolicy] Notification Error (non-blocking):', notifyError);
         }
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
         console.log(`[ApprovePolicy] Transaction committed successfully`);
 
         // Reload policy to get the full state including associations for response
-        const updatedPolicy = await Policy.findByPk(policy.id, {
-            include: [
-                { model: User, as: 'customer' },
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
-                { model: Payment, as: 'payments' }
-            ]
-        });
+        const updatedPolicy = await Policy.findById(policy._id)
+            .populate('customer')
+            .populate({
+                path: 'agent',
+                populate: { path: 'user' }
+            })
+            .populate('payments');
 
         res.json({
             success: true,
@@ -270,10 +300,8 @@ export const approvePolicy = async (req, res) => {
             }
         });
     } catch (error) {
-        if (transaction) {
-            console.log(`[ApprovePolicy] Rolling back transaction due to error`);
-            await transaction.rollback();
-        }
+        await session.abortTransaction();
+        await session.endSession();
         console.error('[ApprovePolicy] FATAL ERROR:', error);
         res.status(500).json({
             success: false,
@@ -288,21 +316,24 @@ export const approvePolicy = async (req, res) => {
 // @route   PATCH /api/admin/policies/:id/reject
 // @access  Private (admin)
 export const rejectPolicy = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const { rejectionReason } = req.body;
 
         if (!rejectionReason) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Rejection reason is required'
             });
         }
 
-        const policy = await Policy.findByPk(req.params.id);
+        const policy = await Policy.findById(req.params.id).session(session);
         if (!policy) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(404).json({
                 success: false,
                 message: 'Policy not found'
@@ -310,19 +341,19 @@ export const rejectPolicy = async (req, res) => {
         }
 
         if (policy.status === 'REJECTED') {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Policy is already rejected'
             });
         }
 
-        await policy.update({
-            status: 'REJECTED',
-            rejectedAt: new Date(),
-            rejectedBy: req.user.id,
-            rejectionReason
-        }, { transaction });
+        policy.status = 'REJECTED';
+        policy.rejectedAt = new Date();
+        policy.rejectedBy = req.user._id;
+        policy.rejectionReason = rejectionReason;
+        await policy.save({ session });
 
         // Create notification (wrapped in try-catch to not fail the whole rejection)
         try {
@@ -331,11 +362,11 @@ export const rejectPolicy = async (req, res) => {
             console.error('[RejectPolicy] Notification Error (non-blocking):', notifyError);
         }
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
 
-        const updatedPolicy = await Policy.findByPk(policy.id, {
-            include: [{ model: User, as: 'customer' }]
-        });
+        const updatedPolicy = await Policy.findById(policy._id)
+            .populate('customer');
 
         res.json({
             success: true,
@@ -343,7 +374,8 @@ export const rejectPolicy = async (req, res) => {
             data: { policy: updatedPolicy }
         });
     } catch (error) {
-        if (transaction) await transaction.rollback();
+        await session.abortTransaction();
+        await session.endSession();
         console.error('Reject policy error:', error);
         res.status(500).json({
             success: false,
@@ -363,29 +395,60 @@ export const getAllAgents = async (req, res) => {
         const where = {};
         if (status) where.status = status;
 
-        const include = [
-            { model: User, as: 'user' },
-            { model: Agent, as: 'parentAgent', include: [{ model: User, as: 'user' }] }
-        ];
+        const count = await Agent.countDocuments(where);
+        
+        let query = Agent.find(where)
+            .populate('user')
+            .populate({
+                path: 'parentAgent',
+                populate: { path: 'user' }
+            })
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+        
         if (search) {
-            include[0].where = {
-                [Op.or]: [
-                    { fullName: { [Op.like]: `%${search}%` } },
-                    { email: { [Op.like]: `%${search}%` } }
-                ]
+            // Apply search filter on populated user data
+            const agents = await Agent.find(where)
+                .populate('user')
+                .populate({
+                    path: 'parentAgent',
+                    populate: { path: 'user' }
+                });
+            const filtered = agents.filter(agent => {
+                const user = agent.user;
+                return (user?.fullName?.includes(search) || user?.email?.includes(search));
+            });
+            const sliced = filtered.slice((page - 1) * limit, page * limit);
+            
+            // Helper to clean paths
+            const cleanPath = (path) => {
+                if (!path) return null;
+                const normalized = path.replace(/\\/g, '/');
+                const uploadIndex = normalized.indexOf('uploads/');
+                return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
             };
+
+            const cleanedAgents = sliced.map(agent => {
+                const agentJSON = agent.toJSON();
+                agentJSON.panPhoto = cleanPath(agentJSON.panPhoto);
+                agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
+                agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
+                agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
+                return agentJSON;
+            });
+            
+            return res.json({
+                success: true,
+                count: filtered.length,
+                totalPages: Math.ceil(filtered.length / limit),
+                currentPage: parseInt(page),
+                data: { agents: cleanedAgents }
+            });
         }
-
-        const offset = (page - 1) * limit;
-
-        const { count, rows: agents } = await Agent.findAndCountAll({
-            where,
-            include,
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
-
+        
+        const agents = await query;
+        
         // Helper to clean paths
         const cleanPath = (path) => {
             if (!path) return null;
@@ -424,13 +487,15 @@ export const getAllAgents = async (req, res) => {
 // @route   POST /api/admin/agents
 // @access  Private (admin)
 export const createAgent = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const { fullName, email, phone, password, address, city, state, pincode, parentId, commissionRate, status, agentCode } = req.body;
 
         // Basic validation
         if (!fullName || !email || !password) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Full name, email, and password are required'
@@ -438,12 +503,10 @@ export const createAgent = async (req, res) => {
         }
 
         // Check if user exists
-        const existingUser = await User.findOne({
-            where: { email },
-            transaction
-        });
+        const existingUser = await User.findOne({ email }).session(session);
         if (existingUser) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'User with this email already exists'
@@ -451,7 +514,7 @@ export const createAgent = async (req, res) => {
         }
 
         // Create User
-        const user = await User.create({
+        const user = await User.create([{
             fullName,
             email,
             phone,
@@ -462,12 +525,12 @@ export const createAgent = async (req, res) => {
             pincode,
             role: 'agent',
             status: status === 'active' ? 'active' : 'inactive'
-        }, { transaction });
+        }], { session });
 
         // Calculate level if parentId exists
         let level = 1;
         if (parentId && parentId !== '') {
-            const parent = await Agent.findByPk(parentId, { transaction });
+            const parent = await Agent.findById(parentId).session(session);
             if (parent) {
                 level = parent.level + 1;
             }
@@ -476,13 +539,13 @@ export const createAgent = async (req, res) => {
         // Generate Agent Code if not provided
         let finalAgentCode = agentCode;
         if (!finalAgentCode || finalAgentCode === 'generated automatically') {
-            const count = await Agent.count({ transaction });
+            const count = await Agent.countDocuments().session(session);
             finalAgentCode = `AGT${1000 + count + 1}`;
         }
 
         // Create Agent Profile
-        const agent = await Agent.create({
-            userId: user.id,
+        const agent = await Agent.create([{
+            userId: user[0]._id,
             agentCode: finalAgentCode,
             parentAgentId: parentId || null,
             level,
@@ -492,21 +555,23 @@ export const createAgent = async (req, res) => {
             totalEarnings: 0,
             totalWithdrawals: 0,
             approvedAt: status === 'active' ? new Date() : null,
-            approvedBy: status === 'active' ? req.user.id : null
-        }, { transaction });
+            approvedBy: status === 'active' ? req.user._id : null
+        }], { session });
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
 
         res.status(201).json({
             success: true,
             message: 'Agent created successfully',
             data: {
-                user: user.toJSON(),
-                agent
+                user: user[0].toJSON(),
+                agent: agent[0]
             }
         });
     } catch (error) {
-        if (transaction) await transaction.rollback();
+        await session.abortTransaction();
+        await session.endSession();
         console.error('Create agent error detailed:', error);
         res.status(500).json({
             success: false,
@@ -523,9 +588,8 @@ export const approveAgent = async (req, res) => {
     try {
         const { adminNotes } = req.body;
 
-        const agent = await Agent.findByPk(req.params.id, {
-            include: [{ model: User, as: 'user' }]
-        });
+        const agent = await Agent.findById(req.params.id)
+            .populate('user');
 
         if (!agent) {
             return res.status(404).json({
@@ -534,12 +598,11 @@ export const approveAgent = async (req, res) => {
             });
         }
 
-        await agent.update({
-            status: 'active',
-            approvedAt: new Date(),
-            approvedBy: req.user.id,
-            adminNotes
-        });
+        agent.status = 'active';
+        agent.approvedAt = new Date();
+        agent.approvedBy = req.user._id;
+        agent.adminNotes = adminNotes;
+        await agent.save();
 
         // Send notification
         await notifyAgentApproval(agent);
@@ -573,9 +636,8 @@ export const rejectAgent = async (req, res) => {
             });
         }
 
-        const agent = await Agent.findByPk(req.params.id, {
-            include: [{ model: User, as: 'user' }]
-        });
+        const agent = await Agent.findById(req.params.id)
+            .populate('user');
 
         if (!agent) {
             return res.status(404).json({
@@ -584,12 +646,11 @@ export const rejectAgent = async (req, res) => {
             });
         }
 
-        await agent.update({
-            status: 'rejected',
-            rejectedAt: new Date(),
-            rejectedBy: req.user.id,
-            rejectionReason
-        });
+        agent.status = 'rejected';
+        agent.rejectedAt = new Date();
+        agent.rejectedBy = req.user._id;
+        agent.rejectionReason = rejectionReason;
+        await agent.save();
 
         // Send notification
         await notifyAgentRejection(agent);
@@ -613,16 +674,18 @@ export const rejectAgent = async (req, res) => {
 // @route   PUT /api/admin/agents/:id
 // @access  Private (admin)
 export const updateAgent = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const { fullName, phone, email, address, city, state, pincode, agentCode, status, commissionRate } = req.body;
 
-        const agent = await Agent.findByPk(req.params.id, {
-            include: [{ model: User, as: 'user' }]
-        });
+        const agent = await Agent.findById(req.params.id)
+            .populate('user')
+            .session(session);
 
         if (!agent) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(404).json({
                 success: false,
                 message: 'Agent not found'
@@ -631,39 +694,38 @@ export const updateAgent = async (req, res) => {
 
         // Update User details
         if (fullName || phone || email || address || city || state || pincode) {
-            const userUpdate = {};
-            if (fullName) userUpdate.fullName = fullName;
-            if (phone) userUpdate.phone = phone;
-            if (address) userUpdate.address = address;
-            if (city) userUpdate.city = city;
-            if (state) userUpdate.state = state;
-            if (pincode) userUpdate.pincode = pincode;
+            if (fullName) agent.user.fullName = fullName;
+            if (phone) agent.user.phone = phone;
+            if (address) agent.user.address = address;
+            if (city) agent.user.city = city;
+            if (state) agent.user.state = state;
+            if (pincode) agent.user.pincode = pincode;
             // Handle email update carefully (uniqueness)
             if (email && email !== agent.user.email) {
-                const existing = await User.findOne({ where: { email } });
+                const existing = await User.findOne({ email }).session(session);
                 if (existing) {
-                    await transaction.rollback();
+                    await session.abortTransaction();
+                    await session.endSession();
                     return res.status(400).json({ success: false, message: 'Email already in use' });
                 }
-                userUpdate.email = email;
+                agent.user.email = email;
             }
-            await agent.user.update(userUpdate, { transaction });
+            await agent.user.save({ session });
         }
 
         // Update Agent details
-        const agentUpdate = {};
-        if (agentCode) agentUpdate.agentCode = agentCode;
-        if (status) agentUpdate.status = status;
-        if (commissionRate !== undefined) agentUpdate.commissionRate = commissionRate;
+        if (agentCode) agent.agentCode = agentCode;
+        if (status) agent.status = status;
+        if (commissionRate !== undefined) agent.commissionRate = commissionRate;
 
-        await agent.update(agentUpdate, { transaction });
+        await agent.save({ session });
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
 
         // Reload agent with user
-        const updatedAgent = await Agent.findByPk(req.params.id, {
-            include: [{ model: User, as: 'user' }]
-        });
+        const updatedAgent = await Agent.findById(req.params.id)
+            .populate('user');
 
         res.json({
             success: true,
@@ -671,7 +733,8 @@ export const updateAgent = async (req, res) => {
             data: { agent: updatedAgent }
         });
     } catch (error) {
-        await transaction.rollback();
+        await session.abortTransaction();
+        await session.endSession();
         console.error('Update agent error:', error);
         res.status(500).json({
             success: false,
@@ -686,16 +749,19 @@ export const updateAgent = async (req, res) => {
 // @access  Private (admin)
 export const getAgentById = async (req, res) => {
     try {
-        const agent = await Agent.findByPk(req.params.id, {
-            include: [
-                { model: User, as: 'user' },
-                { model: Agent, as: 'parentAgent', include: [{ model: User, as: 'user' }] },
-                { model: Agent, as: 'subAgents', include: [{ model: User, as: 'user' }] },
-                { model: Policy, as: 'policies', limit: 10 },
-                { model: Commission, as: 'commissions', limit: 10 },
-                { model: Withdrawal, as: 'withdrawals', limit: 10 }
-            ]
-        });
+        const agent = await Agent.findById(req.params.id)
+            .populate('user')
+            .populate({
+                path: 'parentAgent',
+                populate: { path: 'user' }
+            })
+            .populate({
+                path: 'subAgents',
+                populate: { path: 'user' }
+            })
+            .populate('policies', null, null, { limit: 10 })
+            .populate('commissions', null, null, { limit: 10 })
+            .populate('withdrawals', null, null, { limit: 10 });
 
         if (!agent) {
             return res.status(404).json({
@@ -740,9 +806,8 @@ export const verifyAgentKYC = async (req, res) => {
         const { id } = req.params;
         const { status, reason } = req.body; // 'verified' or 'rejected'
 
-        const agent = await Agent.findByPk(id, {
-            include: [{ model: User, as: 'user' }]
-        });
+        const agent = await Agent.findById(id)
+            .populate('user');
 
         if (!agent) {
             return res.status(404).json({
@@ -751,20 +816,20 @@ export const verifyAgentKYC = async (req, res) => {
             });
         }
 
-        const updateData = { kycStatus: status };
+        agent.kycStatus = status;
         if (status === 'rejected') {
-            updateData.kycRejectionReason = reason;
+            agent.kycRejectionReason = reason;
         } else if (status === 'verified') {
-            updateData.kycRejectionReason = null;
+            agent.kycRejectionReason = null;
             // Optionally auto-activate agent if KYC is verified and they were pending
             if (agent.status === 'pending') {
-                updateData.status = 'active';
-                updateData.approvedAt = new Date();
-                updateData.approvedBy = req.user.id;
+                agent.status = 'active';
+                agent.approvedAt = new Date();
+                agent.approvedBy = req.user._id;
             }
         }
 
-        await agent.update(updateData);
+        await agent.save();
 
         res.json({
             success: true,
@@ -790,22 +855,21 @@ export const getAllCustomers = async (req, res) => {
 
         const where = { role: 'customer' };
         if (search) {
-            where[Op.or] = [
-                { fullName: { [Op.like]: `%${search}%` } },
-                { email: { [Op.like]: `%${search}%` } },
-                { phone: { [Op.like]: `%${search}%` } }
+            where.$or = [
+                { fullName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
             ];
         }
 
         const offset = (page - 1) * limit;
 
-        const { count, rows: customers } = await User.findAndCountAll({
-            where,
-            attributes: { exclude: ['password'] },
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
+        const count = await User.countDocuments(where);
+        const customers = await User.find(where)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
 
         res.json({
             success: true,
@@ -830,18 +894,14 @@ export const getAllCustomers = async (req, res) => {
 export const getCustomerById = async (req, res) => {
     try {
         const customer = await User.findOne({
-            where: {
-                id: req.params.id,
-                role: 'customer'
-            },
-            attributes: { exclude: ['password'] },
-            include: [
-                { model: Policy, as: 'policies' },
-                { model: Claim, as: 'claims' },
-                { model: Payment, as: 'payments' },
-                { model: Notification, as: 'notifications' }
-            ]
-        });
+            _id: req.params.id,
+            role: 'customer'
+        })
+            .select('-password')
+            .populate('policies')
+            .populate('claims')
+            .populate('payments')
+            .populate('notifications');
 
         if (!customer) {
             return res.status(404).json({
@@ -876,16 +936,16 @@ export const getWithdrawalRequests = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const { count, rows: withdrawals } = await Withdrawal.findAndCountAll({
-            where,
-            include: [
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
-                { model: User, as: 'processor' }
-            ],
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
+        const count = await Withdrawal.countDocuments(where);
+        const withdrawals = await Withdrawal.find(where)
+            .populate({
+                path: 'agent',
+                populate: { path: 'user' }
+            })
+            .populate('processor')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
 
         res.json({
             success: true,
@@ -908,25 +968,28 @@ export const getWithdrawalRequests = async (req, res) => {
 // @route   PATCH /api/admin/withdrawals/:id
 // @access  Private (admin)
 export const processWithdrawal = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
         const { action, rejectionReason, transactionId, adminNotes } = req.body; // action: 'approve' or 'reject'
 
         if (!action || !['approve', 'reject'].includes(action)) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Invalid action. Must be "approve" or "reject"'
             });
         }
 
-        const withdrawal = await Withdrawal.findByPk(req.params.id, {
-            include: [{ model: Agent, as: 'agent' }]
-        });
+        const withdrawal = await Withdrawal.findById(req.params.id)
+            .populate('agent')
+            .session(session);
 
         if (!withdrawal) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(404).json({
                 success: false,
                 message: 'Withdrawal request not found'
@@ -934,7 +997,8 @@ export const processWithdrawal = async (req, res) => {
         }
 
         if (withdrawal.status !== 'pending') {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(400).json({
                 success: false,
                 message: 'Withdrawal request is not in pending status'
@@ -947,25 +1011,24 @@ export const processWithdrawal = async (req, res) => {
             const newBalance = parseFloat(agent.walletBalance) - parseFloat(withdrawal.amount);
 
             if (newBalance < 0) {
-                await transaction.rollback();
+                await session.abortTransaction();
+                await session.endSession();
                 return res.status(400).json({
                     success: false,
                     message: 'Insufficient wallet balance'
                 });
             }
 
-            await agent.update({
-                walletBalance: newBalance,
-                totalWithdrawals: parseFloat(agent.totalWithdrawals) + parseFloat(withdrawal.amount)
-            }, { transaction });
+            agent.walletBalance = newBalance;
+            agent.totalWithdrawals = parseFloat(agent.totalWithdrawals) + parseFloat(withdrawal.amount);
+            await agent.save({ session });
 
-            await withdrawal.update({
-                status: 'approved',
-                processedAt: new Date(),
-                processedBy: req.user.id,
-                transactionId,
-                adminNotes
-            }, { transaction });
+            withdrawal.status = 'approved';
+            withdrawal.processedAt = new Date();
+            withdrawal.processedBy = req.user._id;
+            withdrawal.transactionId = transactionId;
+            withdrawal.adminNotes = adminNotes;
+            await withdrawal.save({ session });
 
             // Send notification
             await notifyWithdrawalApproved(withdrawal, agent);
@@ -973,25 +1036,26 @@ export const processWithdrawal = async (req, res) => {
         } else {
             // Reject
             if (!rejectionReason) {
-                await transaction.rollback();
+                await session.abortTransaction();
+                await session.endSession();
                 return res.status(400).json({
                     success: false,
                     message: 'Rejection reason is required'
                 });
             }
 
-            await withdrawal.update({
-                status: 'rejected',
-                rejectionReason,
-                processedAt: new Date(),
-                processedBy: req.user.id
-            }, { transaction });
+            withdrawal.status = 'rejected';
+            withdrawal.rejectionReason = rejectionReason;
+            withdrawal.processedAt = new Date();
+            withdrawal.processedBy = req.user._id;
+            await withdrawal.save({ session });
 
             // Send notification
             await notifyWithdrawalRejected(withdrawal, withdrawal.agent);
         }
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
 
         res.json({
             success: true,
@@ -999,7 +1063,8 @@ export const processWithdrawal = async (req, res) => {
             data: { withdrawal }
         });
     } catch (error) {
-        await transaction.rollback();
+        await session.abortTransaction();
+        await session.endSession();
         console.error('Process withdrawal error:', error);
         res.status(500).json({
             success: false,
@@ -1042,16 +1107,16 @@ export const getAllCommissions = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const { count, rows: commissions } = await Commission.findAndCountAll({
-            where,
-            include: [
-                { model: Agent, as: 'agent', include: [{ model: User, as: 'user' }] },
-                { model: Policy, as: 'policy' }
-            ],
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
+        const count = await Commission.countDocuments(where);
+        const commissions = await Commission.find(where)
+            .populate({
+                path: 'agent',
+                populate: { path: 'user' }
+            })
+            .populate('policy')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
 
         res.json({
             success: true,
@@ -1075,9 +1140,8 @@ export const getAllCommissions = async (req, res) => {
 // @access  Private (admin)
 export const getCommissionSettings = async (req, res) => {
     try {
-        const settings = await CommissionSettings.findAll({
-            order: [['level', 'ASC']]
-        });
+        const settings = await CommissionSettings.find()
+            .sort({ level: 1 });
 
         res.json({
             success: true,
@@ -1114,14 +1178,13 @@ export const updateCommissionSettings = async (req, res) => {
 
             if (id) {
                 // Update existing
-                const existing = await CommissionSettings.findByPk(id);
+                const existing = await CommissionSettings.findById(id);
                 if (existing) {
-                    await existing.update({
-                        percentage,
-                        description,
-                        isActive,
-                        updatedBy: req.user.id
-                    });
+                    existing.percentage = percentage;
+                    existing.description = description;
+                    existing.isActive = isActive;
+                    existing.updatedBy = req.user._id;
+                    await existing.save();
                     updatedSettings.push(existing);
                 }
             } else if (level) {
@@ -1131,7 +1194,7 @@ export const updateCommissionSettings = async (req, res) => {
                     percentage,
                     description,
                     isActive,
-                    updatedBy: req.user.id
+                    updatedBy: req.user._id
                 });
                 updatedSettings.push(newSetting);
             }

@@ -1,103 +1,77 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Payment = sequelize.define('Payment', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    policyId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: 'policy_id',
-        references: {
-            model: 'policies',
-            key: 'id'
-        }
-    },
-    customerId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        field: 'customer_id',
-        references: {
-            model: 'users',
-            key: 'id'
-        }
-    },
-    // Razorpay Details
-    razorpayOrderId: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'razorpay_order_id'
-    },
-    razorpayPaymentId: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        unique: true,
-        field: 'razorpay_payment_id'
-    },
-    razorpaySignature: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-        field: 'razorpay_signature'
-    },
-    // Payment Details
-    amount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
-    },
-    currency: {
-        type: DataTypes.STRING(10),
-        defaultValue: 'INR'
-    },
-    status: {
-        type: DataTypes.ENUM('pending', 'success', 'failed', 'refunded'),
-        defaultValue: 'pending',
-        allowNull: false
-    },
-    paymentMethod: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        field: 'payment_method'
-    },
-    // Additional Info
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: true
-    },
-    notes: {
-        type: DataTypes.JSON,
-        allowNull: true
-    },
-    errorCode: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-        field: 'error_code'
-    },
-    errorDescription: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        field: 'error_description'
-    },
-    // Timestamps
-    paidAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'paid_at'
-    }
-}, {
-    tableName: 'payments',
-    timestamps: true,
-    underscored: true,
-    indexes: [
-        {
-            fields: ['policy_id']
+const paymentSchema = new mongoose.Schema(
+    {
+        policyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Policy',
+            required: true
         },
-        {
-            fields: ['customer_id']
+        customerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        razorpayOrderId: {
+            type: String,
+            default: null
+        },
+        razorpayPaymentId: {
+            type: String,
+            unique: true,
+            sparse: true,
+            default: null
+        },
+        razorpaySignature: {
+            type: String,
+            default: null
+        },
+        amount: {
+            type: mongoose.Decimal128,
+            required: true
+        },
+        currency: {
+            type: String,
+            default: 'INR'
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'success', 'failed', 'refunded'],
+            default: 'pending'
+        },
+        paymentMethod: {
+            type: String,
+            default: null
+        },
+        description: {
+            type: String,
+            default: null
+        },
+        notes: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null
+        },
+        errorCode: {
+            type: String,
+            default: null
+        },
+        errorDescription: {
+            type: String,
+            default: null
+        },
+        paidAt: {
+            type: Date,
+            default: null
         }
-    ]
-});
+    },
+    {
+        timestamps: true
+    }
+);
+
+paymentSchema.index({ policyId: 1 });
+paymentSchema.index({ customerId: 1 });
+
+const Payment = mongoose.model('Payment', paymentSchema);
 
 export default Payment;

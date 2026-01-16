@@ -18,7 +18,8 @@ export const createClaim = async (req, res) => {
 
         // Verify policy belongs to user
         const policy = await Policy.findOne({
-            where: { id: policyId, customerId: req.user.id }
+            _id: policyId,
+            customerId: req.user._id
         });
 
         if (!policy) {
@@ -43,7 +44,7 @@ export const createClaim = async (req, res) => {
         const claim = await Claim.create({
             claimNumber,
             policyId,
-            customerId: req.user.id,
+            customerId: req.user._id,
             claimType,
             incidentDate,
             incidentLocation,
@@ -75,24 +76,14 @@ export const getClaims = async (req, res) => {
     try {
         const { status } = req.query;
 
-        const where = { customerId: req.user.id };
+        const where = { customerId: req.user._id };
         if (status) where.status = status;
 
-        const claims = await Claim.findAll({
-            where,
-            attributes: {
-                exclude: ['documents', 'description', 'adminNotes', 'rejectionReason']
-            },
-            include: [
-                {
-                    model: Policy,
-                    as: 'policy',
-                    attributes: ['id', 'policyNumber', 'status']
-                },
-                { model: User, as: 'reviewer', attributes: ['id', 'fullName'] }
-            ],
-            order: [['createdAt', 'DESC']]
-        });
+        const claims = await Claim.find(where)
+            .select('-documents -description -adminNotes -rejectionReason')
+            .populate({ path: 'policy', select: 'policyNumber status' })
+            .populate({ path: 'reviewer', select: 'fullName' })
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -114,18 +105,14 @@ export const getClaims = async (req, res) => {
 // @access  Private
 export const getClaimById = async (req, res) => {
     try {
-        const where = { id: req.params.id };
+        const where = { _id: req.params.id };
         if (req.user.role !== 'admin') {
-            where.customerId = req.user.id;
+            where.customerId = req.user._id;
         }
 
-        const claim = await Claim.findOne({
-            where,
-            include: [
-                { model: Policy, as: 'policy' },
-                { model: User, as: 'reviewer' }
-            ]
-        });
+        const claim = await Claim.findOne(where)
+            .populate('policy')
+            .populate('reviewer');
 
         if (!claim) {
             return res.status(404).json({
@@ -160,24 +147,15 @@ export const getAllClaims = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const { count, rows: claims } = await Claim.findAndCountAll({
-            where,
-            attributes: {
-                exclude: ['documents', 'description', 'adminNotes', 'rejectionReason']
-            },
-            include: [
-                {
-                    model: Policy,
-                    as: 'policy',
-                    attributes: ['id', 'policyNumber', 'status']
-                },
-                { model: User, as: 'customer', attributes: ['id', 'fullName', 'email'] },
-                { model: User, as: 'reviewer', attributes: ['id', 'fullName'] }
-            ],
-            order: [['createdAt', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
+        const count = await Claim.countDocuments(where);
+        const claims = await Claim.find(where)
+            .select('-documents -description -adminNotes -rejectionReason')
+            .populate({ path: 'policy', select: 'policyNumber status' })
+            .populate({ path: 'customer', select: 'fullName email' })
+            .populate({ path: 'reviewer', select: 'fullName' })
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
 
         res.json({
             success: true,
@@ -203,7 +181,7 @@ export const updateClaimStatus = async (req, res) => {
     try {
         const { status, approvedAmount, rejectionReason, adminNotes } = req.body;
 
-        const claim = await Claim.findByPk(req.params.id);
+        const claim = await Claim.findById(req.params.id);
         if (!claim) {
             return res.status(404).json({
                 success: false,
@@ -211,27 +189,25 @@ export const updateClaimStatus = async (req, res) => {
             });
         }
 
-        const updateData = {
-            status,
-            reviewedBy: req.user.id,
-            reviewedAt: new Date(),
-            adminNotes
-        };
+        claim.status = status;
+        claim.reviewedBy = req.user._id;
+        claim.reviewedAt = new Date();
+        claim.adminNotes = adminNotes;
 
         if (status === 'approved' && approvedAmount) {
-            updateData.approvedAmount = approvedAmount;
+            claim.approvedAmount = approvedAmount;
         }
 
         if (status === 'rejected' && rejectionReason) {
-            updateData.rejectionReason = rejectionReason;
+            claim.rejectionReason = rejectionReason;
         }
 
         if (status === 'paid') {
-            updateData.paidAmount = claim.approvedAmount || claim.claimAmount;
-            updateData.paidAt = new Date();
+            claim.paidAmount = claim.approvedAmount || claim.claimAmount;
+            claim.paidAt = new Date();
         }
 
-        await claim.update(updateData);
+        await claim.save();
 
         // Send notification
         await notifyClaimStatusUpdate(claim);
@@ -259,10 +235,8 @@ export const uploadClaimDocuments = async (req, res) => {
         const { documents } = req.body; // Array of document URLs
 
         const claim = await Claim.findOne({
-            where: {
-                id: req.params.id,
-                customerId: req.user.id
-            }
+            _id: req.params.id,
+            customerId: req.user._id
         });
 
         if (!claim) {
@@ -273,9 +247,8 @@ export const uploadClaimDocuments = async (req, res) => {
         }
 
         const existingDocs = claim.documents || [];
-        const updatedDocs = [...existingDocs, ...documents];
-
-        await claim.update({ documents: updatedDocs });
+        claim.documents = [...existingDocs, ...documents];
+        await claim.save();
 
         res.json({
             success: true,

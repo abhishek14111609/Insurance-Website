@@ -1,5 +1,5 @@
 import { User, Agent } from '../models/index.js';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 
@@ -8,11 +8,11 @@ dotenv.config();
 const createTestAgent = async () => {
     try {
         console.log('Connecting to database...');
-        await sequelize.authenticate();
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/insurance_db');
         console.log('Database connected.');
 
         const agentEmail = 'agent@securelife.com';
-        let user = await User.findOne({ where: { email: agentEmail } });
+        let user = await User.findOne({ email: agentEmail });
 
         if (user) {
             console.log('Test agent user already exists.');
@@ -38,14 +38,14 @@ const createTestAgent = async () => {
         }
 
         // Check if Agent profile exists
-        let agentProfile = await Agent.findOne({ where: { userId: user.id } });
+        let agentProfile = await Agent.findOne({ userId: user._id });
 
         if (agentProfile) {
             console.log('Agent profile already exists.');
         } else {
             console.log('Creating agent profile...');
             agentProfile = await Agent.create({
-                userId: user.id,
+                userId: user._id,
                 agentCode: 'AG-TEST-001',
                 level: 1,
                 status: 'active',
@@ -64,7 +64,7 @@ const createTestAgent = async () => {
         console.log('Password: agent123');
         console.log('Agent Code: AG-TEST-001');
 
-        await sequelize.close();
+        await mongoose.disconnect();
         process.exit(0);
 
     } catch (error) {

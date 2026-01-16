@@ -1,8 +1,7 @@
 import { Agent, User, Policy, Commission, Withdrawal } from '../models/index.js';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 import { getAgentCommissionSummary } from '../utils/commission.util.js';
 import { notifyAgentApproval } from '../utils/notification.util.js';
-import { Op } from 'sequelize';
 import crypto from 'crypto';
 
 // @desc    Register as agent
@@ -21,7 +20,7 @@ export const registerAgent = async (req, res) => {
         } = req.body;
 
         // Check if user already has an agent profile
-        const existingAgent = await Agent.findOne({ where: { userId: req.user.id } });
+        const existingAgent = await Agent.findOne({ userId: req.user._id });
         if (existingAgent) {
             return res.status(400).json({
                 success: false,
@@ -37,16 +36,16 @@ export const registerAgent = async (req, res) => {
         let level = 1;
 
         if (parentAgentCode) {
-            const parentAgent = await Agent.findOne({ where: { agentCode: parentAgentCode } });
+            const parentAgent = await Agent.findOne({ agentCode: parentAgentCode });
             if (parentAgent) {
-                parentAgentId = parentAgent.id;
+                parentAgentId = parentAgent._id;
                 level = parentAgent.level + 1;
             }
         }
 
         // Create agent profile
         const agent = await Agent.create({
-            userId: req.user.id,
+            userId: req.user._id,
             agentCode,
             parentAgentId,
             level,
@@ -82,13 +81,12 @@ export const registerAgent = async (req, res) => {
 // @access  Private (agent)
 export const getAgentProfile = async (req, res) => {
     try {
-        const agent = await Agent.findOne({
-            where: { userId: req.user.id },
-            include: [
-                { model: User, as: 'user' },
-                { model: Agent, as: 'parentAgent', include: [{ model: User, as: 'user' }] }
-            ]
-        });
+        const agent = await Agent.findOne({ userId: req.user._id })
+            .populate('user')
+            .populate({
+                path: 'parentAgent',
+                populate: { path: 'user' }
+            });
 
         if (!agent) {
             return res.status(404).json({
@@ -115,16 +113,16 @@ export const getAgentProfile = async (req, res) => {
 // @route   PUT /api/agents/profile
 // @access  Private (agent)
 export const updateAgentProfile = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
-        const agent = await Agent.findOne({
-            where: { userId: req.user.id },
-            include: [{ model: User, as: 'user' }],
-            transaction
-        });
+        const agent = await Agent.findOne({ userId: req.user._id })
+            .populate('user')
+            .session(session);
 
         if (!agent) {
-            await transaction.rollback();
+            await session.abortTransaction();
+            await session.endSession();
             return res.status(404).json({
                 success: false,
                 message: 'Agent profile not found'
@@ -148,33 +146,30 @@ export const updateAgentProfile = async (req, res) => {
 
         // Update User fields
         if (agent.user) {
-            await agent.user.update({
-                fullName: fullName || agent.user.fullName,
-                phone: phone || agent.user.phone,
-                address: address || agent.user.address,
-                city: city || agent.user.city,
-                state: state || agent.user.state,
-                pincode: pincode || agent.user.pincode
-            }, { transaction });
+            agent.user.fullName = fullName || agent.user.fullName;
+            agent.user.phone = phone || agent.user.phone;
+            agent.user.address = address || agent.user.address;
+            agent.user.city = city || agent.user.city;
+            agent.user.state = state || agent.user.state;
+            agent.user.pincode = pincode || agent.user.pincode;
+            await agent.user.save({ session });
         }
 
         // Update Agent fields
-        await agent.update({
-            bankName: bankName || agent.bankName,
-            accountNumber: accountNumber || agent.accountNumber,
-            ifscCode: ifscCode || agent.ifscCode,
-            accountHolderName: accountHolderName || agent.accountHolderName,
-            panNumber: panNumber || agent.panNumber,
-            aadharNumber: aadharNumber || agent.aadharNumber
-        }, { transaction });
+        agent.bankName = bankName || agent.bankName;
+        agent.accountNumber = accountNumber || agent.accountNumber;
+        agent.ifscCode = ifscCode || agent.ifscCode;
+        agent.accountHolderName = accountHolderName || agent.accountHolderName;
+        agent.panNumber = panNumber || agent.panNumber;
+        agent.aadharNumber = aadharNumber || agent.aadharNumber;
+        await agent.save({ session });
 
-        await transaction.commit();
+        await session.commitTransaction();
+        await session.endSession();
 
         // Refetch to get updated data
-        const updatedAgent = await Agent.findOne({
-            where: { id: agent.id },
-            include: [{ model: User, as: 'user' }]
-        });
+        const updatedAgent = await Agent.findById(agent._id)
+            .populate('user');
 
         res.json({
             success: true,
@@ -182,7 +177,8 @@ export const updateAgentProfile = async (req, res) => {
             data: { agent: updatedAgent }
         });
     } catch (error) {
-        if (transaction) await transaction.rollback();
+        await session.abortTransaction();
+        await session.endSession();
         console.error('Update agent profile error:', error);
         res.status(500).json({
             success: false,
@@ -197,7 +193,7 @@ export const updateAgentProfile = async (req, res) => {
 // @access  Private (agent)
 export const getAgentHierarchy = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -208,23 +204,21 @@ export const getAgentHierarchy = async (req, res) => {
 
         // Get all sub-agents recursively
         const buildHierarchy = async (agentId) => {
-            const subAgents = await Agent.findAll({
-                where: { parentAgentId: agentId },
-                include: [{ model: User, as: 'user' }]
-            });
+            const subAgents = await Agent.find({ parentAgentId: agentId })
+                .populate('user');
 
             const hierarchy = [];
             for (const subAgent of subAgents) {
                 const node = {
                     ...subAgent.toJSON(),
-                    subAgents: await buildHierarchy(subAgent.id)
+                    subAgents: await buildHierarchy(subAgent._id)
                 };
                 hierarchy.push(node);
             }
             return hierarchy;
         };
 
-        const hierarchy = await buildHierarchy(agent.id);
+        const hierarchy = await buildHierarchy(agent._id);
 
         res.json({
             success: true,
@@ -245,7 +239,7 @@ export const getAgentHierarchy = async (req, res) => {
 // @access  Private (agent)
 export const getTeam = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -256,29 +250,23 @@ export const getTeam = async (req, res) => {
 
         // Logic to get all downline agents (recursively or iterative)
         // Level 1: Direct sub-agents
-        const level1 = await Agent.findAll({
-            where: { parentAgentId: agent.id },
-            include: [{ model: User, as: 'user' }]
-        });
+        const level1 = await Agent.find({ parentAgentId: agent._id })
+            .populate('user');
 
         let team = level1.map(a => ({ ...a.toJSON(), relativeLevel: 1 }));
 
         // Level 2: Sub-agents of Level 1
         if (level1.length > 0) {
-            const level1Ids = level1.map(a => a.id);
-            const level2 = await Agent.findAll({
-                where: { parentAgentId: level1Ids },
-                include: [{ model: User, as: 'user' }]
-            });
+            const level1Ids = level1.map(a => a._id);
+            const level2 = await Agent.find({ parentAgentId: { $in: level1Ids } })
+                .populate('user');
             team = [...team, ...level2.map(a => ({ ...a.toJSON(), relativeLevel: 2 }))];
 
             // Level 3: Sub-agents of Level 2
             if (level2.length > 0) {
-                const level2Ids = level2.map(a => a.id);
-                const level3 = await Agent.findAll({
-                    where: { parentAgentId: level2Ids },
-                    include: [{ model: User, as: 'user' }]
-                });
+                const level2Ids = level2.map(a => a._id);
+                const level3 = await Agent.find({ parentAgentId: { $in: level2Ids } })
+                    .populate('user');
                 team = [...team, ...level3.map(a => ({ ...a.toJSON(), relativeLevel: 3 }))];
             }
         }
@@ -303,7 +291,7 @@ export const getTeam = async (req, res) => {
 // @access  Private (agent)
 export const getAgentStats = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -313,66 +301,56 @@ export const getAgentStats = async (req, res) => {
         }
 
         // Get policies sold
-        const policiesCount = await Policy.count({ where: { agentId: agent.id } });
+        const policiesCount = await Policy.countDocuments({ agentId: agent._id });
 
         // Get team size
-        const teamSize = await Agent.count({ where: { parentAgentId: agent.id } });
+        const teamSize = await Agent.countDocuments({ parentAgentId: agent._id });
 
         // This month stats
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const thisMonthPolicies = await Policy.count({
-            where: {
-                agentId: agent.id,
-                createdAt: { [Op.gte]: startOfMonth }
-            }
+        const thisMonthPolicies = await Policy.countDocuments({
+            agentId: agent._id,
+            createdAt: { $gte: startOfMonth }
         });
 
-        const thisMonthCommissions = await Commission.sum('amount', {
-            where: {
-                agentId: agent.id,
-                createdAt: { [Op.gte]: startOfMonth }
-            }
-        }) || 0;
+        const thisMonthCommissionsResult = await Commission.aggregate([
+            { $match: { agentId: agent._id, createdAt: { $gte: startOfMonth } } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const thisMonthCommissions = thisMonthCommissionsResult[0]?.total || 0;
 
-        const thisMonthNewMembers = await Agent.count({
-            where: {
-                parentAgentId: agent.id,
-                createdAt: { [Op.gte]: startOfMonth }
-            }
+        const thisMonthNewMembers = await Agent.countDocuments({
+            parentAgentId: agent._id,
+            createdAt: { $gte: startOfMonth }
         });
 
         // Recent commissions
-        const recentCommissions = await Commission.findAll({
-            where: { agentId: agent.id },
-            include: [{ model: Policy, as: 'policy' }],
-            order: [['createdAt', 'DESC']],
-            limit: 5
-        });
+        const recentCommissions = await Commission.find({ agentId: agent._id })
+            .populate('policy')
+            .sort({ createdAt: -1 })
+            .limit(5);
 
         // Upcoming Renewals (Expiring in next 30 days)
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-        const upcomingRenewalsCount = await Policy.count({
-            where: {
-                agentId: agent.id,
-                status: 'APPROVED',
-                endDate: {
-                    [Op.between]: [new Date(), thirtyDaysFromNow]
-                }
+        const upcomingRenewalsCount = await Policy.countDocuments({
+            agentId: agent._id,
+            status: 'APPROVED',
+            endDate: {
+                $gte: new Date(),
+                $lte: thirtyDaysFromNow
             }
         });
 
         // Top Performing Sub-agents (Direct only)
-        const topPerformers = await Agent.findAll({
-            where: { parentAgentId: agent.id },
-            include: [{ model: User, as: 'user', attributes: ['fullName', 'email'] }],
-            order: [['totalEarnings', 'DESC']],
-            limit: 3
-        });
+        const topPerformers = await Agent.find({ parentAgentId: agent._id })
+            .populate({ path: 'user', select: 'fullName email' })
+            .sort({ totalEarnings: -1 })
+            .limit(3);
 
         const stats = {
             totalEarnings: parseFloat(agent.totalEarnings),
@@ -413,7 +391,7 @@ export const getAgentStats = async (req, res) => {
 // @access  Private (agent)
 export const getWallet = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -427,43 +405,32 @@ export const getWallet = async (req, res) => {
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const thisMonthEarnings = await Commission.sum('amount', {
-            where: {
-                agentId: agent.id,
-                createdAt: { [Op.gte]: startOfMonth },
-                status: 'approved'
-            }
-        }) || 0;
+        const thisMonthEarningsResult = await Commission.aggregate([
+            { $match: { agentId: agent._id, createdAt: { $gte: startOfMonth }, status: 'approved' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const thisMonthEarnings = thisMonthEarningsResult[0]?.total || 0;
 
-        const pendingWithdrawalsAmount = await Withdrawal.sum('amount', {
-            where: {
-                agentId: agent.id,
-                status: 'pending'
-            }
-        }) || 0;
+        const pendingWithdrawalsResult = await Withdrawal.aggregate([
+            { $match: { agentId: agent._id, status: 'pending' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const pendingWithdrawalsAmount = pendingWithdrawalsResult[0]?.total || 0;
 
         // Get recent transactions (commissions and withdrawals)
-        const commissions = await Commission.findAll({
-            where: { agentId: agent.id },
-            include: [{
-                model: Policy,
-                as: 'policy',
-                attributes: ['id', 'policyNumber', 'status'] // Only need basic info
-            }],
-            order: [['createdAt', 'DESC']],
-            limit: 20
-        });
+        const commissions = await Commission.find({ agentId: agent._id })
+            .populate({ path: 'policy', select: 'policyNumber status' })
+            .sort({ createdAt: -1 })
+            .limit(20);
 
-        const withdrawals = await Withdrawal.findAll({
-            where: { agentId: agent.id },
-            order: [['createdAt', 'DESC']],
-            limit: 20
-        });
+        const withdrawals = await Withdrawal.find({ agentId: agent._id })
+            .sort({ createdAt: -1 })
+            .limit(20);
 
         // Combine into transactions for frontend
         const transactions = [
             ...commissions.map(c => ({
-                id: `comm_${c.id}`,
+                id: `comm_${c._id}`,
                 type: 'commission',
                 amount: parseFloat(c.amount),
                 description: `Commission for Policy #${c.policy?.policyNumber || 'N/A'}`,
@@ -471,7 +438,7 @@ export const getWallet = async (req, res) => {
                 createdAt: c.createdAt
             })),
             ...withdrawals.map(w => ({
-                id: `with_${w.id}`,
+                id: `with_${w._id}`,
                 type: 'withdrawal',
                 amount: parseFloat(w.amount),
                 description: 'Withdrawal Request',
@@ -517,7 +484,7 @@ export const requestWithdrawal = async (req, res) => {
     try {
         const { amount } = req.body;
 
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -561,7 +528,7 @@ export const requestWithdrawal = async (req, res) => {
 
         // Create withdrawal request
         const withdrawal = await Withdrawal.create({
-            agentId: agent.id,
+            agentId: agent._id,
             amount,
             status: 'pending',
             bankDetails: {
@@ -592,7 +559,7 @@ export const requestWithdrawal = async (req, res) => {
 // @access  Private (agent)
 export const getWithdrawals = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -601,11 +568,9 @@ export const getWithdrawals = async (req, res) => {
             });
         }
 
-        const withdrawals = await Withdrawal.findAll({
-            where: { agentId: agent.id },
-            include: [{ model: User, as: 'processor' }],
-            order: [['createdAt', 'DESC']]
-        });
+        const withdrawals = await Withdrawal.find({ agentId: agent._id })
+            .populate('processor')
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -629,7 +594,7 @@ export const getCommissions = async (req, res) => {
     try {
         const { status } = req.query;
 
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -638,14 +603,12 @@ export const getCommissions = async (req, res) => {
             });
         }
 
-        const where = { agentId: agent.id };
+        const where = { agentId: agent._id };
         if (status) where.status = status;
 
-        const commissions = await Commission.findAll({
-            where,
-            include: [{ model: Policy, as: 'policy' }],
-            order: [['createdAt', 'DESC']]
-        });
+        const commissions = await Commission.find(where)
+            .populate('policy')
+            .sort({ createdAt: -1 });
 
         // Calculate stats for frontend
         const totalEarned = commissions.reduce((sum, c) => sum + parseFloat(c.amount), 0);
@@ -691,7 +654,7 @@ export const getPoliciesSold = async (req, res) => {
     try {
         const { status } = req.query;
 
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -700,17 +663,13 @@ export const getPoliciesSold = async (req, res) => {
             });
         }
 
-        const where = { agentId: agent.id };
+        const where = { agentId: agent._id };
         if (status) where.status = status;
 
-        const policies = await Policy.findAll({
-            where,
-            attributes: {
-                exclude: ['photos', 'ownerAddress', 'adminNotes', 'rejectionReason']
-            },
-            include: [{ model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] }],
-            order: [['createdAt', 'DESC']]
-        });
+        const policies = await Policy.find(where)
+            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .populate({ path: 'customer', select: 'fullName email phone' })
+            .sort({ createdAt: -1 });
 
         res.json({
             success: true,
@@ -732,7 +691,7 @@ export const getPoliciesSold = async (req, res) => {
 // @access  Private (agent)
 export const getAgentCustomers = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         if (!agent) {
             return res.status(404).json({
@@ -741,29 +700,33 @@ export const getAgentCustomers = async (req, res) => {
             });
         }
 
-        // Get all unique users who have a policy sold by this agent with policy count
-        const customers = await User.findAll({
-            include: [{
-                model: Policy,
-                as: 'policies',
-                where: { agentId: agent.id },
-                attributes: [] // Don't fetch policy fields in the select
-            }],
-            attributes: [
-                'id',
-                'fullName',
-                'email',
-                'phone',
-                'city',
-                'state',
-                'followUpNotes',
-                [sequelize.fn('COUNT', sequelize.col('policies.id')), 'policyCount'],
-                [sequelize.fn('MAX', sequelize.col('policies.created_at')), 'lastPurchaseDate']
-            ],
-            group: ['User.id'],
-            subQuery: false,
-            raw: true
+        // Get all unique customers who have policies sold by this agent
+        const policies = await Policy.find({ agentId: agent._id })
+            .populate('customer')
+            .sort({ createdAt: -1 });
+        
+        // Group by customer
+        const customerMap = new Map();
+        policies.forEach(policy => {
+            if (policy.customer) {
+                const customerId = policy.customer._id.toString();
+                if (!customerMap.has(customerId)) {
+                    customerMap.set(customerId, {
+                        ...policy.customer.toObject(),
+                        policyCount: 1,
+                        lastPurchaseDate: policy.createdAt
+                    });
+                } else {
+                    const existing = customerMap.get(customerId);
+                    existing.policyCount++;
+                    if (new Date(policy.createdAt) > new Date(existing.lastPurchaseDate)) {
+                        existing.lastPurchaseDate = policy.createdAt;
+                    }
+                }
+            }
         });
+        
+        const customers = Array.from(customerMap.values());
 
         res.json({
             success: true,
@@ -788,11 +751,12 @@ export const updateCustomerNotes = async (req, res) => {
         const { id } = req.params;
         const { notes } = req.body;
 
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
 
         // Verify customer belongs to this agent (has sold them a policy)
         const policy = await Policy.findOne({
-            where: { agentId: agent.id, customerId: id }
+            agentId: agent._id, 
+            customerId: id
         });
 
         if (!policy) {
@@ -802,7 +766,7 @@ export const updateCustomerNotes = async (req, res) => {
             });
         }
 
-        await User.update({ followUpNotes: notes }, { where: { id } });
+        await User.findByIdAndUpdate(id, { followUpNotes: notes });
 
         res.json({
             success: true,
@@ -825,11 +789,12 @@ export const updateSubAgentTraining = async (req, res) => {
         const { id } = req.params;
         const { status, progress } = req.body;
 
-        const parentAgent = await Agent.findOne({ where: { userId: req.user.id } });
+        const parentAgent = await Agent.findOne({ userId: req.user._id });
 
         // Verify sub-agent is a direct downline
         const subAgent = await Agent.findOne({
-            where: { id, parentAgentId: parentAgent.id }
+            _id: id, 
+            parentAgentId: parentAgent._id
         });
 
         if (!subAgent) {
@@ -839,10 +804,9 @@ export const updateSubAgentTraining = async (req, res) => {
             });
         }
 
-        await subAgent.update({
-            trainingStatus: status || subAgent.trainingStatus,
-            trainingProgress: progress !== undefined ? progress : subAgent.trainingProgress
-        });
+        subAgent.trainingStatus = status || subAgent.trainingStatus;
+        subAgent.trainingProgress = progress !== undefined ? progress : subAgent.trainingProgress;
+        await subAgent.save();
 
         res.json({
             success: true,
@@ -861,7 +825,7 @@ export const updateSubAgentTraining = async (req, res) => {
 // @access  Private (agent)
 export const submitKYC = async (req, res) => {
     try {
-        const agent = await Agent.findOne({ where: { userId: req.user.id } });
+        const agent = await Agent.findOne({ userId: req.user._id });
         if (!agent) {
             return res.status(404).json({ success: false, message: 'Agent profile not found' });
         }
@@ -904,7 +868,8 @@ export const submitKYC = async (req, res) => {
             if (files.bankProofPhoto) updateData.bankProofPhoto = getRelativePath(files.bankProofPhoto[0]);
         }
 
-        await agent.update(updateData);
+        Object.assign(agent, updateData);
+        await agent.save();
 
         res.json({
             success: true,

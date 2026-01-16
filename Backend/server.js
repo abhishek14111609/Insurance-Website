@@ -7,8 +7,8 @@ import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import sequelize, { testConnection, syncDatabase } from './config/database.js';
-import './models/index.js'; // Import models and associations
+import { connectDB } from './config/mongoose.js';
+import './models/index.js'; // Import models
 
 // Routes
 import authRoutes from './routes/auth.route.js';
@@ -131,17 +131,13 @@ const startServer = async () => {
     try {
         console.log('\n⏳ Starting SecureLife Insurance Server...');
 
-        // Test database connection
-        const isConnected = await testConnection();
+        // Connect to MongoDB
+        const isConnected = await connectDB();
 
         if (!isConnected) {
-            console.error('❌ Failed to connect to database. Server not started.');
+            console.error('❌ Failed to connect to MongoDB. Server not started.');
             process.exit(1);
         }
-
-        // Sync database (only create tables if they don't exist)
-        await syncDatabase({ force: false });
-
 
         // Initialize commission settings
         await initializeCommissionSettings();
