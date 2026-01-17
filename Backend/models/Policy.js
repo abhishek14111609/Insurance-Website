@@ -96,8 +96,10 @@ const policySchema = new mongoose.Schema(
         },
         // Photos
         photos: {
-            type: [String],
-            default: []
+            front: { type: String, default: null },
+            back: { type: String, default: null },
+            left: { type: String, default: null },
+            right: { type: String, default: null }
         },
         // Owner Details
         ownerName: {
@@ -164,7 +166,13 @@ const policySchema = new mongoose.Schema(
     {
         timestamps: true,
         toJSON: {
-            transform: function(doc, ret) {
+            virtuals: true,
+            transform: function (doc, ret) {
+                // Expose a stable string id for frontend consumers
+                if (ret._id) {
+                    ret.id = ret._id.toString();
+                }
+
                 // Convert Decimal128 to regular numbers
                 if (ret.coverageAmount instanceof mongoose.Types.Decimal128) {
                     ret.coverageAmount = parseFloat(ret.coverageAmount.toString());
@@ -175,11 +183,34 @@ const policySchema = new mongoose.Schema(
                 if (ret.milkYield instanceof mongoose.Types.Decimal128) {
                     ret.milkYield = parseFloat(ret.milkYield.toString());
                 }
+
                 return ret;
             }
+        },
+        toObject: {
+            virtuals: true
         }
     }
 );
+
+// Virtual relations for population
+policySchema.virtual('payments', {
+    ref: 'Payment',
+    localField: '_id',
+    foreignField: 'policyId'
+});
+
+policySchema.virtual('commissions', {
+    ref: 'Commission',
+    localField: '_id',
+    foreignField: 'policyId'
+});
+
+policySchema.virtual('claims', {
+    ref: 'Claim',
+    localField: '_id',
+    foreignField: 'policyId'
+});
 
 // Create indexes
 policySchema.index({ customerId: 1, createdAt: -1 });

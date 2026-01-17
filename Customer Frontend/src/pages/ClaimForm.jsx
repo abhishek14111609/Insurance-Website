@@ -22,7 +22,7 @@ const ClaimForm = () => {
     const [loadingPolicies, setLoadingPolicies] = useState(true);
 
     const [formData, setFormData] = useState({
-        policyId: preSelectedPolicy?.id || '',
+        policyId: preSelectedPolicy?._id || preSelectedPolicy?.id || '',
         claimType: 'death',
         incidentDate: '',
         incidentLocation: '',
@@ -104,7 +104,7 @@ const ClaimForm = () => {
 
             // Submit claim
             const claimData = {
-                policyId: parseInt(formData.policyId),
+                policyId: formData.policyId,
                 claimType: formData.claimType,
                 incidentDate: formData.incidentDate,
                 incidentLocation: formData.incidentLocation,
@@ -180,11 +180,14 @@ const ClaimForm = () => {
                                 disabled={!!preSelectedPolicy}
                             >
                                 <option value="">Select a policy</option>
-                                {policies.map(policy => (
-                                    <option key={policy.id} value={policy.id}>
-                                        {policy.policyNumber} - {policy.cattleType} ({policy.tagId})
-                                    </option>
-                                ))}
+                                {policies.map(policy => {
+                                    const policyId = policy._id || policy.id;
+                                    return (
+                                        <option key={policyId} value={policyId}>
+                                            {policy.policyNumber} - {policy.cattleType} ({policy.tagId})
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
                     </div>

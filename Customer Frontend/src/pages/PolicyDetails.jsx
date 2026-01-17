@@ -302,7 +302,7 @@ const PolicyDetails = () => {
 
                 {/* Action Buttons */}
                 <div className="action-buttons">
-                    {policy.status === 'APPROVED' && (
+                    {/* {policy.status === 'APPROVED' && (
                         <>
                             <button onClick={handleDownload} className="btn btn-primary">
                                 📄 Download PDF
@@ -311,7 +311,7 @@ const PolicyDetails = () => {
                                 🖨️ Print Policy
                             </button>
                         </>
-                    )}
+                    )} */}
                     <Link to="/my-policies" className="btn btn-secondary">
                         Back to My Policies
                     </Link>

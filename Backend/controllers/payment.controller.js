@@ -19,6 +19,10 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
 // @access  Private
 export const createOrder = async (req, res) => {
     try {
+        console.log('[CreateOrder] Starting payment order creation...');
+        console.log('[CreateOrder] Request body:', req.body);
+        console.log('[CreateOrder] User:', req.user?._id);
+
         if (!razorpay) {
             return res.status(503).json({
                 success: false,
@@ -27,6 +31,15 @@ export const createOrder = async (req, res) => {
         }
 
         const { policyId, amount } = req.body;
+        console.log(`[CreateOrder] Request received for Policy: ${policyId}, Amount: ${amount}`);
+
+        const numericAmount = Number(amount);
+        if (!numericAmount || Number.isNaN(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid payment amount'
+            });
+        }
 
         // Verify policy belongs to user
         const policy = await Policy.findOne({
@@ -42,26 +55,37 @@ export const createOrder = async (req, res) => {
         }
 
         // Create Razorpay order
+        const receipt = `pol_${policy.policyNumber}_${Date.now().toString().slice(-6)}`.slice(0, 40);
         const options = {
-            amount: Math.round(amount * 100), // Convert to paise
+            amount: Math.round(numericAmount * 100), // Convert to paise
             currency: 'INR',
-            receipt: `policy_${policyId}_${Date.now()}`,
+            receipt,
             notes: {
                 policyId: policyId,
                 policyNumber: policy.policyNumber,
-                customerId: req.user.id,
+                customerId: req.user._id.toString(),
                 customerEmail: req.user.email
             }
         };
 
-        const order = await razorpay.orders.create(options);
+        let order;
+        try {
+            order = await razorpay.orders.create(options);
+        } catch (orderErr) {
+            console.error('[CreateOrder] Razorpay order creation failed:', orderErr);
+            const rpMsg = orderErr?.error?.description || orderErr?.message || 'Razorpay order creation failed';
+            return res.status(500).json({
+                success: false,
+                message: `Error creating payment order: ${rpMsg}`
+            });
+        }
 
         // Create payment record
         const payment = await Payment.create({
             policyId,
             customerId: req.user._id,
             razorpayOrderId: order.id,
-            amount,
+            amount: numericAmount,
             currency: 'INR',
             status: 'pending',
             description: `Premium payment for policy ${policy.policyNumber}`
@@ -79,11 +103,13 @@ export const createOrder = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Create order error:', error);
+        console.error('Create order error details:', error);
+        console.error('Create order error stack:', error?.stack);
+        const message = error?.error?.description || error?.message || error?.description || 'Unknown error while creating payment order';
         res.status(500).json({
             success: false,
-            message: 'Error creating payment order',
-            error: error.message
+            message: `Error creating payment order: ${message}`,
+            error: message
         });
     }
 };

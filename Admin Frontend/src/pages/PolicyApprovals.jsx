@@ -57,7 +57,12 @@ const PolicyApprovals = () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
         try {
-            const result = await policyAPI.approve(selectedPolicy.id, notes);
+            const policyId = selectedPolicy?._id || selectedPolicy?.id;
+            if (!policyId) {
+                throw new Error('Missing policy identifier');
+            }
+
+            const result = await policyAPI.approve(policyId, notes);
             if (result.success) {
                 alert('Policy approved successfully!');
                 loadPolicies();
@@ -83,7 +88,12 @@ const PolicyApprovals = () => {
         setIsSubmitting(true);
 
         try {
-            const result = await policyAPI.reject(selectedPolicy.id, rejectionReason);
+            const policyId = selectedPolicy?._id || selectedPolicy?.id;
+            if (!policyId) {
+                throw new Error('Missing policy identifier');
+            }
+
+            const result = await policyAPI.reject(policyId, rejectionReason);
             if (result.success) {
                 alert('Policy rejected.');
                 loadPolicies();
@@ -147,109 +157,112 @@ const PolicyApprovals = () => {
                             p.ownerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             p.tagId?.toLowerCase().includes(searchTerm.toLowerCase())
                         )
-                        .map(policy => (
-                            <div key={policy.id} className="policy-card">
-                                <div className="policy-header">
-                                    <div>
-                                        <h3>{policy.policyNumber}</h3>
-                                        <span className="status-badge pending">Pending Approval</span>
+                        .map(policy => {
+                            const policyId = policy._id || policy.id;
+                            return (
+                                <div key={policyId} className="policy-card">
+                                    <div className="policy-header">
+                                        <div>
+                                            <h3>{policy.policyNumber}</h3>
+                                            <span className="status-badge pending">Pending Approval</span>
+                                        </div>
+                                        <div className="policy-date">
+                                            {new Date(policy.createdAt).toLocaleDateString()}
+                                        </div>
                                     </div>
-                                    <div className="policy-date">
-                                        {new Date(policy.createdAt).toLocaleDateString()}
-                                    </div>
-                                </div>
 
-                                <div className="policy-details">
-                                    <div className="detail-row">
-                                        <span className="label">Customer:</span>
-                                        <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Email:</span>
-                                        <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Phone:</span>
-                                        <span className="value">{policy.ownerPhone}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Cattle Type:</span>
-                                        <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Tag ID:</span>
-                                        <span className="value">{policy.tagId}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Coverage:</span>
-                                        <span className="value highlight">{formatCurrency(policy.coverageAmount)}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Premium:</span>
-                                        <span className="value highlight">{formatCurrency(policy.premium)}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Breed:</span>
-                                        <span className="value">{policy.breed || 'N/A'}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="label">Age:</span>
-                                        <span className="value">{policy.age ? `${policy.age} Years` : 'N/A'}</span>
-                                    </div>
-                                    {policy.agent && (
+                                    <div className="policy-details">
                                         <div className="detail-row">
-                                            <span className="label">Agent:</span>
-                                            <span className="value">{policy.agent.user?.fullName} ({policy.agent.agentCode})</span>
+                                            <span className="label">Customer:</span>
+                                            <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Email:</span>
+                                            <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Phone:</span>
+                                            <span className="value">{policy.ownerPhone}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Cattle Type:</span>
+                                            <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Tag ID:</span>
+                                            <span className="value">{policy.tagId}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Coverage:</span>
+                                            <span className="value highlight">{formatCurrency(policy.coverageAmount)}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Premium:</span>
+                                            <span className="value highlight">{formatCurrency(policy.premium)}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Breed:</span>
+                                            <span className="value">{policy.breed || 'N/A'}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="label">Age:</span>
+                                            <span className="value">{policy.age ? `${policy.age} Years` : 'N/A'}</span>
+                                        </div>
+                                        {policy.agent && (
+                                            <div className="detail-row">
+                                                <span className="label">Agent:</span>
+                                                <span className="value">{policy.agent.user?.fullName} ({policy.agent.agentCode})</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Photos */}
+                                    {policy.photos && (
+                                        <div className="policy-photos">
+                                            <h4>Cattle Photos:</h4>
+                                            <div className="photos-grid">
+                                                {(() => {
+                                                    let photos = policy.photos;
+                                                    if (!photos) return null;
+                                                    if (typeof photos === 'string') {
+                                                        try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
+                                                    }
+                                                    return Object.entries(photos || {}).map(([side, url]) => (
+                                                        url && (
+                                                            <div key={side} className="photo-item">
+                                                                <img src={url.startsWith('http') ? url : `${BASE_URL}${url}`} alt={`${side} view`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo' }} />
+                                                                <span>{side}</span>
+                                                            </div>
+                                                        )
+                                                    ));
+                                                })()}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
 
-                                {/* Photos */}
-                                {policy.photos && (
-                                    <div className="policy-photos">
-                                        <h4>Cattle Photos:</h4>
-                                        <div className="photos-grid">
-                                            {(() => {
-                                                let photos = policy.photos;
-                                                if (!photos) return null;
-                                                if (typeof photos === 'string') {
-                                                    try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
-                                                }
-                                                return Object.entries(photos || {}).map(([side, url]) => (
-                                                    url && (
-                                                        <div key={side} className="photo-item">
-                                                            <img src={url.startsWith('http') ? url : `${BASE_URL}${url}`} alt={`${side} view`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo' }} />
-                                                            <span>{side}</span>
-                                                        </div>
-                                                    )
-                                                ));
-                                            })()}
-                                        </div>
+                                    <div className="policy-actions">
+                                        <button
+                                            className="btn btn-info"
+                                            onClick={() => handleViewDetails(policy)}
+                                        >
+                                            👁️ Details
+                                        </button>
+                                        <button
+                                            className="btn btn-success"
+                                            onClick={() => handleApproveClick(policy)}
+                                        >
+                                            ✅ Approve
+                                        </button>
+                                        <button
+                                            className="btn btn-danger"
+                                            onClick={() => handleRejectClick(policy)}
+                                        >
+                                            ❌ Reject
+                                        </button>
                                     </div>
-                                )}
-
-                                <div className="policy-actions">
-                                    <button
-                                        className="btn btn-info"
-                                        onClick={() => handleViewDetails(policy)}
-                                    >
-                                        👁️ Details
-                                    </button>
-                                    <button
-                                        className="btn btn-success"
-                                        onClick={() => handleApproveClick(policy)}
-                                    >
-                                        ✅ Approve
-                                    </button>
-                                    <button
-                                        className="btn btn-danger"
-                                        onClick={() => handleRejectClick(policy)}
-                                    >
-                                        ❌ Reject
-                                    </button>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                 </div>
             )}
 

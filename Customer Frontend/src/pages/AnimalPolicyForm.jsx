@@ -177,9 +177,14 @@ const AnimalPolicyForm = () => {
             console.log('Policy created:', policy);
 
             // 2. Create Razorpay Order
+            const safeAmount = parseFloat(selectedPlan.premium);
+            if (isNaN(safeAmount)) {
+                throw new Error('Invalid plan premium amount. Please refresh the page and try again.');
+            }
+
             const orderResponse = await paymentAPI.createOrder({
-                policyId: policy.id,
-                amount: selectedPlan.premium
+                policyId: policy._id,
+                amount: safeAmount
             });
 
             if (!orderResponse.success) {
@@ -211,7 +216,7 @@ const AnimalPolicyForm = () => {
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
-                            policyId: policy.id
+                            policyId: policy._id
                         });
 
                         if (verifyResponse.success) {

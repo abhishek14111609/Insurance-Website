@@ -36,9 +36,10 @@ const NotificationBell = () => {
         try {
             await notificationAPI.markAsRead(id);
             // Update local state
-            const updated = notifications.map(n =>
-                n.id === id ? { ...n, isRead: true } : n
-            );
+            const updated = notifications.map(n => {
+                const notificationId = n._id || n.id;
+                return notificationId === id ? { ...n, isRead: true } : n;
+            });
             setNotifications(updated);
             setUnreadCount(Math.max(0, unreadCount - 1));
         } catch (error) {
@@ -125,31 +126,36 @@ const NotificationBell = () => {
                                     <p>Loading...</p>
                                 </div>
                             ) : notifications.length > 0 ? (
-                                notifications.slice(0, 5).map(notification => (
-                                    <div
-                                        key={notification.id}
-                                        className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-                                        onClick={() => {
-                                            markAsRead(notification.id);
-                                            if (notification.actionUrl) {
-                                                window.location.href = notification.actionUrl;
-                                            }
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        <div className="notification-icon">
-                                            {getNotificationIcon(notification.type)}
+                                notifications.slice(0, 5).map(notification => {
+                                    const notificationId = notification._id || notification.id;
+                                    return (
+                                        <div
+                                            key={notificationId}
+                                            className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
+                                            onClick={() => {
+                                                if (notificationId) {
+                                                    markAsRead(notificationId);
+                                                }
+                                                if (notification.actionUrl) {
+                                                    window.location.href = notification.actionUrl;
+                                                }
+                                                setIsOpen(false);
+                                            }}
+                                        >
+                                            <div className="notification-icon">
+                                                {getNotificationIcon(notification.type)}
+                                            </div>
+                                            <div className="notification-content">
+                                                <strong>{notification.title}</strong>
+                                                <p>{notification.message}</p>
+                                                <span className="notification-time">
+                                                    {getTimeAgo(notification.createdAt)}
+                                                </span>
+                                            </div>
+                                            {!notification.isRead && <span className="unread-dot"></span>}
                                         </div>
-                                        <div className="notification-content">
-                                            <strong>{notification.title}</strong>
-                                            <p>{notification.message}</p>
-                                            <span className="notification-time">
-                                                {getTimeAgo(notification.createdAt)}
-                                            </span>
-                                        </div>
-                                        {!notification.isRead && <span className="unread-dot"></span>}
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <div className="notification-empty">
                                     <span className="empty-icon">🔕</span>

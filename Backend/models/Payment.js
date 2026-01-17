@@ -18,9 +18,7 @@ const paymentSchema = new mongoose.Schema(
         },
         razorpayPaymentId: {
             type: String,
-            unique: true,
-            sparse: true,
-            default: null
+            sparse: true
         },
         razorpaySignature: {
             type: String,

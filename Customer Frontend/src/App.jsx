@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import CustomerProfile from './pages/CustomerProfile';
+import NotFound from './pages/NotFound';
 
 // Insurance Pages
 import AnimalInsurance from './pages/AnimalInsurance';
@@ -43,11 +44,11 @@ import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
 
 // Role-based protected routes
-import { 
-    ProtectedRoute, 
-    ProtectedCustomerRoute, 
-    ProtectedAgentRoute,
-    GuestRoute 
+import {
+  ProtectedRoute,
+  ProtectedCustomerRoute,
+  ProtectedAgentRoute,
+  GuestRoute
 } from './components/ProtectedRoutes';
 
 import './App.css';
@@ -81,45 +82,45 @@ function App() {
           <Route path="/animal-insurance" element={<AnimalInsurance />} />
 
           {/* Guest Routes - Only for unauthenticated users */}
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <GuestRoute>
                 <Login />
               </GuestRoute>
-            } 
+            }
           />
-          <Route 
-            path="/register" 
+          <Route
+            path="/register"
             element={
               <GuestRoute>
                 <Register />
               </GuestRoute>
-            } 
+            }
           />
-          <Route 
-            path="/forgot-password" 
+          <Route
+            path="/forgot-password"
             element={
               <GuestRoute>
                 <ForgotPassword />
               </GuestRoute>
-            } 
+            }
           />
 
           {/* Agent Public Routes */}
           <Route path="/become-agent" element={<AgentLanding />} />
-          <Route 
-            path="/agent/login" 
+          <Route
+            path="/agent/login"
             element={
               <GuestRoute allowedRoles={['agent']}>
                 <AgentLogin />
               </GuestRoute>
-            } 
+            }
           />
 
           {/* ==================== CUSTOMER ROUTES ==================== */}
           {/* Only customers can access these routes */}
-          
+
           <Route
             path="/profile"
             element={
@@ -219,83 +220,83 @@ function App() {
 
           {/* ==================== AGENT ROUTES ==================== */}
           {/* Only agents can access these routes */}
-          
-          <Route 
-            path="/agent" 
+
+          <Route
+            path="/agent"
             element={
               <ProtectedAgentRoute>
                 <AgentLayout />
               </ProtectedAgentRoute>
             }
           >
-            <Route 
-              path="dashboard" 
+            <Route
+              path="dashboard"
               element={
                 <ProtectedAgentRoute>
                   <AgentDashboard />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="policies" 
+            <Route
+              path="policies"
               element={
                 <ProtectedAgentRoute>
                   <AgentPolicies />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="customers" 
+            <Route
+              path="customers"
               element={
                 <ProtectedAgentRoute>
                   <AgentCustomers />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="wallet" 
+            <Route
+              path="wallet"
               element={
                 <ProtectedAgentRoute>
                   <AgentWallet />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="team" 
+            <Route
+              path="team"
               element={
                 <ProtectedAgentRoute>
                   <AgentTeam />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="profile" 
+            <Route
+              path="profile"
               element={
                 <ProtectedAgentRoute>
                   <AgentProfile />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="reports" 
+            <Route
+              path="reports"
               element={
                 <ProtectedAgentRoute>
                   <AgentReports />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
-            <Route 
-              path="commissions" 
+            <Route
+              path="commissions"
               element={
                 <ProtectedAgentRoute>
                   <AgentCommissions />
                 </ProtectedAgentRoute>
-              } 
+              }
             />
           </Route>
 
-          {/* Catch all - redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch all - 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 

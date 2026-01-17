@@ -214,17 +214,20 @@ const AgentDetails = () => {
                     <div className="detail-card">
                         <h3>Sub-Agents ({subAgents.length})</h3>
                         <div className="sub-agents-grid">
-                            {subAgents.map(sub => (
-                                <Link
-                                    key={sub.id}
-                                    to={`/agents/details/${sub.id}`}
-                                    className="sub-agent-card"
-                                >
-                                    <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
-                                    <div className="sub-agent-name">{sub.user?.fullName}</div>
-                                    <div className="sub-agent-status">{sub.status}</div>
-                                </Link>
-                            ))}
+                            {subAgents.map(sub => {
+                                const subId = sub._id || sub.id;
+                                return (
+                                    <Link
+                                        key={subId}
+                                        to={`/agents/details/${subId}`}
+                                        className="sub-agent-card"
+                                    >
+                                        <div className="sub-agent-code">{sub.agentCode || sub.code}</div>
+                                        <div className="sub-agent-name">{sub.user?.fullName}</div>
+                                        <div className="sub-agent-status">{sub.status}</div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
                 )
@@ -248,15 +251,18 @@ const AgentDetails = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {policies.slice(0, 10).map(policy => (
-                                    <tr key={policy.id}>
-                                        <td>{policy.policyNumber}</td>
-                                        <td>{policy.customer?.fullName || policy.ownerName}</td>
-                                        <td>₹{parseInt(policy.premium || 0).toLocaleString()}</td>
-                                        <td><span className={`badge badge-${(policy.status || '').toLowerCase()}`}>{policy.status}</span></td>
-                                        <td>{new Date(policy.createdAt).toLocaleDateString()}</td>
-                                    </tr>
-                                ))}
+                                {policies.slice(0, 10).map(policy => {
+                                    const policyId = policy._id || policy.id;
+                                    return (
+                                        <tr key={policyId}>
+                                            <td>{policy.policyNumber}</td>
+                                            <td>{policy.customer?.fullName || policy.ownerName}</td>
+                                            <td>₹{parseInt(policy.premium || 0).toLocaleString()}</td>
+                                            <td><span className={`badge badge-${(policy.status || '').toLowerCase()}`}>{policy.status}</span></td>
+                                            <td>{new Date(policy.createdAt).toLocaleDateString()}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

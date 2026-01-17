@@ -81,7 +81,7 @@ const AnimalInsurance = () => {
             {/* Plans Section */}
             <section className="plans-section">
                 <div className="container">
-                    <div className="section-header" style={{ justifyContent : 'center' }} >
+                    <div className="section-header" style={{ justifyContent: 'center' }} >
                         <h2>Choose Your Protection Plan</h2>
                         {/* <p>Select from our specially designed livestock protection plans.</p> */}
                     </div>
@@ -99,7 +99,7 @@ const AnimalInsurance = () => {
                         <div className="plans-grid">
                             {plans.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).map((plan) => (
                                 <div
-                                    key={plan.id}
+                                    key={plan._id}
                                     className={`plan-card ${plan.displayOrder === 1 ? 'recommended' : ''}`}
                                 >
                                     {plan.displayOrder === 1 && (
@@ -130,7 +130,7 @@ const AnimalInsurance = () => {
                                     <div className="plan-features">
                                         <ul>
                                             {(plan.features || []).map((feature) => (
-                                                <li key={`${plan.id}-${feature.replace(/\s+/g, '-').toLowerCase()}`}>
+                                                <li key={`${plan._id}-${feature.replace(/\s+/g, '-').toLowerCase()}`}>
                                                     <span className="check-icon">✓</span>
                                                     {feature}
                                                 </li>
@@ -188,7 +188,7 @@ const AnimalInsurance = () => {
             <section className="how-it-works-section">
                 <div className="container">
                     <h2 className="section-title" style={{ justifyContent: 'center' }}>How It Works</h2>
-                    <br />  
+                    <br />
                     <div className="steps-grid">
                         <div className="step-card">
                             <div className="step-number">1</div>

@@ -137,15 +137,18 @@ const Dashboard = () => {
                         </div>
                         <div className="approval-list">
                             {pendingPolicies.length > 0 ? (
-                                pendingPolicies.map(policy => (
-                                    <div key={policy.id} className="approval-item">
-                                        <div className="item-info">
-                                            <strong>{policy.policyNumber}</strong>
-                                            <span>{policy.customer?.fullName || policy.ownerName}</span>
+                                pendingPolicies.map(policy => {
+                                    const policyId = policy._id || policy.id;
+                                    return (
+                                        <div key={policyId} className="approval-item">
+                                            <div className="item-info">
+                                                <strong>{policy.policyNumber}</strong>
+                                                <span>{policy.customer?.fullName || policy.ownerName}</span>
+                                            </div>
+                                            <span className="item-amount">₹{parseInt(policy.coverageAmount || 0).toLocaleString()}</span>
                                         </div>
-                                        <span className="item-amount">₹{parseInt(policy.coverageAmount || 0).toLocaleString()}</span>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <p className="empty-state">No pending policies</p>
                             )}

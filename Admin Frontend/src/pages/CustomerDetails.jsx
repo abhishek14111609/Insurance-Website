@@ -101,15 +101,18 @@ const CustomerDetails = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {customer.policies.map(policy => (
-                                        <tr key={policy.id}>
-                                            <td>{policy.policyNumber}</td>
-                                            <td>{policy.cattleType}</td>
-                                            <td>₹{parseFloat(policy.premium).toLocaleString()}</td>
-                                            <td><span className={`status-badge ${policy.status.toLowerCase()}`}>{policy.status}</span></td>
-                                            <td><Link to="/policy-approvals" className="btn-link">View</Link></td>
-                                        </tr>
-                                    ))}
+                                    {customer.policies.map(policy => {
+                                        const policyId = policy._id || policy.id;
+                                        return (
+                                            <tr key={policyId}>
+                                                <td>{policy.policyNumber}</td>
+                                                <td>{policy.cattleType}</td>
+                                                <td>₹{parseFloat(policy.premium).toLocaleString()}</td>
+                                                <td><span className={`status-badge ${policy.status.toLowerCase()}`}>{policy.status}</span></td>
+                                                <td><Link to="/policy-approvals" className="btn-link">View</Link></td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -132,14 +135,17 @@ const CustomerDetails = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {customer.claims.map(claim => (
-                                        <tr key={claim.id}>
-                                            <td>#{claim.id}</td>
-                                            <td>₹{parseFloat(claim.claimAmount).toLocaleString()}</td>
-                                            <td><span className={`status-badge ${claim.status}`}>{claim.status}</span></td>
-                                            <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
-                                        </tr>
-                                    ))}
+                                    {customer.claims.map(claim => {
+                                        const claimId = claim._id || claim.id;
+                                        return (
+                                            <tr key={claimId}>
+                                                <td>#{claimId}</td>
+                                                <td>₹{parseFloat(claim.claimAmount).toLocaleString()}</td>
+                                                <td><span className={`status-badge ${claim.status}`}>{claim.status}</span></td>
+                                                <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

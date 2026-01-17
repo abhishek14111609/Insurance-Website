@@ -67,7 +67,19 @@ const policyPlanSchema = new mongoose.Schema(
         }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            transform: function (doc, ret) {
+                // Convert Decimal128 to regular numbers
+                if (ret.coverageAmount && ret.coverageAmount.toString) {
+                    ret.coverageAmount = parseFloat(ret.coverageAmount.toString());
+                }
+                if (ret.premium && ret.premium.toString) {
+                    ret.premium = parseFloat(ret.premium.toString());
+                }
+                return ret;
+            }
+        }
     }
 );
 

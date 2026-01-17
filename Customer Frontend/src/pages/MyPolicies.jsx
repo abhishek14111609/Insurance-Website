@@ -167,9 +167,9 @@ const MyPolicies = () => {
 
                                         {policy.status === 'APPROVED' && (
                                             <>
-                                                <button className="btn btn-sm btn-outline">
+                                                {/* <button className="btn btn-sm btn-outline">
                                                     Download PDF
-                                                </button>
+                                                </button> */}
                                                 <button
                                                     className="btn btn-sm btn-primary"
                                                     onClick={() => navigate('/claims/new', { state: { policy } })}

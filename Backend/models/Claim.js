@@ -84,7 +84,13 @@ const claimSchema = new mongoose.Schema(
     {
         timestamps: true,
         toJSON: {
-            transform: function(doc, ret) {
+            virtuals: true,
+            transform: function (doc, ret) {
+                // Expose a stable string id for frontend consumers
+                if (ret._id) {
+                    ret.id = ret._id.toString();
+                }
+
                 // Convert Decimal128 to regular numbers
                 if (ret.claimAmount instanceof mongoose.Types.Decimal128) {
                     ret.claimAmount = parseFloat(ret.claimAmount.toString());
@@ -97,9 +103,34 @@ const claimSchema = new mongoose.Schema(
                 }
                 return ret;
             }
+        },
+        toObject: {
+            virtuals: true
         }
     }
 );
+
+// Virtual relations to keep populate paths backward-compatible
+claimSchema.virtual('policy', {
+    ref: 'Policy',
+    localField: 'policyId',
+    foreignField: '_id',
+    justOne: true
+});
+
+claimSchema.virtual('customer', {
+    ref: 'User',
+    localField: 'customerId',
+    foreignField: '_id',
+    justOne: true
+});
+
+claimSchema.virtual('reviewer', {
+    ref: 'User',
+    localField: 'reviewedBy',
+    foreignField: '_id',
+    justOne: true
+});
 
 const Claim = mongoose.model('Claim', claimSchema);
 

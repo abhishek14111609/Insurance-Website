@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
                 if (userData.role === 'admin') {
                     setUser(null);
                     localStorage.removeItem(AUTH_STORAGE_KEY);
-                    const error = new Error('Admin users cannot login on the customer portal. Please use the admin panel.');
+                    const error = new Error('Admin users cannot login on the customer portal.');
                     setError(error.message);
                     throw error;
                 }
