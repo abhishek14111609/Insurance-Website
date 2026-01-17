@@ -9,6 +9,7 @@ import PolicyPlan from './PolicyPlan.js';
 import Notification from './Notification.js';
 import CommissionSettings from './CommissionSettings.js';
 import Inquiry from './Inquiry.js';
+import RefreshToken from './RefreshToken.js';
 
 // Export all models
 export {
@@ -22,5 +23,6 @@ export {
     PolicyPlan,
     Notification,
     CommissionSettings,
-    Inquiry
+    Inquiry,
+    RefreshToken
 };

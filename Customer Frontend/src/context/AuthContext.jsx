@@ -83,14 +83,14 @@ export const AuthProvider = ({ children }) => {
             const response = await authAPI.getProfile();
             if (response.success) {
                 const userData = response.data.user;
-                
+
                 // Reject admin users who somehow got logged in on customer portal
                 if (userData.role === 'admin') {
                     setUser(null);
                     localStorage.removeItem(AUTH_STORAGE_KEY);
                     return;
                 }
-                
+
                 if (response.data.agentProfile) {
                     Object.assign(userData, response.data.agentProfile);
                 }
@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
             const response = await authAPI.login(credentials);
             if (response.success) {
                 const userData = response.data.user;
-                
+
                 // Reject admin users - they should not login on customer portal
                 if (userData.role === 'admin') {
                     setUser(null);
@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }) => {
                     setError(error.message);
                     throw error;
                 }
-                
+
                 if (response.data.agentProfile) {
                     Object.assign(userData, response.data.agentProfile);
                 }
@@ -160,21 +160,10 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             const response = await authAPI.register(userData);
             if (response.success) {
-                const registeredUser = response.data.user;
-                if (response.data.agentProfile) {
-                    Object.assign(registeredUser, response.data.agentProfile);
-                }
-                setUser(registeredUser);
-                // Persist minimal user data (token is in HTTP-only cookie)
-                const minimalUser = {
-                    id: registeredUser.id,
-                    email: registeredUser.email,
-                    fullName: registeredUser.fullName,
-                    role: registeredUser.role
-                };
-                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(minimalUser));
-                // Broadcast to other tabs
-                broadcastAuthState('login', minimalUser);
+                // Do not auto-login after registration; require verification + manual login
+                setUser(null);
+                localStorage.removeItem(AUTH_STORAGE_KEY);
+                broadcastAuthState('logout');
                 return response;
             }
         } catch (err) {

@@ -8,14 +8,15 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-export const sendEmail = async ({ to, subject, html, text }) => {
+export const sendEmail = async ({ to, subject, html, text, attachments }) => {
     try {
         const mailOptions = {
             from: '"Pashudhan Suraksha" <pashudhansuraksha2026@gmail.com>',
             to,
             subject,
             html,
-            text
+            text,
+            attachments: attachments && attachments.length ? attachments : undefined
         };
 
         const info = await transporter.sendMail(mailOptions);

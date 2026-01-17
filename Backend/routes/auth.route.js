@@ -9,7 +9,10 @@ import {
     forgotPassword,
     resetPassword,
     verifyAgentCode,
-    logout
+    logout,
+    verifyEmail,
+    resendVerification,
+    refreshSession
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
@@ -23,6 +26,9 @@ router.post('/login', login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerification);
+router.post('/refresh', refreshSession);
 
 // Protected routes
 router.get('/me', authenticate, getMe);

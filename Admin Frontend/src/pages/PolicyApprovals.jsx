@@ -3,6 +3,18 @@ import { policyAPI, BASE_URL } from '../services/api.service';
 import { formatCurrency } from '../utils/numberUtils';
 import './PolicyApprovals.css';
 
+// Normalize any stored path (bare filename, relative path, or absolute URL) to a fetchable URL
+const normalizeFileUrl = (value) => {
+    if (!value) return null;
+    if (value.startsWith('http')) return value;
+    let clean = value.trim();
+    if (clean.startsWith('/')) clean = clean.slice(1);
+    if (!clean.toLowerCase().startsWith('uploads/')) {
+        clean = `uploads/${clean}`;
+    }
+    return `${BASE_URL}/${clean}`;
+};
+
 const PolicyApprovals = () => {
     const [policies, setPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -227,14 +239,16 @@ const PolicyApprovals = () => {
                                                     if (typeof photos === 'string') {
                                                         try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
                                                     }
-                                                    return Object.entries(photos || {}).map(([side, url]) => (
-                                                        url && (
+                                                    return Object.entries(photos || {}).map(([side, url]) => {
+                                                        const imgUrl = normalizeFileUrl(url);
+                                                        if (!imgUrl) return null;
+                                                        return (
                                                             <div key={side} className="photo-item">
-                                                                <img src={url.startsWith('http') ? url : `${BASE_URL}${url}`} alt={`${side} view`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo' }} />
+                                                                <img src={imgUrl} alt={`${side} view`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo'; }} />
                                                                 <span>{side}</span>
                                                             </div>
-                                                        )
-                                                    ));
+                                                        );
+                                                    });
                                                 })()}
                                             </div>
                                         </div>

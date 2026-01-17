@@ -3,6 +3,13 @@ import { Policy, User, Agent, Payment, Commission } from '../models/index.js';
 // @desc    Create new policy
 // @route   POST /api/policies
 // @access  Private (Customer)
+const normalizePhotoPath = (value) => {
+    if (!value) return null;
+    const asString = String(value).replace(/\\/g, '/');
+    const uploadIndex = asString.indexOf('uploads/');
+    return uploadIndex !== -1 ? asString.substring(uploadIndex) : asString;
+};
+
 export const createPolicy = async (req, res) => {
     try {
         const {
@@ -12,13 +19,15 @@ export const createPolicy = async (req, res) => {
             agentCode, photos, planId
         } = req.body;
 
+        const normalizedAgentCode = agentCode ? String(agentCode).toUpperCase() : null;
+
         // Generate policy number
         const policyNumber = `POL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         // Find agent if agent code provided
         let agentId = null;
-        if (agentCode) {
-            const agent = await Agent.findOne({ agentCode });
+        if (normalizedAgentCode) {
+            const agent = await Agent.findOne({ agentCode: normalizedAgentCode });
             if (agent) {
                 // Check KYC status before allowing sale
                 if (agent.kycStatus !== 'verified') {
@@ -30,6 +39,13 @@ export const createPolicy = async (req, res) => {
                 agentId = agent._id;
             }
         }
+
+        const normalizedPhotos = {
+            front: normalizePhotoPath(photos?.front),
+            back: normalizePhotoPath(photos?.back),
+            left: normalizePhotoPath(photos?.left),
+            right: normalizePhotoPath(photos?.right)
+        };
 
         // Create policy
         const policy = await Policy.create({
@@ -56,8 +72,8 @@ export const createPolicy = async (req, res) => {
             ownerCity,
             ownerState,
             ownerPincode,
-            agentCode,
-            photos,
+            agentCode: normalizedAgentCode,
+            photos: normalizedPhotos,
             status: 'PENDING',
             paymentStatus: 'PENDING'
         });
@@ -72,6 +88,40 @@ export const createPolicy = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error creating policy',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Upload policy photos (pre-policy creation)
+// @route   POST /api/policies/upload-photos
+// @access  Private (Customer/Agent)
+export const uploadPolicyPhotos = async (req, res) => {
+    try {
+        const files = req.files || {};
+        const toRelative = (file) => {
+            const fullPath = file.path.replace(/\\/g, '/');
+            const idx = fullPath.indexOf('uploads/');
+            return idx !== -1 ? fullPath.substring(idx) : fullPath;
+        };
+
+        const photos = {
+            front: files.front?.[0] ? toRelative(files.front[0]) : null,
+            back: files.back?.[0] ? toRelative(files.back[0]) : null,
+            left: files.left?.[0] ? toRelative(files.left[0]) : null,
+            right: files.right?.[0] ? toRelative(files.right[0]) : null
+        };
+
+        res.json({
+            success: true,
+            message: 'Policy photos uploaded successfully',
+            data: { photos }
+        });
+    } catch (error) {
+        console.error('Upload policy photos error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error uploading policy photos',
             error: error.message
         });
     }
@@ -202,7 +252,7 @@ export const getPendingPolicies = async (req, res) => {
                 { status: 'PENDING_APPROVAL' }
             ]
         })
-            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .select('-ownerAddress -adminNotes -rejectionReason')
             .populate({ path: 'customerId', select: 'fullName email phone' })
             .populate({
                 path: 'agentId',
@@ -230,5 +280,6 @@ export default {
     getPolicies,
     getPolicyById,
     updatePolicyPayment,
-    getPendingPolicies
+    getPendingPolicies,
+    uploadPolicyPhotos
 };

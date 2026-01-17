@@ -9,27 +9,14 @@ export const authenticate = async (req, res, next) => {
 
         let token = null;
 
-        // Check Origin/Referer to guess context (robust for localhost)
-        const origin = req.headers.origin || req.headers.referer || '';
-        const isAdminFrontend = origin.includes('5175') || origin.includes('admin');
+        const url = req.originalUrl || '';
+        const isAdminRoute = url.startsWith('/api/admin') || url.includes('/admin/');
 
-        // Intelligent Token Selection
-        if (isAdminFrontend) {
-            // If accessing from Admin Frontend, prioritize admin_token
-            if (req.cookies?.admin_token) {
-                token = req.cookies.admin_token;
-            } else if (req.cookies?.token) {
-                // Fallback: mostly won't work for admin, but safely handled by role check later
-                token = req.cookies.token;
-            }
+        // Unified token cookie; prefer admin_token for admin routes to avoid cross-portal collisions
+        if (isAdminRoute && req.cookies?.admin_token) {
+            token = req.cookies.admin_token;
         } else {
-            // If accessing from Customer Frontend, prioritize customer token
-            if (req.cookies?.token) {
-                token = req.cookies.token;
-            } else if (req.cookies?.admin_token) {
-                // Fallback
-                token = req.cookies.admin_token;
-            }
+            token = req.cookies?.token || null;
         }
 
         // Fallback to Authorization header only for API clients (non-browser)
@@ -54,6 +41,13 @@ export const authenticate = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid token. User not found.'
+            });
+        }
+
+        if (user.role !== 'admin' && !user.emailVerified) {
+            return res.status(403).json({
+                success: false,
+                message: 'Email not verified. Please verify to continue.'
             });
         }
 

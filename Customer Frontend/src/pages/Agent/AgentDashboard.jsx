@@ -185,18 +185,21 @@ const AgentDashboard = () => {
                     </div>
                     {stats?.topPerformers && stats.topPerformers.length > 0 ? (
                         <div className="performers-list">
-                            {stats.topPerformers.map((performer, idx) => (
-                                <div key={idx} className="performer-item">
-                                    <span className="rank">#{idx + 1}</span>
-                                    <div className="performer-info">
-                                        <strong>{performer.name}</strong>
-                                        <small>{performer.agentCode}</small>
+                            {stats.topPerformers.map((performer, idx) => {
+                                const key = performer.agentCode || performer.id || idx;
+                                return (
+                                    <div key={key} className="performer-item">
+                                        <span className="rank">#{idx + 1}</span>
+                                        <div className="performer-info">
+                                            <strong>{performer.name}</strong>
+                                            <small>{performer.agentCode}</small>
+                                        </div>
+                                        <div className="performer-stat">
+                                            <strong>₹{performer.totalEarnings?.toLocaleString()}</strong>
+                                        </div>
                                     </div>
-                                    <div className="performer-stat">
-                                        <strong>₹{performer.totalEarnings?.toLocaleString()}</strong>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <p className="empty-msg">No team members yet. Build your network to see leaders!</p>
@@ -214,22 +217,25 @@ const AgentDashboard = () => {
 
                 {stats?.recentCommissions && stats.recentCommissions.length > 0 ? (
                     <div className="activity-list">
-                        {stats.recentCommissions.slice(0, 5).map((commission) => (
-                            <div key={commission.id} className="activity-item">
-                                <div className="activity-icon">💰</div>
-                                <div className="activity-content">
-                                    <h4>Commission Earned</h4>
-                                    <p>Policy #{commission.policy?.policyNumber}</p>
-                                    <small>{new Date(commission.createdAt).toLocaleDateString()}</small>
+                        {stats.recentCommissions.slice(0, 5).map((commission, idx) => {
+                            const key = commission.id || commission._id || idx;
+                            return (
+                                <div key={key} className="activity-item">
+                                    <div className="activity-icon">💰</div>
+                                    <div className="activity-content">
+                                        <h4>Commission Earned</h4>
+                                        <p>Policy #{commission.policy?.policyNumber}</p>
+                                        <small>{new Date(commission.createdAt).toLocaleDateString()}</small>
+                                    </div>
+                                    <div className="activity-amount">
+                                        <span className={`status-badge status-${commission.status}`}>
+                                            {commission.status}
+                                        </span>
+                                        <strong>₹{commission.amount?.toLocaleString()}</strong>
+                                    </div>
                                 </div>
-                                <div className="activity-amount">
-                                    <span className={`status-badge status-${commission.status}`}>
-                                        {commission.status}
-                                    </span>
-                                    <strong>₹{commission.amount?.toLocaleString()}</strong>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="empty-state">

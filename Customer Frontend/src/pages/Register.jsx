@@ -1,4 +1,4 @@
-import { useState,useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Register.css';
@@ -95,7 +95,7 @@ const Register = () => {
         setIsSubmitting(true);
 
         try {
-            // Register user via AuthContext
+            // Register user via AuthContext (no auto login)
             await register({
                 fullName: formData.fullName,
                 email: formData.email,
@@ -108,11 +108,8 @@ const Register = () => {
                 role: 'customer'
             });
 
-            // Dispatch custom event to notify navbar
-            window.dispatchEvent(new Event('customerLogin'));
-
-            alert('Registration successful! Welcome to SecureLife!');
-            navigate('/dashboard');
+            alert('Registration successful! Please verify your email, then log in.');
+            navigate('/login');
         } catch (error) {
             setErrors({ email: error.message || 'Registration failed. Please try again.' });
             setIsSubmitting(false);

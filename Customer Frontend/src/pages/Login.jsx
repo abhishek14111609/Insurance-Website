@@ -143,6 +143,9 @@ const Login = () => {
                         <Link to="/forgot-password" className="forgot-password">
                             Forgot Password?
                         </Link>
+                        <Link to="/verify-email" className="forgot-password">
+                            Resend verification
+                        </Link>
                     </div>
 
                     <button type="submit" className="login-btn" disabled={isSubmitting}>

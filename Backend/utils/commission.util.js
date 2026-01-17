@@ -1,78 +1,81 @@
-import { Agent, Commission, CommissionSettings, Policy } from '../models/index.js';
+import { Agent, Commission, CommissionSettings } from '../models/index.js';
 import mongoose from 'mongoose';
 import { decimal128ToNumber } from './mongoose.util.js';
 
+const fixedMap = { 1: 300, 2: 450, 3: 750 };
+const parentPercents = [5, 3, 2, 2, 1];
+
+const getTermYears = (policy) => {
+    if (!policy) return 1;
+    const fromDuration = policy.duration ? parseInt(policy.duration, 10) : NaN;
+    if (!Number.isNaN(fromDuration) && [1, 2, 3].includes(fromDuration)) return fromDuration;
+    const planDuration = policy.planId?.duration ? parseInt(policy.planId.duration, 10) : NaN;
+    if (!Number.isNaN(planDuration) && [1, 2, 3].includes(planDuration)) return planDuration;
+    return 1;
+};
+
 /**
- * Calculate and distribute multi-level commissions for a policy
- * @param {Object} policy - The approved policy
+ * Calculate and distribute distance-based commissions for a policy
+ * @param {Object} policy - The approved policy (should include agentId and premium)
+ * @param {mongoose.ClientSession|null} session - Optional session for transactional safety
  * @returns {Promise<Array>} Array of created commission records
  */
 export const calculateAndDistributeCommissions = async (policy, session = null) => {
     try {
-        // Get commission settings
-        const settings = await CommissionSettings.find({ isActive: true })
-            .sort({ level: 1 })
-            .session(session);
-
-        if (!settings || settings.length === 0) {
-            console.log('No active commission settings found');
+        if (!policy || !policy.agentId) {
+            console.log('No agent assigned to policy; skipping commissions');
             return [];
         }
 
-        // If no agent, no commissions
-        if (!policy.agentId) {
-            console.log('No agent assigned to policy');
+        const alreadyExists = await Commission.exists({ policyId: policy._id }).session(session || null);
+        if (alreadyExists) {
+            console.log('Commission already generated for policy; skipping');
             return [];
         }
 
-        const commissions = [];
-        let currentAgent = await Agent.findById(policy.agentId).session(session);
-        let level = 1;
+        const premium = decimal128ToNumber(policy.premium);
+        const term = getTermYears(policy);
 
-        // Traverse up the agent hierarchy
-        while (currentAgent && level <= settings.length) {
-            const setting = settings.find(s => s.level === level);
+        const records = [];
 
-            if (setting) {
-                // Check if policy amount is within range
-                const policyAmount = decimal128ToNumber(policy.premium);
-                const minAmount = setting.minPolicyAmount ? decimal128ToNumber(setting.minPolicyAmount) : 0;
-                const maxAmount = setting.maxPolicyAmount ? decimal128ToNumber(setting.maxPolicyAmount) : Infinity;
+        // Seller fixed commission (distance 0)
+        records.push({
+            policyId: policy._id,
+            agentId: policy.agentId,
+            level: 0,
+            distanceFromSeller: 0,
+            amount: fixedMap[term] || 0,
+            percentage: 0,
+            commissionType: 'fixed',
+            premiumAtSale: premium,
+            planTermYears: term,
+            status: 'pending'
+        });
 
-                if (policyAmount >= minAmount && policyAmount <= maxAmount) {
-                    // Use agent's custom percentage if level 1 and it exists
-                    let percentage = decimal128ToNumber(setting.percentage);
-                    if (level === 1 && currentAgent.commissionRate) {
-                        percentage = decimal128ToNumber(currentAgent.commissionRate);
-                    }
+        // Traverse up to 5 parents
+        let currentAgent = await Agent.findById(policy.agentId).select('parentAgentId').session(session || null);
+        let distance = 1;
+        while (currentAgent?.parentAgentId && distance <= 5) {
+            const pct = parentPercents[distance - 1];
+            records.push({
+                policyId: policy._id,
+                agentId: currentAgent.parentAgentId,
+                level: distance,
+                distanceFromSeller: distance,
+                amount: (premium * pct) / 100,
+                percentage: pct,
+                commissionType: 'percentage',
+                premiumAtSale: premium,
+                planTermYears: term,
+                status: 'pending'
+            });
 
-                    const commissionAmount = (policyAmount * percentage) / 100;
-
-                    // Create commission record
-                    const commission = await Commission.create([{
-                        policyId: policy._id,
-                        agentId: currentAgent._id,
-                        level: level,
-                        amount: commissionAmount,
-                        percentage: percentage,
-                        status: 'pending'
-                    }], { session });
-
-                    commissions.push(commission[0]);
-                    console.log(`[CommissionUtil] Created level ${level} commission: ₹${commissionAmount} (${percentage}%) for agent ID ${currentAgent._id} (User: ${currentAgent.userId})`);
-                }
-            }
-
-            // Move to parent agent
-            if (currentAgent.parentAgentId) {
-                currentAgent = await Agent.findById(currentAgent.parentAgentId).session(session);
-                level++;
-            } else {
-                break;
-            }
+            currentAgent = await Agent.findById(currentAgent.parentAgentId).select('parentAgentId').session(session || null);
+            distance++;
         }
 
-        return commissions;
+        const created = await Commission.insertMany(records, { session });
+        return created;
     } catch (error) {
         console.error('Error calculating commissions:', error);
         throw error;

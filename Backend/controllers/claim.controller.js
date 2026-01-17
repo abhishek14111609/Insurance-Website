@@ -80,9 +80,9 @@ export const getClaims = async (req, res) => {
         if (status) where.status = status;
 
         const claims = await Claim.find(where)
-            .select('-documents -description -adminNotes -rejectionReason')
-            .populate({ path: 'policy', select: 'policyNumber status' })
-            .populate({ path: 'reviewer', select: 'fullName' })
+            .select('-description -adminNotes -rejectionReason')
+            .populate({ path: 'policy', select: 'policyNumber status', strictPopulate: false })
+            .populate({ path: 'reviewer', select: 'fullName', strictPopulate: false })
             .sort({ createdAt: -1 });
 
         res.json({
@@ -111,8 +111,8 @@ export const getClaimById = async (req, res) => {
         }
 
         const claim = await Claim.findOne(where)
-            .populate('policy')
-            .populate('reviewer');
+            .populate({ path: 'policy', strictPopulate: false })
+            .populate({ path: 'reviewer', strictPopulate: false });
 
         if (!claim) {
             return res.status(404).json({
@@ -150,9 +150,9 @@ export const getAllClaims = async (req, res) => {
         const count = await Claim.countDocuments(where);
         const claims = await Claim.find(where)
             .select('-documents -description -adminNotes -rejectionReason')
-            .populate({ path: 'policy', select: 'policyNumber status' })
-            .populate({ path: 'customer', select: 'fullName email' })
-            .populate({ path: 'reviewer', select: 'fullName' })
+            .populate({ path: 'policy', select: 'policyNumber status', strictPopulate: false })
+            .populate({ path: 'customer', select: 'fullName email', strictPopulate: false })
+            .populate({ path: 'reviewer', select: 'fullName', strictPopulate: false })
             .sort({ createdAt: -1 })
             .skip(offset)
             .limit(parseInt(limit));
@@ -232,7 +232,8 @@ export const updateClaimStatus = async (req, res) => {
 // @access  Private (customer)
 export const uploadClaimDocuments = async (req, res) => {
     try {
-        const { documents } = req.body; // Array of document URLs
+        const { documents } = req.body; // Optional array of existing URLs/paths
+        const files = req.files || [];
 
         const claim = await Claim.findOne({
             _id: req.params.id,
@@ -246,8 +247,21 @@ export const uploadClaimDocuments = async (req, res) => {
             });
         }
 
+        const toRelative = (file) => {
+            const fullPath = file.path.replace(/\\/g, '/');
+            const idx = fullPath.indexOf('uploads/');
+            return idx !== -1 ? fullPath.substring(idx) : fullPath;
+        };
+
+        const uploaded = Array.isArray(files) ? files.map(toRelative) : [];
+        const bodyDocs = Array.isArray(documents)
+            ? documents
+            : documents
+                ? [documents]
+                : [];
+
         const existingDocs = claim.documents || [];
-        claim.documents = [...existingDocs, ...documents];
+        claim.documents = [...existingDocs, ...uploaded, ...bodyDocs];
         await claim.save();
 
         res.json({

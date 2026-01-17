@@ -16,6 +16,10 @@ const commissionSchema = new mongoose.Schema(
             type: Number,
             required: true
         },
+        distanceFromSeller: {
+            type: Number,
+            default: null
+        },
         amount: {
             type: mongoose.Decimal128,
             required: true
@@ -23,6 +27,19 @@ const commissionSchema = new mongoose.Schema(
         percentage: {
             type: mongoose.Decimal128,
             required: true
+        },
+        commissionType: {
+            type: String,
+            enum: ['fixed', 'percentage'],
+            default: 'percentage'
+        },
+        premiumAtSale: {
+            type: mongoose.Decimal128,
+            default: null
+        },
+        planTermYears: {
+            type: Number,
+            default: null
         },
         status: {
             type: String,
@@ -42,6 +59,9 @@ const commissionSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+commissionSchema.index({ policyId: 1 });
+commissionSchema.index({ agentId: 1 });
 
 const Commission = mongoose.model('Commission', commissionSchema);
 

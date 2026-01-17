@@ -11,6 +11,7 @@ import ContactUs from './pages/ContactUs';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import CustomerProfile from './pages/CustomerProfile';
 import NotFound from './pages/NotFound';
 
@@ -106,6 +107,7 @@ function App() {
               </GuestRoute>
             }
           />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Agent Public Routes */}
           <Route path="/become-agent" element={<AgentLanding />} />

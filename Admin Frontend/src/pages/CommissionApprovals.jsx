@@ -8,6 +8,15 @@ const CommissionApprovals = () => {
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
 
+    const normalizeNumber = (value) => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'object' && value.$numberDecimal) {
+            return Number(value.$numberDecimal);
+        }
+        const num = Number(value);
+        return Number.isNaN(num) ? null : num;
+    };
+
     useEffect(() => {
         loadPendingCommissions();
     }, []);
@@ -117,45 +126,53 @@ const CommissionApprovals = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {commissions.map(item => (
-                                <tr key={item.id}>
-                                    <td>#{item.id}</td>
-                                    <td>
-                                        <div className="agent-info">
-                                            <span className="agent-name">{item.agent?.user?.fullName || 'Unknown Agent'}</span>
-                                            <span className="agent-code">{item.agent?.agentCode}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="policy-info">
-                                            <div>Policy #{item.policyId}</div>
-                                            <div>Customer: {item.policy?.ownerName || 'N/A'}</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="amount-cell">₹{parseFloat(item.amount).toLocaleString()}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{item.percentage}% of premium</div>
-                                    </td>
-                                    <td>
-                                        <span className={`level-badge L${item.level}`}>
-                                            Level {item.level}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div style={{ fontSize: '0.9rem' }}>{new Date(item.createdAt).toLocaleDateString()}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.createdAt).toLocaleTimeString()}</div>
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button
-                                            className="action-btn approve-btn"
-                                            onClick={() => handleApprove(item.id)}
-                                            disabled={processingId === item.id}
-                                        >
-                                            {processingId === item.id ? '...' : '✅ Approve'}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {commissions.map((item, idx) => {
+                                const key = item.id || item._id || idx;
+                                const policyNumber = item.policy?.policyNumber || item.policyId?.policyNumber || item.policyId || 'N/A';
+                                const agentName = item.agent?.user?.fullName || item.agent?.userId?.fullName;
+                                const agentCode = item.agent?.agentCode || item.agentId?.agentCode;
+                                const amountValue = normalizeNumber(item.amount);
+                                const percentageValue = normalizeNumber(item.percentage);
+                                return (
+                                    <tr key={key}>
+                                        <td>#{key}</td>
+                                        <td>
+                                            <div className="agent-info">
+                                                <span className="agent-name">{agentName || 'Unknown Agent'}</span>
+                                                <span className="agent-code">{agentCode || '—'}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="policy-info">
+                                                <div>Policy #{policyNumber}</div>
+                                                <div>Customer: {item.policy?.ownerName || item.policyId?.ownerName || 'N/A'}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="amount-cell">₹{amountValue !== null ? amountValue.toLocaleString() : 'N/A'}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{percentageValue !== null ? `${percentageValue}% of premium` : '—'}</div>
+                                        </td>
+                                        <td>
+                                            <span className={`level-badge L${item.level}`}>
+                                                Level {item.level}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontSize: '0.9rem' }}>{new Date(item.createdAt).toLocaleDateString()}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.createdAt).toLocaleTimeString()}</div>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                className="action-btn approve-btn"
+                                                onClick={() => handleApprove(item.id || item._id)}
+                                                disabled={processingId === (item.id || item._id)}
+                                            >
+                                                {processingId === (item.id || item._id) ? '...' : '✅ Approve'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 ) : (

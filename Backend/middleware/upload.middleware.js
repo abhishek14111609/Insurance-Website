@@ -6,36 +6,53 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../uploads/agent_docs');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const ensureUploadDir = (subDir) => {
+    const fullPath = path.join(__dirname, '../uploads', subDir);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
+    }
+    return fullPath;
+};
 
-const storage = multer.diskStorage({
+const createStorage = (subDir) => multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        cb(null, ensureUploadDir(subDir));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
     }
 });
 
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf/;
+const createFileFilter = (allowedTypes) => (req, file, cb) => {
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (extname && mimetype) {
         return cb(null, true);
-    } else {
-        cb(new Error('Only images (JPG, PNG) and PDF files are allowed!'));
     }
+    cb(new Error('Invalid file type'));
 };
 
+const fiveMbLimit = { fileSize: 5 * 1024 * 1024 };
+
+// Agent KYC docs (images + PDF)
 export const uploadAgentDocs = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: fileFilter
+    storage: createStorage('agent_docs'),
+    limits: fiveMbLimit,
+    fileFilter: createFileFilter(/jpeg|jpg|png|pdf/)
+});
+
+// Policy photos (images only)
+export const uploadPolicyPhotos = multer({
+    storage: createStorage('policy_photos'),
+    limits: fiveMbLimit,
+    fileFilter: createFileFilter(/jpeg|jpg|png/)
+});
+
+// Claim documents (images + PDF)
+export const uploadClaimDocs = multer({
+    storage: createStorage('claim_docs'),
+    limits: fiveMbLimit,
+    fileFilter: createFileFilter(/jpeg|jpg|png|pdf/)
 });

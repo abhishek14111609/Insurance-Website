@@ -16,23 +16,30 @@ const axiosInstance = axios.create({
 
 // Response interceptor to handle errors
 axiosInstance.interceptors.response.use(
-    response => {
+    (response) => {
         return response.data; // Return only the data
     },
-    error => {
-        // Handle 401 errors - redirect to admin login
-        if (error.response?.status === 401) {
-            // Don't redirect if already on the login page
+    async (error) => {
+        const originalRequest = error.config;
+        const status = error.response?.status;
+
+        if (status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            try {
+                await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+                return axiosInstance(originalRequest);
+            } catch (refreshErr) {
+                // fall through
+            }
+        }
+
+        if (status === 401) {
             if (window.location.pathname !== '/login') {
-                // Clear all admin localStorage items (no token to clear - it's in cookie)
                 localStorage.removeItem('admin:auth_user');
-                // Token in HTTP-only cookie will be cleared by backend on logout
-                // Redirect to admin login
                 window.location.href = '/login';
             }
         }
 
-        // Re-throw the error for the caller to handle
         const message = error.response?.data?.message || error.message || 'API request failed';
         throw new Error(message);
     }

@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { Payment, Policy, Commission, Agent } from '../models/index.js';
 import { calculateAndDistributeCommissions } from '../utils/commission.util.js';
+import { sendEmail } from '../utils/email.util.js';
 
 // Initialize Razorpay only if keys are present
 let razorpay = null;
@@ -162,11 +163,36 @@ export const verifyPayment = async (req, res) => {
             policy.paymentDate = new Date();
             policy.status = 'PENDING_APPROVAL';
             await policy.save();
+        }
 
-            // Calculate and create commissions if agent involved
-            if (policy.agentId) {
-                await calculateAndDistributeCommissions(policy);
+        let paymentEmailSent = false;
+        try {
+            const customerEmail = policy?.ownerEmail || req.user?.email;
+            const customerName = policy?.ownerName || req.user?.fullName || 'Customer';
+            const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;
+
+            if (customerEmail) {
+                const html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+                        <h2 style="color: #2563eb;">Payment Received</h2>
+                        <p>Hi ${customerName},</p>
+                        <p>We have received your payment for policy <strong>${policy?.policyNumber || policyId}</strong>.</p>
+                        <p><strong>Amount:</strong> ${amountPaid ? `₹${amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A'}</p>
+                        <p><strong>Payment ID:</strong> ${razorpay_payment_id}</p>
+                        <p>Your policy is now under review for approval. You will receive the policy documents once approved.</p>
+                        <p>Thank you for your payment.</p>
+                    </div>
+                `;
+
+                await sendEmail({
+                    to: customerEmail,
+                    subject: `Payment Successful for Policy ${policy?.policyNumber || ''}`,
+                    html
+                });
+                paymentEmailSent = true;
             }
+        } catch (mailError) {
+            console.error('[VerifyPayment] Payment success email failed (non-blocking):', mailError);
         }
 
         res.json({
@@ -174,7 +200,8 @@ export const verifyPayment = async (req, res) => {
             message: 'Payment verified successfully',
             data: {
                 payment,
-                policy
+                policy,
+                paymentEmailSent
             }
         });
     } catch (error) {

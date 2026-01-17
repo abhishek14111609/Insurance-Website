@@ -1,5 +1,10 @@
 import { User, Policy, Agent, Payment, Commission, Withdrawal, Claim, CommissionSettings } from '../models/index.js';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import PDFDocument from 'pdfkit';
+import { sendEmail } from '../utils/email.util.js';
 import { calculateAndDistributeCommissions, approveCommission } from '../utils/commission.util.js';
 import {
     notifyPolicyApproval,
@@ -10,6 +15,166 @@ import {
     notifyWithdrawalRejected
 } from '../utils/notification.util.js';
 import { seedDatabase } from '../utils/seed.js';
+
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+const sendVerificationEmail = async (user, token) => {
+    const verifyUrl = `${process.env.FRONTEND_URL || ''}/verify-email?token=${token}`;
+    await sendEmail({
+        to: user.email,
+        subject: 'Verify your email - Pashudhan Suraksha',
+        html: `
+            <h1>Verify your email</h1>
+            <p>Hi ${user.fullName}, please verify your email to activate your agent account.</p>
+            <a href="${verifyUrl}" clicktracking=off>Verify Email</a>
+            <p>If you did not request this, you can ignore this email.</p>
+        `
+    });
+};
+
+const ensureDirectory = (dirPath) => {
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
+};
+
+const toAbsoluteUploadPath = (maybeRelative) => {
+    if (!maybeRelative) return null;
+    const normalized = String(maybeRelative).replace(/\\/g, '/');
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+        return null;
+    }
+    const trimmed = normalized.startsWith('/') ? normalized.slice(1) : normalized;
+    const prefixed = trimmed.startsWith('uploads/') ? trimmed : path.join('uploads', trimmed);
+    return path.join(process.cwd(), prefixed);
+};
+
+const formatCurrency = (value) => {
+    const numeric = typeof value === 'number' ? value : parseFloat(value);
+    if (Number.isNaN(numeric)) return 'N/A';
+    return `₹${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const generatePolicyPdf = async (policy) => {
+    const docsDir = path.join(process.cwd(), 'uploads', 'policy_docs');
+    ensureDirectory(docsDir);
+
+    const pdfPath = path.join(docsDir, `Policy-${policy.policyNumber}.pdf`);
+    const doc = new PDFDocument({ margin: 40 });
+    const stream = fs.createWriteStream(pdfPath);
+
+    doc.pipe(stream);
+
+    doc.fontSize(18).text('Policy Approval Certificate', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Policy Number: ${policy.policyNumber}`);
+    doc.text(`Policy Plan: ${policy.planId?.name || 'Custom Plan'}`);
+    doc.text(`Coverage Amount: ${formatCurrency(policy.coverageAmount)}`);
+    doc.text(`Premium: ${formatCurrency(policy.premium)}`);
+    doc.text(`Duration: ${policy.duration || 'N/A'}`);
+    doc.text(`Start Date: ${policy.startDate ? new Date(policy.startDate).toDateString() : 'N/A'}`);
+    doc.text(`End Date: ${policy.endDate ? new Date(policy.endDate).toDateString() : 'N/A'}`);
+
+    doc.moveDown();
+    doc.text('Livestock Details', { underline: true });
+    doc.text(`Type: ${policy.cattleType || 'N/A'}`);
+    doc.text(`Tag ID: ${policy.tagId || 'N/A'}`);
+    doc.text(`Breed: ${policy.breed || 'N/A'}`);
+    doc.text(`Gender: ${policy.gender || 'N/A'}`);
+    doc.text(`Health: ${policy.healthStatus || 'N/A'}`);
+
+    doc.moveDown();
+    doc.text('Owner', { underline: true });
+    doc.text(`Name: ${policy.ownerName || policy.customerId?.fullName || 'Customer'}`);
+    doc.text(`Email: ${policy.ownerEmail || policy.customerId?.email || 'N/A'}`);
+    doc.text(`Phone: ${policy.ownerPhone || 'N/A'}`);
+    doc.text(`Address: ${policy.ownerAddress || 'N/A'}`);
+    if (policy.ownerCity || policy.ownerState || policy.ownerPincode) {
+        doc.text(`City/State/Pincode: ${[policy.ownerCity, policy.ownerState, policy.ownerPincode].filter(Boolean).join(', ')}`);
+    }
+
+    if (policy.agentId) {
+        doc.moveDown();
+        doc.text('Agent', { underline: true });
+        doc.text(`Code: ${policy.agentId.agentCode || policy.agentCode || 'N/A'}`);
+        const agentName = policy.agentId.userId?.fullName || 'N/A';
+        doc.text(`Name: ${agentName}`);
+    }
+
+    doc.moveDown();
+    doc.text('Status: APPROVED');
+    doc.text(`Approved At: ${policy.approvedAt ? new Date(policy.approvedAt).toLocaleString() : new Date().toLocaleString()}`);
+
+    doc.end();
+
+    await new Promise((resolve, reject) => {
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+    });
+
+    return pdfPath;
+};
+
+const buildPolicyEmailAttachments = async (policy) => {
+    const attachments = [];
+
+    try {
+        const pdfPath = await generatePolicyPdf(policy);
+        if (pdfPath && fs.existsSync(pdfPath)) {
+            attachments.push({ filename: path.basename(pdfPath), path: pdfPath });
+        }
+    } catch (pdfError) {
+        console.error('[PolicyEmail] Failed to generate policy PDF:', pdfError);
+    }
+
+    const photoFields = ['front', 'back', 'left', 'right'];
+    photoFields.forEach((field) => {
+        const relPath = policy?.photos?.[field];
+        if (!relPath) return;
+        const absPath = toAbsoluteUploadPath(relPath);
+        if (absPath && fs.existsSync(absPath)) {
+            const ext = path.extname(absPath) || '';
+            attachments.push({
+                filename: `${policy.policyNumber}-${field}${ext}`,
+                path: absPath
+            });
+        }
+    });
+
+    return attachments;
+};
+
+const sendPolicyDocumentsEmail = async (policy) => {
+    if (!policy) return false;
+
+    const recipient = policy.ownerEmail || policy.customerId?.email;
+    if (!recipient) return false;
+
+    const attachments = await buildPolicyEmailAttachments(policy);
+    const customerName = policy.ownerName || policy.customerId?.fullName || 'Customer';
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+            <h2 style="color: #16a34a;">Policy Approved</h2>
+            <p>Hi ${customerName},</p>
+            <p>Your livestock insurance policy <strong>${policy.policyNumber}</strong> has been approved. Please find the policy PDF and photos attached for your records.</p>
+            <p><strong>Coverage:</strong> ${formatCurrency(policy.coverageAmount)} | <strong>Premium:</strong> ${formatCurrency(policy.premium)} | <strong>Duration:</strong> ${policy.duration || 'N/A'}</p>
+            <p><strong>Policy Period:</strong> ${policy.startDate ? new Date(policy.startDate).toDateString() : 'N/A'} to ${policy.endDate ? new Date(policy.endDate).toDateString() : 'N/A'}</p>
+            <p>If you have questions, reply to this email and we will assist you.</p>
+            <p>Thank you for choosing Pashudhan Suraksha.</p>
+        </div>
+    `;
+
+    await sendEmail({
+        to: recipient,
+        subject: `Policy ${policy.policyNumber} Approved – Documents Attached`,
+        html,
+        attachments
+    });
+
+    return true;
+};
 
 // @desc    Get dashboard statistics
 // @route   GET /api/admin/dashboard
@@ -147,7 +312,7 @@ export const getAllPolicies = async (req, res) => {
 
         const count = await Policy.countDocuments(where);
         const policies = await Policy.find(where)
-            .select('-photos -ownerAddress -adminNotes -rejectionReason')
+            .select('-ownerAddress -adminNotes -rejectionReason')
             .populate({ path: 'customerId', select: 'fullName email phone' })
             .populate({
                 path: 'agentId',
@@ -170,6 +335,74 @@ export const getAllPolicies = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching policies',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Policy sales history for admin (approved or filtered)
+// @route   GET /api/admin/policies/sales/history
+// @access  Private (admin)
+export const getPolicySalesHistory = async (req, res) => {
+    try {
+        const { status = 'APPROVED', page = 1, limit = 20, from, to } = req.query;
+
+        const filters = {};
+        if (status) filters.status = status;
+        if (from || to) {
+            filters.approvedAt = {};
+            if (from) filters.approvedAt.$gte = new Date(from);
+            if (to) filters.approvedAt.$lte = new Date(to);
+        }
+
+        const numericLimit = parseInt(limit);
+        const offset = (page - 1) * numericLimit;
+
+        const [count, policies] = await Promise.all([
+            Policy.countDocuments(filters),
+            Policy.find(filters)
+                .populate('customerId', 'fullName email phone')
+                .populate({
+                    path: 'agentId',
+                    populate: { path: 'userId', select: 'fullName email phone' }
+                })
+                .populate('planId')
+                .sort({ approvedAt: -1, createdAt: -1 })
+                .skip(offset)
+                .limit(numericLimit)
+        ]);
+
+        const soldSummary = await Policy.aggregate([
+            { $match: { status: 'APPROVED' } },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    totalPremium: { $sum: { $toDouble: '$premium' } },
+                    totalCoverage: { $sum: { $toDouble: '$coverageAmount' } }
+                }
+            }
+        ]);
+
+        res.json({
+            success: true,
+            count,
+            totalPages: Math.ceil(count / numericLimit),
+            currentPage: parseInt(page),
+            data: {
+                policies,
+                summary: {
+                    totalSold: soldSummary[0]?.total || 0,
+                    totalPremium: soldSummary[0]?.totalPremium || 0,
+                    totalCoverage: soldSummary[0]?.totalCoverage || 0
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Get policy sales history error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching policy sales history',
             error: error.message
         });
     }
@@ -289,14 +522,23 @@ export const approvePolicy = async (req, res) => {
                 path: 'agentId',
                 populate: { path: 'userId' }
             })
-            .populate('payments');
+            .populate('payments')
+            .populate('planId');
+
+        let documentsEmailSent = false;
+        try {
+            documentsEmailSent = await sendPolicyDocumentsEmail(updatedPolicy);
+        } catch (mailError) {
+            console.error('[ApprovePolicy] Policy email send failed (non-blocking):', mailError);
+        }
 
         res.json({
             success: true,
             message: 'Policy approved successfully',
             data: {
                 policy: updatedPolicy,
-                commissionsCreated: commissions.length
+                commissionsCreated: commissions.length,
+                documentsEmailSent
             }
         });
     } catch (error) {
@@ -385,93 +627,166 @@ export const rejectPolicy = async (req, res) => {
     }
 };
 
-// @desc    Get all agents
+// @desc    Get all agents with metrics and robust search/filter support
 // @route   GET /api/admin/agents
 // @access  Private (admin)
 export const getAllAgents = async (req, res) => {
     try {
-        const { status, page = 1, limit = 20, search } = req.query;
+        const { status, level, page = 1, limit = 20, search } = req.query;
+
+        const numericPage = Math.max(parseInt(page, 10) || 1, 1);
+        const numericLimit = Math.max(parseInt(limit, 10) || 20, 1);
 
         const where = {};
-        if (status) where.status = status;
+        if (status && status !== 'all') where.status = status.toLowerCase();
+        if (level && level !== 'all') where.level = parseInt(level, 10);
 
-        const count = await Agent.countDocuments(where);
-
-        let query = Agent.find(where)
-            .populate('userId')
-            .populate({
-                path: 'parentAgentId',
-                populate: { path: 'userId' }
-            })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
-
-        if (search) {
-            // Apply search filter on populated user data
-            const agents = await Agent.find(where)
-                .populate('userId')
-                .populate({
-                    path: 'parentAgentId',
-                    populate: { path: 'userId' }
-                });
-            const filtered = agents.filter(agent => {
-                const user = agent.userId;
-                return (user?.fullName?.includes(search) || user?.email?.includes(search));
-            });
-            const sliced = filtered.slice((page - 1) * limit, page * limit);
-            
-            // Helper to clean paths
-            const cleanPath = (path) => {
-                if (!path) return null;
-                const normalized = path.replace(/\\/g, '/');
-                const uploadIndex = normalized.indexOf('uploads/');
-                return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
-            };
-
-            const cleanedAgents = sliced.map(agent => {
-                const agentJSON = agent.toJSON();
-                agentJSON.panPhoto = cleanPath(agentJSON.panPhoto);
-                agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
-                agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
-                agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
-                return agentJSON;
-            });
-            
-            return res.json({
-                success: true,
-                count: filtered.length,
-                totalPages: Math.ceil(filtered.length / limit),
-                currentPage: parseInt(page),
-                data: { agents: cleanedAgents }
-            });
-        }
-        
-        const agents = await query;
-        
-        // Helper to clean paths
-        const cleanPath = (path) => {
-            if (!path) return null;
-            const normalized = path.replace(/\\/g, '/');
+        // Helper to clean upload paths for safer UI rendering
+        const cleanPath = (filePath) => {
+            if (!filePath) return null;
+            const normalized = String(filePath).replace(/\\/g, '/');
             const uploadIndex = normalized.indexOf('uploads/');
             return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
         };
 
-        const cleanedAgents = agents.map(agent => {
-            const agentJSON = agent.toJSON();
-            agentJSON.panPhoto = cleanPath(agentJSON.panPhoto);
-            agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
-            agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
-            agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
-            return agentJSON;
+        // Fetch agents (with populate) and apply search on the populated fields if provided
+        const baseQuery = Agent.find(where)
+            .populate({ path: 'userId', select: 'fullName email phone city state address createdAt' })
+            .populate({
+                path: 'parentAgentId',
+                select: 'agentCode level userId',
+                populate: { path: 'userId', select: 'fullName' }
+            })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        let agents = [];
+        let totalCount = 0;
+
+        if (search) {
+            const allAgents = await baseQuery;
+            const lowerSearch = search.toLowerCase();
+            const filtered = allAgents.filter((agent) => {
+                const user = agent.userId || {};
+                const parent = agent.parentAgentId || {};
+                return (
+                    (agent.agentCode || '').toLowerCase().includes(lowerSearch) ||
+                    (user.fullName || '').toLowerCase().includes(lowerSearch) ||
+                    (user.email || '').toLowerCase().includes(lowerSearch) ||
+                    (user.phone || '').toLowerCase().includes(lowerSearch) ||
+                    (user.city || '').toLowerCase().includes(lowerSearch) ||
+                    (parent.agentCode || '').toLowerCase().includes(lowerSearch)
+                );
+            });
+            totalCount = filtered.length;
+            agents = filtered.slice((numericPage - 1) * numericLimit, numericPage * numericLimit);
+        } else {
+            totalCount = await Agent.countDocuments(where);
+            agents = await baseQuery.skip((numericPage - 1) * numericLimit).limit(numericLimit);
+        }
+
+        const agentIds = agents.map((a) => a._id);
+
+        // Aggregate policy stats for the current page of agents
+        let policyAgg = [];
+        let commissionAgg = [];
+
+        if (agentIds.length > 0) {
+            policyAgg = await Policy.aggregate([
+                { $match: { agentId: { $in: agentIds } } },
+                {
+                    $group: {
+                        _id: '$agentId',
+                        totalPolicies: { $sum: 1 },
+                        approvedPolicies: {
+                            $sum: {
+                                $cond: [{ $eq: ['$status', 'APPROVED'] }, 1, 0]
+                            }
+                        },
+                        totalPremium: {
+                            $sum: { $toDouble: { $ifNull: ['$premium', 0] } }
+                        }
+                    }
+                }
+            ]);
+
+            commissionAgg = await Commission.aggregate([
+                { $match: { agentId: { $in: agentIds } } },
+                {
+                    $group: {
+                        _id: '$agentId',
+                        totalCommissions: { $sum: { $toDouble: { $ifNull: ['$amount', 0] } } },
+                        pendingCommissions: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ['$status', 'pending'] },
+                                    { $toDouble: { $ifNull: ['$amount', 0] } },
+                                    0
+                                ]
+                            }
+                        },
+                        approvedCommissions: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ['$status', 'approved'] },
+                                    { $toDouble: { $ifNull: ['$amount', 0] } },
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+        }
+
+        const policyMap = new Map(policyAgg.map((p) => [p._id.toString(), p]));
+        const commissionMap = new Map(commissionAgg.map((c) => [c._id.toString(), c]));
+
+        const normalizeDecimal = (value) => {
+            if (value === null || value === undefined) return 0;
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') return parseFloat(value) || 0;
+            if (value._bsontype === 'Decimal128') return parseFloat(value.toString()) || 0;
+            return 0;
+        };
+
+        const normalizedAgents = agents.map((agent) => {
+            const idStr = agent._id.toString();
+            const policyStats = policyMap.get(idStr) || {};
+            const commissionStats = commissionMap.get(idStr) || {};
+
+            return {
+                ...agent,
+                status: (agent.status || 'pending').toLowerCase(),
+                kycStatus: agent.kycStatus || 'not_submitted',
+                user: agent.userId || null,
+                parentAgent: agent.parentAgentId || null,
+                walletBalance: normalizeDecimal(agent.walletBalance),
+                totalEarnings: normalizeDecimal(agent.totalEarnings),
+                totalWithdrawals: normalizeDecimal(agent.totalWithdrawals),
+                panPhoto: cleanPath(agent.panPhoto),
+                aadharPhotoFront: cleanPath(agent.aadharPhotoFront),
+                aadharPhotoBack: cleanPath(agent.aadharPhotoBack),
+                bankProofPhoto: cleanPath(agent.bankProofPhoto),
+                policyStats: {
+                    totalPolicies: policyStats.totalPolicies || 0,
+                    approvedPolicies: policyStats.approvedPolicies || 0,
+                    totalPremium: policyStats.totalPremium || 0
+                },
+                commissionStats: {
+                    totalCommissions: commissionStats.totalCommissions || 0,
+                    pendingCommissions: commissionStats.pendingCommissions || 0,
+                    approvedCommissions: commissionStats.approvedCommissions || 0
+                }
+            };
         });
 
         res.json({
             success: true,
-            count,
-            totalPages: Math.ceil(count / limit),
-            currentPage: parseInt(page),
-            data: { agents: cleanedAgents }
+            count: totalCount,
+            totalPages: Math.ceil(totalCount / numericLimit),
+            currentPage: numericPage,
+            data: { agents: normalizedAgents }
         });
     } catch (error) {
         console.error('Get all agents error:', error);
@@ -514,6 +829,8 @@ export const createAgent = async (req, res) => {
         }
 
         // Create User
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
         const user = await User.create([{
             fullName,
             email,
@@ -524,7 +841,9 @@ export const createAgent = async (req, res) => {
             state,
             pincode,
             role: 'agent',
-            status: status === 'active' ? 'active' : 'inactive'
+            status: status === 'active' ? 'active' : 'inactive',
+            emailVerified: false,
+            verificationToken: hashToken(verificationToken)
         }], { session });
 
         // Calculate level if parentId exists
@@ -560,6 +879,11 @@ export const createAgent = async (req, res) => {
 
         await session.commitTransaction();
         await session.endSession();
+
+        // Send verification email (non-blocking)
+        sendVerificationEmail(user[0], verificationToken).catch((err) => {
+            console.error('Send agent verification email failed:', err);
+        });
 
         res.status(201).json({
             success: true,
@@ -603,6 +927,17 @@ export const approveAgent = async (req, res) => {
         agent.approvedBy = req.user._id;
         agent.adminNotes = adminNotes;
         await agent.save();
+
+        // If user not verified, generate token and send verification email
+        if (!agent.userId.emailVerified) {
+            const verificationToken = crypto.randomBytes(32).toString('hex');
+            agent.userId.verificationToken = hashToken(verificationToken);
+            await agent.userId.save();
+
+            sendVerificationEmail(agent.userId, verificationToken).catch((err) => {
+                console.error('Send agent verification email on approval failed:', err);
+            });
+        }
 
         // Send notification
         await notifyAgentApproval(agent);
@@ -750,18 +1085,18 @@ export const updateAgent = async (req, res) => {
 export const getAgentById = async (req, res) => {
     try {
         const agent = await Agent.findById(req.params.id)
-            .populate('userId')
+            .populate({ path: 'userId', select: '-password' })
             .populate({
                 path: 'parentAgentId',
-                populate: { path: 'userId' }
+                populate: { path: 'userId', select: '-password' }
             })
             .populate({
                 path: 'subAgents',
-                populate: { path: 'userId' }
+                populate: { path: 'userId', select: '-password' }
             })
-            .populate('policies', null, null, { limit: 10 })
-            .populate('commissions', null, null, { limit: 10 })
-            .populate('withdrawals', null, null, { limit: 10 });
+            .populate({ path: 'policies', options: { limit: 10 }, populate: { path: 'customerId', select: 'fullName' } })
+            .populate({ path: 'commissions', options: { limit: 10 }, populate: { path: 'agentId', select: 'agentCode' } })
+            .populate({ path: 'withdrawals', options: { limit: 10 } });
 
         if (!agent) {
             return res.status(404).json({
@@ -783,6 +1118,11 @@ export const getAgentById = async (req, res) => {
         agentJSON.aadharPhotoFront = cleanPath(agentJSON.aadharPhotoFront);
         agentJSON.aadharPhotoBack = cleanPath(agentJSON.aadharPhotoBack);
         agentJSON.bankProofPhoto = cleanPath(agentJSON.bankProofPhoto);
+
+        // Provide `user` alias expected by frontend
+        if (!agentJSON.user && agentJSON.userId) {
+            agentJSON.user = agentJSON.userId;
+        }
 
         res.json({
             success: true,
@@ -959,6 +1299,44 @@ export const getWithdrawalRequests = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching withdrawal requests',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Withdrawal history (non-pending by default)
+// @route   GET /api/admin/withdrawals/history
+// @access  Private (admin)
+export const getWithdrawalHistory = async (req, res) => {
+    try {
+        const { status, page = 1, limit = 20 } = req.query;
+
+        const where = status ? { status } : { status: { $ne: 'pending' } };
+        const offset = (page - 1) * limit;
+
+        const count = await Withdrawal.countDocuments(where);
+        const withdrawals = await Withdrawal.find(where)
+            .populate({
+                path: 'agentId',
+                populate: { path: 'userId' }
+            })
+            .populate('processedBy')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
+
+        res.json({
+            success: true,
+            count,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            data: { withdrawals }
+        });
+    } catch (error) {
+        console.error('Get withdrawal history error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching withdrawal history',
             error: error.message
         });
     }

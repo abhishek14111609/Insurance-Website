@@ -2,6 +2,7 @@ import express from 'express';
 import {
     getDashboardStats,
     getAllPolicies,
+    getPolicySalesHistory,
     getPolicyDetails,
     approvePolicy,
     rejectPolicy,
@@ -12,6 +13,7 @@ import {
     getAllCustomers,
     getCustomerById,
     getWithdrawalRequests,
+    getWithdrawalHistory,
     processWithdrawal,
     getAllCommissions,
     approveCommissionController,
@@ -35,6 +37,7 @@ router.get('/dashboard', getDashboardStats);
 
 // Policies
 router.get('/policies', getAllPolicies);
+router.get('/policies/sales/history', getPolicySalesHistory);
 router.get('/policies/:id', getPolicyDetails);
 router.patch('/policies/:id/approve', approvePolicy);
 router.patch('/policies/:id/reject', rejectPolicy);
@@ -53,6 +56,7 @@ router.get('/customers', getAllCustomers);
 router.get('/customers/:id', getCustomerById); // Added route
 
 // Withdrawals
+router.get('/withdrawals/history', getWithdrawalHistory);
 router.get('/withdrawals', getWithdrawalRequests);
 router.patch('/withdrawals/:id', processWithdrawal);
 

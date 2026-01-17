@@ -11,6 +11,17 @@ const WithdrawalApprovals = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [loading, setLoading] = useState(true);
 
+    const normalizeNumber = (value) => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'object' && value.$numberDecimal) {
+            return Number(value.$numberDecimal);
+        }
+        const num = Number(value);
+        return Number.isNaN(num) ? null : num;
+    };
+
+    const getWithdrawalId = (withdrawal) => withdrawal?.id || withdrawal?._id || withdrawal?.requestId || withdrawal?.withdrawalId || null;
+
     useEffect(() => {
         loadWithdrawals();
     }, []);
@@ -46,7 +57,12 @@ const WithdrawalApprovals = () => {
     const handleConfirmApprove = async () => {
         try {
             // Processing withdrawal with status 'approve'
-            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'approve', notes);
+            const selectedId = getWithdrawalId(selectedWithdrawal);
+            if (!selectedId) {
+                alert('Missing withdrawal ID. Please refresh and try again.');
+                return;
+            }
+            const result = await adminAPI.processWithdrawal(selectedId, 'approve', notes);
 
             if (result.success) {
                 alert('Withdrawal approved! Agent wallet updated.');
@@ -68,7 +84,12 @@ const WithdrawalApprovals = () => {
         }
 
         try {
-            const result = await adminAPI.processWithdrawal(selectedWithdrawal.id, 'reject', rejectionReason);
+            const selectedId = getWithdrawalId(selectedWithdrawal);
+            if (!selectedId) {
+                alert('Missing withdrawal ID. Please refresh and try again.');
+                return;
+            }
+            const result = await adminAPI.processWithdrawal(selectedId, 'reject', rejectionReason);
 
             if (result.success) {
                 alert('Withdrawal rejected.');
@@ -112,57 +133,61 @@ const WithdrawalApprovals = () => {
                 </div>
             ) : (
                 <div className="withdrawals-grid">
-                    {withdrawals.map(withdrawal => (
-                        <div key={withdrawal.id} className="withdrawal-card">
-                            <div className="withdrawal-header">
-                                <div>
-                                    <h3>₹{parseFloat(withdrawal.amount || 0).toLocaleString()}</h3>
-                                    <span className="status-badge pending">Pending</span>
+                    {withdrawals.map((withdrawal, idx) => {
+                        const key = getWithdrawalId(withdrawal) ?? `idx-${idx}`;
+                        const amountValue = normalizeNumber(withdrawal.amount) ?? 0;
+                        return (
+                            <div key={key} className="withdrawal-card">
+                                <div className="withdrawal-header">
+                                    <div>
+                                        <h3>₹{amountValue.toLocaleString()}</h3>
+                                        <span className="status-badge pending">Pending</span>
+                                    </div>
+                                    <div className="withdrawal-date">
+                                        {new Date(withdrawal.requestedAt || withdrawal.createdAt).toLocaleDateString()}
+                                    </div>
                                 </div>
-                                <div className="withdrawal-date">
-                                    {new Date(withdrawal.requestedAt || withdrawal.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
 
-                            <div className="withdrawal-details">
-                                <div className="detail-row">
-                                    <span className="label">Agent:</span>
-                                    <span className="value">{withdrawal.agent?.user?.fullName || withdrawal.agentName}</span>
+                                <div className="withdrawal-details">
+                                    <div className="detail-row">
+                                        <span className="label">Agent:</span>
+                                        <span className="value">{withdrawal.agent?.user?.fullName || withdrawal.agentName}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Agent Code:</span>
+                                        <span className="value">{withdrawal.agent?.agentCode || withdrawal.agentCode}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Bank Account:</span>
+                                        <span className="value">{withdrawal.bankDetails?.accountNumber || withdrawal.bankAccount || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">IFSC:</span>
+                                        <span className="value">{withdrawal.bankDetails?.ifscCode || withdrawal.ifsc || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Account Holder:</span>
+                                        <span className="value">{withdrawal.bankDetails?.accountHolderName || withdrawal.accountHolder || 'N/A'}</span>
+                                    </div>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="label">Agent Code:</span>
-                                    <span className="value">{withdrawal.agent?.agentCode || withdrawal.agentCode}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Bank Account:</span>
-                                    <span className="value">{withdrawal.bankDetails?.accountNumber || withdrawal.bankAccount || 'N/A'}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">IFSC:</span>
-                                    <span className="value">{withdrawal.bankDetails?.ifscCode || withdrawal.ifsc || 'N/A'}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Account Holder:</span>
-                                    <span className="value">{withdrawal.bankDetails?.accountHolderName || withdrawal.accountHolder || 'N/A'}</span>
-                                </div>
-                            </div>
 
-                            <div className="withdrawal-actions">
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => handleApproveClick(withdrawal)}
-                                >
-                                    ✅ Approve
-                                </button>
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={() => handleRejectClick(withdrawal)}
-                                >
-                                    ❌ Reject
-                                </button>
+                                <div className="withdrawal-actions">
+                                    <button
+                                        className="btn btn-success"
+                                        onClick={() => handleApproveClick(withdrawal)}
+                                    >
+                                        ✅ Approve
+                                    </button>
+                                    <button
+                                        className="btn btn-danger"
+                                        onClick={() => handleRejectClick(withdrawal)}
+                                    >
+                                        ❌ Reject
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -176,7 +201,7 @@ const WithdrawalApprovals = () => {
 
                         <div className="modal-body">
                             <div className="withdrawal-summary">
-                                <p><strong>Amount:</strong> ₹{parseFloat(selectedWithdrawal?.amount || 0).toLocaleString()}</p>
+                                <p><strong>Amount:</strong> ₹{(normalizeNumber(selectedWithdrawal?.amount) ?? 0).toLocaleString()}</p>
                                 <p><strong>Agent:</strong> {selectedWithdrawal?.agent?.user?.fullName || selectedWithdrawal?.agentName}</p>
                             </div>
 

@@ -14,31 +14,35 @@ const axiosInstance = axios.create({
 
 // Response interceptor to handle errors
 axiosInstance.interceptors.response.use(
-    response => {
+    (response) => {
         return response.data; // Return only the data
     },
-    error => {
-        // Handle 401 errors - redirect to appropriate login
-        if (error.response?.status === 401) {
-            // Get current path to determine correct redirect
-            const path = window.location.pathname;
+    async (error) => {
+        const originalRequest = error.config;
+        const status = error.response?.status;
 
-            // Don't redirect if already on a login page
-            if (path.includes('/login') || path.includes('/agent/login')) {
-                return Promise.reject(error);
-            }
-
-            // Determine correct login route based on current path
-            if (path.startsWith('/agent')) {
-                // Agent routes - redirect to agent login
-                window.location.href = '/agent/login';
-            } else {
-                // Customer routes - redirect to customer login
-                window.location.href = '/login';
+        // Try refresh once on 401
+        if (status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            try {
+                await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+                return axiosInstance(originalRequest);
+            } catch (refreshErr) {
+                // fall through to redirect handling
             }
         }
 
-        // Re-throw the error for the caller to handle
+        if (status === 401) {
+            const path = window.location.pathname;
+            if (!(path.includes('/login') || path.includes('/agent/login'))) {
+                if (path.startsWith('/agent')) {
+                    window.location.href = '/agent/login';
+                } else {
+                    window.location.href = '/login';
+                }
+            }
+        }
+
         const message = error.response?.data?.message || error.message || 'API request failed';
         throw new Error(message);
     }
@@ -85,6 +89,16 @@ export const authAPI = {
     // Reset password
     resetPassword: async (token, newPassword) => {
         return axiosInstance.post(`/auth/reset-password/${token}`, { newPassword });
+    },
+
+    // Verify email with token
+    verifyEmail: async (token) => {
+        return axiosInstance.get(`/auth/verify-email/${token}`);
+    },
+
+    // Resend verification email
+    resendVerification: async (email) => {
+        return axiosInstance.post('/auth/resend-verification', { email });
     },
 
     // Logout

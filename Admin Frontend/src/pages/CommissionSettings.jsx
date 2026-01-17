@@ -2,75 +2,104 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
 import './CommissionSettings.css';
 
+const DEFAULT_LEVELS = [
+    { level: 1, label: 'Parent 1 (direct upline)', defaultPct: 5 },
+    { level: 2, label: 'Parent 2', defaultPct: 3 },
+    { level: 3, label: 'Parent 3', defaultPct: 2 },
+    { level: 4, label: 'Parent 4', defaultPct: 2 },
+    { level: 5, label: 'Parent 5', defaultPct: 1 }
+];
+
 const CommissionSettings = () => {
-    const [settings, setSettings] = useState({
-        level1: 15,
-        level2: 10,
-        level3: 5
-    });
+    const [rows, setRows] = useState(DEFAULT_LEVELS.map(l => ({ ...l, percentage: l.defaultPct, id: null })));
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         loadSettings();
     }, []);
 
+    const normalize = (val) => {
+        const num = parseFloat(val);
+        if (Number.isNaN(num)) return 0;
+        return Math.min(100, Math.max(0, num));
+    };
+
     const loadSettings = async () => {
         try {
             setLoading(true);
+            setError('');
             const response = await adminAPI.getCommissionSettings();
-            if (response.success && response.data && response.data.settings) {
-                const settingsArray = response.data.settings;
-                const newSettings = { ...settings };
-
-                settingsArray.forEach(s => {
-                    if (s.level === 1) newSettings.level1 = parseFloat(s.percentage);
-                    if (s.level === 2) newSettings.level2 = parseFloat(s.percentage);
-                    if (s.level === 3) newSettings.level3 = parseFloat(s.percentage);
-                    // Store the actual record IDs for updating
-                    newSettings[`id${s.level}`] = s.id;
+            if (response?.success && response?.data?.settings) {
+                const fromApi = response.data.settings.map((s) => {
+                    const pct = parseFloat(s.percentage);
+                    return {
+                        id: s.id || s._id,
+                        level: s.level,
+                        percentage: Number.isFinite(pct) ? pct : null,
+                        description: s.description,
+                        isActive: s.isActive !== false
+                    };
                 });
 
-                setSettings(newSettings);
+                // Merge API data into defaults (levels 1-5)
+                const merged = DEFAULT_LEVELS.map((base) => {
+                    const match = fromApi.find((s) => s.level === base.level);
+                    const pct = Number.isFinite(match?.percentage) ? match.percentage : base.defaultPct;
+                    return {
+                        ...base,
+                        id: match?.id || null,
+                        percentage: pct,
+                        description: match?.description || '',
+                        isActive: match?.isActive !== false
+                    };
+                });
+
+                setRows(merged);
             }
-        } catch (error) {
-            console.error('Error loading commission settings:', error);
+        } catch (err) {
+            console.error('Error loading commission settings:', err);
+            setError(err.message || 'Failed to load settings');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleChange = (level, value) => {
-        setSettings({
-            ...settings,
-            [level]: parseFloat(value) || 0
-        });
+    const handleChange = (idx, value) => {
+        const next = [...rows];
+        next[idx] = { ...next[idx], percentage: normalize(value) };
+        setRows(next);
         setSaved(false);
     };
 
     const handleSave = async () => {
         try {
-            // Transform back to array of settings for backend
+            setLoading(true);
+            setError('');
             const payload = {
-                settings: [
-                    { id: settings.id1, level: 1, percentage: settings.level1 },
-                    { id: settings.id2, level: 2, percentage: settings.level2 },
-                    { id: settings.id3, level: 3, percentage: settings.level3 }
-                ]
+                settings: rows.map((r) => ({
+                    id: r.id,
+                    level: r.level,
+                    percentage: r.percentage,
+                    description: r.description || undefined,
+                    isActive: true
+                }))
             };
 
             const response = await adminAPI.updateCommissionSettings(payload);
-            if (response.success) {
+            if (response?.success) {
                 setSaved(true);
-                alert('Commission settings updated successfully!');
-                setTimeout(() => setSaved(false), 3000);
-                loadSettings(); // Reload to get potential new IDs if created
+                setTimeout(() => setSaved(false), 2500);
+                await loadSettings();
             } else {
-                alert(response.message || 'Failed to update settings');
+                setError(response?.message || 'Failed to update settings');
             }
-        } catch (error) {
-            console.error('Error updating settings:', error);
-            alert('An error occurred while saving');
+        } catch (err) {
+            console.error('Error updating settings:', err);
+            setError(err.message || 'Failed to update settings');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -80,69 +109,37 @@ const CommissionSettings = () => {
         <div className="commission-settings-page">
             <div className="page-header">
                 <h1>⚙️ Commission Settings</h1>
-                <p>Configure commission rates for each agent level</p>
+                <p>Configure the upline commission percentages for up to 5 parents (seller fixed commission is handled by backend).</p>
             </div>
 
             <div className="settings-card">
                 <div className="settings-info">
-                    <h3>ℹ️ Commission Structure</h3>
-                    <p>Set the commission percentage for each agent level. Higher levels typically receive higher commissions.</p>
+                    <h3>ℹ️ Distance-Based Structure</h3>
+                    <p>Percentages apply to parents above the seller: Parent 1 is the direct parent, then up to Parent 5.</p>
                 </div>
 
+                {error && <div className="error-banner">{error}</div>}
+
                 <div className="settings-form">
-                    <div className="setting-item">
-                        <div className="setting-label">
-                            <h4>Level 1 Agents</h4>
-                            <p>Top-level agents (no parent)</p>
+                    {rows.map((row, idx) => (
+                        <div className="setting-item" key={row.level}>
+                            <div className="setting-label">
+                                <h4>{row.label}</h4>
+                                <p>Level {row.level} upline</p>
+                            </div>
+                            <div className="setting-input">
+                                <input
+                                    type="number"
+                                    value={row.percentage}
+                                    onChange={(e) => handleChange(idx, e.target.value)}
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                />
+                                <span>%</span>
+                            </div>
                         </div>
-                        <div className="setting-input">
-                            <input
-                                type="number"
-                                value={settings.level1}
-                                onChange={(e) => handleChange('level1', e.target.value)}
-                                min="0"
-                                max="100"
-                                step="0.5"
-                            />
-                            <span>%</span>
-                        </div>
-                    </div>
-
-                    <div className="setting-item">
-                        <div className="setting-label">
-                            <h4>Level 2 Agents</h4>
-                            <p>Sub-agents of Level 1</p>
-                        </div>
-                        <div className="setting-input">
-                            <input
-                                type="number"
-                                value={settings.level2}
-                                onChange={(e) => handleChange('level2', e.target.value)}
-                                min="0"
-                                max="100"
-                                step="0.5"
-                            />
-                            <span>%</span>
-                        </div>
-                    </div>
-
-                    <div className="setting-item">
-                        <div className="setting-label">
-                            <h4>Level 3 Agents</h4>
-                            <p>Sub-agents of Level 2</p>
-                        </div>
-                        <div className="setting-input">
-                            <input
-                                type="number"
-                                value={settings.level3}
-                                onChange={(e) => handleChange('level3', e.target.value)}
-                                min="0"
-                                max="100"
-                                step="0.5"
-                            />
-                            <span>%</span>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
                 <div className="settings-actions">
@@ -158,18 +155,12 @@ const CommissionSettings = () => {
                 <div className="settings-preview">
                     <h4>Current Rates:</h4>
                     <div className="preview-grid">
-                        <div className="preview-item">
-                            <span>Level 1:</span>
-                            <strong>{settings.level1}%</strong>
-                        </div>
-                        <div className="preview-item">
-                            <span>Level 2:</span>
-                            <strong>{settings.level2}%</strong>
-                        </div>
-                        <div className="preview-item">
-                            <span>Level 3:</span>
-                            <strong>{settings.level3}%</strong>
-                        </div>
+                        {rows.map((row) => (
+                            <div className="preview-item" key={`preview-${row.level}`}>
+                                <span>Level {row.level}:</span>
+                                <strong>{row.percentage}%</strong>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

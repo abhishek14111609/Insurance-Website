@@ -8,6 +8,7 @@ import {
     uploadClaimDocuments
 } from '../controllers/claim.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
+import { uploadClaimDocs } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router.use(authenticate);
 router.post('/', createClaim);
 router.get('/', getClaims);
 router.get('/:id', getClaimById);
-router.post('/:id/documents', uploadClaimDocuments);
+router.post('/:id/documents', uploadClaimDocs.array('documents', 10), uploadClaimDocuments);
 
 // Admin routes
 router.get('/admin/all', authorize('admin'), getAllClaims);

@@ -98,6 +98,9 @@ const AgentLogin = () => {
                         <p className="text-sm text-muted">
                             Not a partner yet? <Link to="/become-agent" style={{ color: 'var(--primary-color)', fontWeight: '600' }}>Join Network</Link>
                         </p>
+                        <p className="text-sm text-muted" style={{ marginTop: '0.5rem' }}>
+                            Need the verification email again? <Link to="/verify-email" style={{ color: 'var(--primary-color)', fontWeight: '600' }}>Resend</Link>
+                        </p>
                     </div>
                 </form>
             </div>

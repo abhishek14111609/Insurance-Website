@@ -12,6 +12,15 @@ const CommissionHistory = () => {
     });
     const [processingId, setProcessingId] = useState(null);
 
+    const normalizeNumber = (value) => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'object' && value.$numberDecimal) {
+            return Number(value.$numberDecimal);
+        }
+        const num = Number(value);
+        return Number.isNaN(num) ? 0 : num;
+    };
+
     useEffect(() => {
         loadCommissions();
     }, []);
@@ -24,10 +33,10 @@ const CommissionHistory = () => {
                 const data = response.data.commissions || [];
                 setCommissions(data);
 
-                // Calculate totals
-                const total = data.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-                const pending = data.filter(item => item.status === 'pending').reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-                const paid = data.filter(item => item.status === 'paid').reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+                // Calculate totals with Decimal support
+                const total = data.reduce((sum, item) => sum + normalizeNumber(item.amount), 0);
+                const pending = data.filter(item => (item.status || '').toLowerCase() === 'pending').reduce((sum, item) => sum + normalizeNumber(item.amount), 0);
+                const paid = data.filter(item => (item.status || '').toLowerCase() === 'paid' || (item.status || '').toLowerCase() === 'approved').reduce((sum, item) => sum + normalizeNumber(item.amount), 0);
 
                 setStats({
                     totalEarned: total,
@@ -49,15 +58,15 @@ const CommissionHistory = () => {
             if (response.success) {
                 // Update local state instead of refetching
                 setCommissions(prev => prev.map(c =>
-                    c.id === id ? { ...c, status: 'approved' } : c
+                    (c.id === id || c._id === id) ? { ...c, status: 'approved' } : c
                 ));
                 // Update stats
-                const commission = commissions.find(c => c.id === id);
+                const commission = commissions.find(c => (c.id === id || c._id === id));
                 if (commission) {
                     setStats(prev => ({
                         ...prev,
-                        pending: prev.pending - parseFloat(commission.amount),
-                        paid: prev.paid + parseFloat(commission.amount)
+                        pending: prev.pending - normalizeNumber(commission.amount),
+                        paid: prev.paid + normalizeNumber(commission.amount)
                     }));
                 }
             } else {
@@ -120,46 +129,53 @@ const CommissionHistory = () => {
                     </thead>
                     <tbody>
                         {commissions.length > 0 ? (
-                            commissions.map(item => (
-                                <tr key={item.id}>
-                                    <td>#{item.id}</td>
-                                    <td>
-                                        <div className="agent-col">
-                                            <span className="agent-name">{item.agent?.user?.fullName || 'N/A'}</span>
-                                            <span className="agent-code">{item.agent?.agentCode}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="policy-col">
-                                            <span className="policy-id">Policy #{item.policyId}</span>
-                                            <span className="customer-name">{item.policy?.ownerName || 'N/A'}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="amount">₹{item.amount}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`level-badge L${item.level}`}>
-                                            Level {item.level}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`status-pill ${item.status}`}>
-                                            {item.status}
-                                        </span>
-                                        {item.status === 'pending' && (
-                                            <button
-                                                className="quick-approve-btn"
-                                                onClick={() => handleApprove(item.id)}
-                                                disabled={processingId === item.id}
-                                            >
-                                                {processingId === item.id ? '...' : 'Approve'}
-                                            </button>
-                                        )}
-                                    </td>
-                                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                                </tr>
-                            ))
+                            commissions.map((item, idx) => {
+                                const key = item.id || item._id || idx;
+                                const policyNumber = item.policy?.policyNumber || item.policyId?.policyNumber || item.policyId || 'N/A';
+                                const customerName = item.policy?.ownerName || item.policyId?.ownerName || 'N/A';
+                                const amountValue = normalizeNumber(item.amount);
+                                const status = (item.status || '').toLowerCase();
+                                return (
+                                    <tr key={key}>
+                                        <td>#{key}</td>
+                                        <td>
+                                            <div className="agent-col">
+                                                <span className="agent-name">{item.agent?.user?.fullName || 'N/A'}</span>
+                                                <span className="agent-code">{item.agent?.agentCode}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="policy-col">
+                                                <span className="policy-id">Policy #{policyNumber}</span>
+                                                <span className="customer-name">{customerName}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="amount">₹{amountValue.toLocaleString()}</span>
+                                        </td>
+                                        <td>
+                                            <span className={`level-badge L${item.level}`}>
+                                                Level {item.level}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`status-pill ${status}`}>
+                                                {status || 'unknown'}
+                                            </span>
+                                            {status === 'pending' && (
+                                                <button
+                                                    className="quick-approve-btn"
+                                                    onClick={() => handleApprove(item.id || item._id)}
+                                                    disabled={processingId === (item.id || item._id)}
+                                                >
+                                                    {processingId === (item.id || item._id) ? '...' : 'Approve'}
+                                                </button>
+                                            )}
+                                        </td>
+                                        <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                                    </tr>
+                                );
+                            })
                         ) : (
                             <tr>
                                 <td colSpan="7" className="no-data">No commission records found</td>

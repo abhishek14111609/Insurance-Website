@@ -26,9 +26,15 @@ const AgentDetails = () => {
             }
         }
 
+        const agentId = agent?._id || agent?.id;
+        if (!agentId) {
+            alert('Missing agent identifier. Please reload and try again.');
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await adminAPI.verifyAgentKYC(agent.id, status, reason);
+            const response = await adminAPI.verifyAgentKYC(agentId, status, reason);
             if (response.success) {
                 alert(`KYC ${status === 'verified' ? 'Approved' : 'Rejected'} successfully`);
                 loadData();
@@ -72,6 +78,8 @@ const AgentDetails = () => {
     if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Details...</div>;
     if (!agent) return <div className="error-message">Agent not found</div>;
 
+    const agentId = agent._id || agent.id;
+
     return (
         <div className="agent-details-page">
             <div className="page-header">
@@ -79,9 +87,11 @@ const AgentDetails = () => {
                     <h1>👤 Agent Details</h1>
                     <p>{agent.agentCode || agent.code} - {agent.user?.fullName}</p>
                 </div>
-                <Link to={`/agents/edit/${agent.id}`} className="btn btn-primary">
-                    ✏️ Edit Agent
-                </Link>
+                {agentId && (
+                    <Link to={`/agents/edit/${agentId}`} className="btn btn-primary">
+                        ✏️ Edit Agent
+                    </Link>
+                )}
             </div>
 
             {/* Basic Info */}

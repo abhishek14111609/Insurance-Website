@@ -1,0 +1,114 @@
+.verify-email-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #f7faff 0%, #eef5ff 100%);
+}
+
+.verify-card {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 64, 128, 0.08);
+    max-width: 480px;
+    width: 100%;
+}
+
+.verify-card h1 {
+    margin: 0 0 1rem;
+    font-size: 1.6rem;
+    color: #0b3a75;
+    text-align: center;
+}
+
+.status {
+    margin: 0.5rem 0 1.5rem;
+    text-align: center;
+    color: #445065;
+}
+
+.status.success {
+    color: #0f9d58;
+    font-weight: 600;
+}
+
+.status.error {
+    color: #d93025;
+    font-weight: 600;
+}
+
+.status.verifying {
+    color: #0b3a75;
+}
+
+.resend-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.resend-form label {
+    font-weight: 600;
+    color: #0b3a75;
+}
+
+.resend-form input {
+    padding: 0.75rem;
+    border: 1px solid #d9e3f5;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.resend-form input:focus {
+    border-color: #0b3a75;
+}
+
+.btn {
+    padding: 0.9rem 1.1rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(120deg, #0b66c2, #0b3a75);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(11, 102, 194, 0.25);
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.link-btn {
+    color: #0b3a75;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 0.6rem 1rem;
+    border: 1px solid #d9e3f5;
+    border-radius: 10px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.link-btn.secondary {
+    border-color: #d93025;
+    color: #d93025;
+}
+
+.link-btn:hover {
+    background: #f1f6ff;
+}

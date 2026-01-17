@@ -133,9 +133,63 @@ const agentSchema = new mongoose.Schema(
         }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            virtuals: true,
+            transform: function (doc, ret) {
+                if (ret._id) {
+                    ret.id = ret._id.toString();
+                }
+
+                // Expose populated user consistently as `user`
+                if (ret.userId && !ret.user) {
+                    ret.user = ret.userId;
+                }
+
+                // Convert Decimal128 fields to numbers for frontend usage
+                if (ret.walletBalance instanceof mongoose.Types.Decimal128) {
+                    ret.walletBalance = parseFloat(ret.walletBalance.toString());
+                }
+                if (ret.totalEarnings instanceof mongoose.Types.Decimal128) {
+                    ret.totalEarnings = parseFloat(ret.totalEarnings.toString());
+                }
+                if (ret.totalWithdrawals instanceof mongoose.Types.Decimal128) {
+                    ret.totalWithdrawals = parseFloat(ret.totalWithdrawals.toString());
+                }
+
+                return ret;
+            }
+        },
+        toObject: {
+            virtuals: true
+        }
     }
 );
+
+// Virtuals for relationships used in admin views
+agentSchema.virtual('subAgents', {
+    ref: 'Agent',
+    localField: '_id',
+    foreignField: 'parentAgentId'
+});
+
+agentSchema.virtual('policies', {
+    ref: 'Policy',
+    localField: '_id',
+    foreignField: 'agentId'
+});
+
+agentSchema.virtual('commissions', {
+    ref: 'Commission',
+    localField: '_id',
+    foreignField: 'agentId'
+});
+
+agentSchema.virtual('withdrawals', {
+    ref: 'Withdrawal',
+    localField: '_id',
+    foreignField: 'agentId'
+});
 
 const Agent = mongoose.model('Agent', agentSchema);
 
