@@ -27,7 +27,7 @@
 3. Build command: `npm run build`
 4. Output directory: `dist`
 5. Add Environment Variables:
-   - `VITE_API_URL` = `https://your-render-app.onrender.com/api`
+   - `VITE_API_URL` = `https://your-render-app.onrender.com/api` (mandatory, otherwise it will call localhost and fail with CORS)
 6. Deploy.
 
 ## 4) Customer Frontend on Vercel
@@ -36,7 +36,7 @@
 3. Build command: `npm run build`
 4. Output directory: `dist`
 5. Add Environment Variables:
-   - `VITE_API_URL` = `https://your-render-app.onrender.com/api`
+   - `VITE_API_URL` = `https://your-render-app.onrender.com/api` (mandatory; prevents calls to localhost)
    - `VITE_RAZORPAY_KEY_ID` (optional): your public Razorpay key; do not include the secret.
 6. Deploy.
 
