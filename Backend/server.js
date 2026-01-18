@@ -45,12 +45,20 @@ app.use(cors({
         if (!origin) return callback(null, true);
 
         // Allow any localhost origin (handles different ports for dev)
-        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/)) {
             return callback(null, true);
         }
 
-        // Allow specific production origins if needed
-        const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+        // Default production origins (Vercel apps)
+        const defaultProdOrigins = [
+            'https://pashudhansuraksha.vercel.app',
+            'https://pashudhansurakshaadmin.vercel.app'
+        ];
+
+        // Allow specific production origins from env
+        const envOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) || [];
+        const allowedOrigins = Array.from(new Set([...defaultProdOrigins, ...envOrigins]));
+
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }

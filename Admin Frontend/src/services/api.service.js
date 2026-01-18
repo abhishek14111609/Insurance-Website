@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// API Configuration with safer defaults for deployed builds
+const DEFAULT_PROD_API = 'https://pashudhansurakshabackend.onrender.com/api';
+const isBrowser = typeof window !== 'undefined';
+const API_BASE_URL = import.meta.env.VITE_API_URL
+    || (isBrowser && window.location.hostname.endsWith('vercel.app') ? DEFAULT_PROD_API : 'http://localhost:5000/api');
 // Helper to get raw base url for static files
 export const BASE_URL = API_BASE_URL.replace('/api', '');
 
