@@ -80,6 +80,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Static files for uploads
 app.use('/uploads', express.static(uploadDir));
 
+// Quiet 404s for missing favicon in Render
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({
