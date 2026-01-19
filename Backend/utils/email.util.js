@@ -14,21 +14,30 @@ if (!smtpUser || !smtpPass) {
     console.warn('SMTP credentials are missing. Set SMTP_USER/SMTP_PASS (or EMAIL_USER/EMAIL_PASSWORD).');
 }
 
-// Centralized transporter uses env vars to avoid hardcoding secrets and allow
-// tuning (pooling, IPv4 forcing) without code changes.
+// Centralized transporter uses env vars; defaults tuned for Gmail app password.
 const transporter = nodemailer.createTransport({
+    service: 'gmail',
     host: smtpHost,
     port: smtpPort,
     secure: smtpSecure,
     auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
-    pool: true,
-    maxConnections: Number(process.env.SMTP_MAX_CONNECTIONS || 3),
-    maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 20),
+    pool: false, // single connection to reduce chance of pool timeouts on free hosts
     connectionTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
-    family: Number(process.env.SMTP_IP_FAMILY || process.env.EMAIL_IP_FAMILY || 4), // Force IPv4 to avoid IPv6 timeouts on some hosts
+    family: Number(process.env.SMTP_IP_FAMILY || process.env.EMAIL_IP_FAMILY || 4),
     tls: {
         rejectUnauthorized: false
+    },
+    logger: false,
+    debug: false
+});
+
+// Verify transporter once at startup to surface bad creds/host quickly.
+transporter.verify((err, success) => {
+    if (err) {
+        console.error('SMTP verify failed:', err.message || err);
+    } else {
+        console.log('SMTP ready:', success ? 'ok' : 'unknown');
     }
 });
 
@@ -44,7 +53,7 @@ export const sendEmail = async ({ to, subject, html, text, attachments }) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent: %s', info.messageId);
+        console.log('Email sent to %s: %s', to, info.messageId);
         return info;
     } catch (error) {
         console.error('Error sending email:', error);
