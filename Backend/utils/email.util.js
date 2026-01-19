@@ -1,11 +1,21 @@
 import nodemailer from 'nodemailer';
 
+// Centralized transporter uses env vars so we do not leak credentials and
+// can tweak connection settings (e.g. IPv4 forcing) without code changes.
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: (process.env.SMTP_SECURE || 'true').toLowerCase() === 'true',
     auth: {
-        user: 'pashudhansuraksha2026@gmail.com',
-        pass: 'kldb vqlo pyej exbb' // App password
-    }
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    },
+    pool: true,
+    maxConnections: Number(process.env.SMTP_MAX_CONNECTIONS || 3),
+    maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 50),
+    connectionTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
+    family: Number(process.env.SMTP_IP_FAMILY || 4) // Force IPv4 to avoid IPv6 timeouts on some hosts
 });
 
 export const sendEmail = async ({ to, subject, html, text, attachments }) => {
