@@ -1,27 +1,36 @@
 import nodemailer from 'nodemailer';
 
-// Centralized transporter uses env vars so we do not leak credentials and
-// can tweak connection settings (e.g. IPv4 forcing) without code changes.
+// Resolve SMTP config from env with backward-compatible fallbacks to EMAIL_* keys.
+const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
+const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587);
+const smtpSecure = (process.env.SMTP_SECURE ?? (smtpPort === 465 ? 'true' : 'false')).toString().toLowerCase() === 'true';
+const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+const smtpFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Pashudhan Suraksha" <no-reply@pashudhansuraksha.com>';
+
+if (!smtpUser || !smtpPass) {
+    console.warn('SMTP credentials are missing. Set SMTP_USER/SMTP_PASS (or EMAIL_USER/EMAIL_PASSWORD).');
+}
+
+// Centralized transporter uses env vars to avoid hardcoding secrets and allow
+// tuning (pooling, IPv4 forcing) without code changes.
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: (process.env.SMTP_SECURE || 'true').toLowerCase() === 'true',
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    },
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
     pool: true,
     maxConnections: Number(process.env.SMTP_MAX_CONNECTIONS || 3),
     maxMessages: Number(process.env.SMTP_MAX_MESSAGES || 50),
     connectionTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
-    family: Number(process.env.SMTP_IP_FAMILY || 4) // Force IPv4 to avoid IPv6 timeouts on some hosts
+    family: Number(process.env.SMTP_IP_FAMILY || process.env.EMAIL_IP_FAMILY || 4) // Force IPv4 to avoid IPv6 timeouts on some hosts
 });
 
 export const sendEmail = async ({ to, subject, html, text, attachments }) => {
     try {
         const mailOptions = {
-            from: '"Pashudhan Suraksha" <pashudhansuraksha2026@gmail.com>',
+            from: smtpFrom,
             to,
             subject,
             html,
