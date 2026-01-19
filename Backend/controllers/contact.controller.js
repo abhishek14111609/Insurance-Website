@@ -75,18 +75,35 @@ export const replyToInquiry = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Inquiry already replied to' });
         }
 
-        // Send Email
-        await sendInquiryReply(inquiry, message);
+        // Try to send email but do not hard-fail the entire request if SMTP is down
+        let emailError = null;
+        try {
+            await sendInquiryReply(inquiry, message);
+        } catch (err) {
+            emailError = err;
+            console.error('Reply email send failed:', err);
+        }
 
-        // Update Database
+        // Update Database regardless so the admin's reply is not lost
         inquiry.status = 'replied';
         inquiry.adminReply = message;
         inquiry.repliedAt = new Date();
         await inquiry.save();
 
+        if (emailError) {
+            return res.status(200).json({
+                success: true,
+                message: 'Reply saved, but email failed to send. Please check SMTP settings and resend.',
+                emailSent: false,
+                error: emailError.message,
+                data: inquiry
+            });
+        }
+
         res.json({
             success: true,
             message: 'Reply sent successfully',
+            emailSent: true,
             data: inquiry
         });
     } catch (error) {
