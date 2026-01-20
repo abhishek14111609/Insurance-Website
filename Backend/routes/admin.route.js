@@ -17,6 +17,7 @@ import {
     processWithdrawal,
     getAllCommissions,
     approveCommissionController,
+    rejectCommissionController,
     getCommissionSettings,
     updateCommissionSettings,
     updateAgent,
@@ -63,6 +64,7 @@ router.patch('/withdrawals/:id', processWithdrawal);
 // Commissions
 router.get('/commissions', getAllCommissions);
 router.patch('/commissions/:id/approve', approveCommissionController);
+router.patch('/commissions/:id/reject', rejectCommissionController);
 router.get('/commission-settings', getCommissionSettings);
 router.put('/commission-settings', updateCommissionSettings);
 

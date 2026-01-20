@@ -183,6 +183,10 @@ export const adminAPI = {
         return axiosInstance.patch(`/admin/commissions/${id}/approve`);
     },
 
+    rejectCommission: async (id, notes = '') => {
+        return axiosInstance.patch(`/admin/commissions/${id}/reject`, { notes });
+    },
+
     updateCommissionSettings: async (settings) => {
         return axiosInstance.put('/admin/commission-settings', settings);
     },
