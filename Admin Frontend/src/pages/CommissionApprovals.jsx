@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
 import './CommissionApprovals.css';
@@ -47,14 +46,40 @@ const CommissionApprovals = () => {
             const response = await adminAPI.approveCommission(id);
             if (response.success) {
                 alert('Commission approved successfully!');
-                // Remove from list
-                setCommissions(prev => prev.filter(c => c.id !== id));
+                // Reload data from server
+                await loadPendingCommissions();
             } else {
                 alert(response.message || 'Failed to approve commission');
             }
         } catch (error) {
             console.error('Approve commission error:', error);
             alert('An error occurred while approving the commission');
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleReject = async (id) => {
+        const notes = prompt('Please provide a reason for rejecting this commission (optional):');
+        if (notes === null) return; // User cancelled
+
+        if (!window.confirm('Are you sure you want to reject this commission?')) {
+            return;
+        }
+
+        try {
+            setProcessingId(id);
+            const response = await adminAPI.rejectCommission(id, notes);
+            if (response.success) {
+                alert('Commission rejected successfully!');
+                // Reload data from server
+                await loadPendingCommissions();
+            } else {
+                alert(response.message || 'Failed to reject commission');
+            }
+        } catch (error) {
+            console.error('Reject commission error:', error);
+            alert('An error occurred while rejecting the commission');
         } finally {
             setProcessingId(null);
         }
@@ -162,13 +187,22 @@ const CommissionApprovals = () => {
                                             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.createdAt).toLocaleTimeString()}</div>
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
-                                            <button
-                                                className="action-btn approve-btn"
-                                                onClick={() => handleApprove(item.id || item._id)}
-                                                disabled={processingId === (item.id || item._id)}
-                                            >
-                                                {processingId === (item.id || item._id) ? '...' : '✅ Approve'}
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    className="action-btn approve-btn"
+                                                    onClick={() => handleApprove(item.id || item._id)}
+                                                    disabled={processingId === (item.id || item._id)}
+                                                >
+                                                    {processingId === (item.id || item._id) ? '...' : '✅ Approve'}
+                                                </button>
+                                                <button
+                                                    className="action-btn reject-btn"
+                                                    onClick={() => handleReject(item.id || item._id)}
+                                                    disabled={processingId === (item.id || item._id)}
+                                                >
+                                                    {processingId === (item.id || item._id) ? '...' : '❌ Reject'}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );

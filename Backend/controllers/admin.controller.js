@@ -1473,6 +1473,49 @@ export const approveCommissionController = async (req, res) => {
     }
 };
 
+// @desc    Reject commission
+// @route   PATCH /api/admin/commissions/:id/reject
+// @access  Private (admin)
+export const rejectCommissionController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+
+        const commission = await Commission.findById(id);
+        if (!commission) {
+            return res.status(404).json({
+                success: false,
+                message: 'Commission not found'
+            });
+        }
+
+        if (commission.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: `Commission is already ${commission.status}`
+            });
+        }
+
+        commission.status = 'cancelled';
+        if (notes) {
+            commission.notes = notes;
+        }
+        await commission.save();
+
+        res.json({
+            success: true,
+            message: 'Commission rejected successfully',
+            data: { commission }
+        });
+    } catch (error) {
+        console.error('Reject commission error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error rejecting commission'
+        });
+    }
+};
+
 // @desc    Get all commissions
 // @route   GET /api/admin/commissions
 // @access  Private (admin)
