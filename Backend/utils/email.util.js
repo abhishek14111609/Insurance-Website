@@ -1,14 +1,14 @@
 import nodemailer from 'nodemailer';
 
 // Resolve SMTP config from env with backward-compatible fallbacks to EMAIL_* keys.
-const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
-const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587);
+const smtpHost = process.env.SMTP_HOST
+const smtpPort = Number(process.env.SMTP_PORT);
 // Default to startTLS on port 587 unless explicitly secure (465)
 const smtpSecure = (process.env.SMTP_SECURE ?? (smtpPort === 465 ? 'true' : 'false')).toString().toLowerCase() === 'true';
-const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || '';
-const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS || '';
+const smtpUser = process.env.SMTP_USER
+const smtpPass = process.env.SMTP_PASS;
 // Default from falls back to the user if not explicitly provided
-const smtpFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || (smtpUser ? `"Pashudhan Suraksha" <${smtpUser}>` : '');
+const smtpFrom = process.env.SMTP_FROM || (smtpUser ? `"Pashudhan Suraksha" <${smtpUser}>` : '');
 
 if (!smtpUser || !smtpPass) {
     console.warn('SMTP credentials are missing. Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS.');
