@@ -223,7 +223,7 @@ const AnimalInsurance = () => {
                 <div className="container">
                     <div className="cta-content">
                         <h2>Secure Your Livelihood Today</h2>
-                        <p>Join thousands of farmers who trust SecureLife for their cattle insurance</p>
+                        <p>Join thousands of farmers who trust Pashudhan Suraksha for their cattle insurance</p>
                         <button style={{ color: 'white', border: "8px solid white", fontSize: '20px' }}
                             className="btn btn-outline btn-large"
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

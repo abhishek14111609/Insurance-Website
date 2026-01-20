@@ -130,7 +130,7 @@ const PolicyDetails = () => {
                     {/* Company Header */}
                     <div className="document-header">
                         <div className="company-logo">
-                            <h2>🛡️ SecureLife Insurance</h2>
+                            <h2>🛡️ Pashudhan Suraksha</h2>
                             <p>IRDAI Reg. No: IRDA/NL-HLT/2024/001</p>
                         </div>
                         <div className="document-title">

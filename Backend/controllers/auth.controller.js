@@ -68,7 +68,7 @@ const generateAgentCodeV2 = async () => {
 // @access  Public
 export const register = async (req, res) => {
     try {
-        const { email, password, fullName, phone, address, city, state, pincode, role } = req.body;
+        const { email, password, fullName, phone, address, city, state, pincode } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -79,7 +79,8 @@ export const register = async (req, res) => {
             });
         }
 
-        const targetRole = role || 'customer';
+        // SECURITY: Force role to be customer for public registration
+        const targetRole = 'customer';
         const verificationToken = crypto.randomBytes(32).toString('hex');
 
         // Create user

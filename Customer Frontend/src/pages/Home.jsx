@@ -81,7 +81,7 @@ const Home = () => {
             {/* Why Choose Us Section */}
             <section className="section bg-light">
                 <div className="container">
-                    <h2 className="section-title">Why Farmers Trust SecureLife?</h2>
+                    <h2 className="section-title">Why Farmers Trust Pashudhan Suraksha?</h2>
 
                     <div className="grid grid-3">
                         <div className="feature-card">

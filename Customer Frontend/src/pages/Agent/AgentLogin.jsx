@@ -73,7 +73,7 @@ const AgentLogin = () => {
                         <label>Email Address</label>
                         <input
                             type="email"
-                            placeholder="agent@securelife.com"
+                            placeholder="agent@pashudhansuraksha.com"
                             value={credentials.email}
                             onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                             required

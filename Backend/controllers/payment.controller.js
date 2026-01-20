@@ -31,16 +31,8 @@ export const createOrder = async (req, res) => {
             });
         }
 
-        const { policyId, amount } = req.body;
-        console.log(`[CreateOrder] Request received for Policy: ${policyId}, Amount: ${amount}`);
-
-        const numericAmount = Number(amount);
-        if (!numericAmount || Number.isNaN(numericAmount) || numericAmount <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid payment amount'
-            });
-        }
+        const { policyId } = req.body;
+        console.log(`[CreateOrder] Request received for Policy: ${policyId}`);
 
         // Verify policy belongs to user
         const policy = await Policy.findOne({
@@ -52,6 +44,17 @@ export const createOrder = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Policy not found'
+            });
+        }
+
+        // SECURITY: Use premium from policy record, not from client
+        // Handle Decimal128 conversion
+        const numericAmount = parseFloat(policy.premium.toString());
+
+        if (!numericAmount || Number.isNaN(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid policy premium amount'
             });
         }
 

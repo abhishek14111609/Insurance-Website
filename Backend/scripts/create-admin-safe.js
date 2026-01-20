@@ -11,7 +11,7 @@ const createAdminSafe = async () => {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/insurance_db');
         console.log('Database connected.');
 
-        const adminEmail = 'admin@securelife.com';
+        const adminEmail = 'admin@pashudhansuraksha.com';
         const existingAdmin = await User.findOne({ email: adminEmail });
 
         if (existingAdmin) {

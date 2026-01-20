@@ -77,8 +77,14 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Static files for uploads
-app.use('/uploads', express.static(uploadDir));
+// Static files for uploads (with security headers)
+app.use('/uploads', express.static(uploadDir, {
+    setHeaders: (res, path) => {
+        // Force download to prevent XSS via SVG/HTML uploads
+        res.set('Content-Disposition', 'attachment');
+        res.set('X-Content-Type-Options', 'nosniff');
+    }
+}));
 
 // Quiet 404s for missing favicon in Render
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -107,7 +113,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'SecureLife Insurance API is running',
+        message: 'Pashudhan Suraksha Insurance API is running',
         version: '2.0.0',
         env: process.env.NODE_ENV || 'development'
     });
@@ -145,7 +151,7 @@ app.use((req, res) => {
 // Start server
 const startServer = async () => {
     try {
-        console.log('\n⏳ Starting SecureLife Insurance Server...');
+        console.log('\n⏳ Starting Pashudhan Suraksha Insurance Server...');
 
         // Connect to MongoDB
         const isConnected = await connectDB();
