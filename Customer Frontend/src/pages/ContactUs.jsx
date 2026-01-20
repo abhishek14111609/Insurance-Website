@@ -160,7 +160,7 @@ const ContactUs = () => {
                                 {/* <div className="info-card">
                                     <div className="info-icon">📍</div>
                                     <h3>Visit Us</h3>
-                                    <p>SecureLife Insurance House</p>
+                                    <p>Pashudhan Suraksha House</p>
                                     <p>Sector 44, Gurugram</p>
                                     <p>Haryana - 122001</p>
                                 </div>

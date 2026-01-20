@@ -47,7 +47,7 @@ const AdminLayout = ({ children }) => {
     <div className="admin-container">
       {/* Sidebar */}
       <aside className="admin-sidebar">
-        <h2>🛡️ SecureLife</h2>
+        <h2>🛡️ Pashudhan Suraksha</h2>
         <div className="subtitle">Admin Panel</div>
 
         <nav className="admin-nav">

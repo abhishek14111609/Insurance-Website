@@ -87,8 +87,8 @@ const PaymentFailure = () => {
                         <a href="tel:1800-123-4567" className="help-link">
                             📞 Call: 1800-123-4567
                         </a>
-                        <a href="mailto:support@securelife.com" className="help-link">
-                            ✉️ Email: support@securelife.com
+                        <a href="mailto:support@pashudhansuraksha.com" className="help-link">
+                            ✉️ Email: support@pashudhansuraksha.com
                         </a>
                         <Link to="/contact-us" className="help-link">
                             💬 Live Chat Support

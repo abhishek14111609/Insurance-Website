@@ -26,7 +26,7 @@ const ClaimForm = () => {
         claimType: 'death',
         incidentDate: '',
         incidentLocation: '',
-        claimAmount: '',
+        claimAmount: preSelectedPolicy?.coverageAmount || '',
         description: ''
     });
 
@@ -62,6 +62,22 @@ const ClaimForm = () => {
 
         fetchPolicies();
     }, []);
+
+    // Keep claim amount in sync with selected policy coverage
+    useEffect(() => {
+        if (!formData.policyId) return;
+
+        const selectedPolicy = policies.find(
+            (policy) => (policy._id || policy.id) === formData.policyId
+        );
+
+        if (selectedPolicy?.coverageAmount != null) {
+            setFormData((prev) => ({
+                ...prev,
+                claimAmount: selectedPolicy.coverageAmount
+            }));
+        }
+    }, [formData.policyId, policies]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -248,9 +264,10 @@ const ClaimForm = () => {
                                 placeholder="Enter claim amount"
                                 min="1"
                                 required
+                                readOnly
                             />
                             <small className="form-hint">
-                                Maximum claim amount is the coverage amount of your policy
+                                Prefilled from your policy coverage; this claim will be filed for the full covered amount
                             </small>
                         </div>
 

@@ -29,7 +29,8 @@ export const registerAgent = async (req, res) => {
         }
 
         // Generate unique agent code
-        const agentCode = `AG${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        const randomBytes = crypto.randomBytes(3).toString('hex').toUpperCase();
+        const agentCode = `AG${randomBytes}`;
 
         // Find parent agent if code provided
         let parentAgentId = null;

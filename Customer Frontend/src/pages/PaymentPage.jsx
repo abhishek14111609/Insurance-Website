@@ -77,7 +77,7 @@ const PaymentPage = () => {
                 key: keyId,
                 amount: orderAmount,
                 currency: currency,
-                name: "SecureLife Insurance",
+                name: "Pashudhan Suraksha",
                 description: `Premium for Policy #${policy.policyNumber || 'New'}`,
                 order_id: orderId,
                 prefill: {

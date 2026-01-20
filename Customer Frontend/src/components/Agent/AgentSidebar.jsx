@@ -17,7 +17,7 @@ const AgentSidebar = () => {
     return (
         <aside className="agent-sidebar">
             <div className="sidebar-header">
-                <h2>🛡️ SecureLife</h2>
+                <h2>🛡️ Pashudhan Suraksha</h2>
                 <span>Agent Portal</span>
             </div>
 

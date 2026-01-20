@@ -121,7 +121,7 @@ const AgentLanding = () => {
                 <div className="agent-hero-content animate-fade-in">
                     <span className="brand-badge">Join Our Network</span>
                     <h1>Become a Certified POSP Agent</h1>
-                    <p>Start your journey with SecureLife today. Zero investment, unlimited earning potential, and complete training support.</p>
+                    <p>Start your journey with Pashudhan Suraksha today. Zero investment, unlimited earning potential, and complete training support.</p>
                     <button className="btn btn-secondary" onClick={() => document.getElementById('register-form')?.scrollIntoView({ behavior: 'smooth' })}>
                         Register Now
                     </button>
@@ -133,7 +133,7 @@ const AgentLanding = () => {
                 <div className="container">
                     <div className="text-center mb-5">
                         <h2 className="section-title">Why Partner With Us?</h2>
-                        <p className="section-subtitle">Join thousands of successful agents who trust SecureLife</p>
+                        <p className="section-subtitle">Join thousands of successful agents who trust Pashudhan Suraksha</p>
                     </div>
                     <div className="benefits-grid">
                         <div className="benefit-card">

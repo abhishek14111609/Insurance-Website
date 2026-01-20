@@ -6,7 +6,7 @@ const AboutUs = () => {
             {/* Hero Section */}
             <section className="page-hero" style={{ marginTop: '150px', }}>
                 <div className="container">
-                    <h1 style={{ textAlign: 'center' }}>About SecureLife Insurance</h1>
+                    <h1 style={{ textAlign: 'center' }}>About Pashudhan Suraksha</h1>
                     <p style={{ textAlign: 'center' }}>Your trusted partner in protecting what matters most for over 20 years</p>
                 </div>
             </section>
@@ -18,7 +18,7 @@ const AboutUs = () => {
                         <div className="about-text">
                             <h2>Who We Are</h2>
                             <p>
-                                SecureLife Insurance is one of India's leading insurance providers, committed to delivering
+                                Pashudhan Suraksha is one of India's leading insurance providers, committed to delivering
                                 comprehensive insurance solutions that protect you and your loved ones. With over 20 years
                                 of experience in the insurance industry, we have served more than 5 million happy customers
                                 across India.

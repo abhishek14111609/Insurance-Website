@@ -78,7 +78,7 @@ const RenewalForm = () => {
                 <div className="form-container">
                     <div className="form-header">
                         <h1>Renew Your Policy</h1>
-                        <p>Continue your protection with SecureLife</p>
+                        <p>Continue your protection with Pashudhan Suraksha</p>
                     </div>
 
                     {/* Current Policy Info */}

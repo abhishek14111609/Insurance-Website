@@ -121,7 +121,7 @@ const Register = () => {
             <div className="register-container">
                 <div className="register-header">
                     <h1>Create Your Account</h1>
-                    <p>Join SecureLife and protect what matters most</p>
+                    <p>Join Pashudhan Suraksha and protect what matters most</p>
                 </div>
 
                 <form className="register-form" onSubmit={handleSubmit}>

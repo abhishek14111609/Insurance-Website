@@ -64,7 +64,7 @@ const AdminLogin = () => {
             <div className="login-container">
                 <div className="login-header">
                     <div className="logo">🛡️</div>
-                    <h1>SecureLife Admin</h1>
+                    <h1>Pashudhan Suraksha Admin</h1>
                     <p>Sign in to access the admin panel</p>
                 </div>
 

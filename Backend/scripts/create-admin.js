@@ -40,7 +40,7 @@ const createAdmin = async () => {
         await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
 
         // Create Admin
-        const adminEmail = 'admin@securelife.com';
+        const adminEmail = 'admin@pashudhansuraksha.com';
         const existingAdmin = await User.findOne({ where: { email: adminEmail } });
 
         if (existingAdmin) {
@@ -56,7 +56,7 @@ const createAdmin = async () => {
                 status: 'active'
             });
             console.log('Admin user created successfully:');
-            console.log('Email: admin@securelife.com');
+            console.log('Email: admin@pashudhansuraksha.com');
             console.log('Password: admin123');
         }
 
