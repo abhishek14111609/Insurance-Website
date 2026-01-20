@@ -1,5 +1,6 @@
 import { Claim, Policy, User } from '../models/index.js';
 import { notifyClaimStatusUpdate } from '../utils/notification.util.js';
+import { sendEmail } from '../utils/email.util.js';
 
 // @desc    Create new claim
 // @route   POST /api/claims
@@ -211,6 +212,45 @@ export const updateClaimStatus = async (req, res) => {
 
         // Send notification
         await notifyClaimStatusUpdate(claim);
+
+        // Send approval email when claim is approved by admin
+        if (status === 'approved') {
+            try {
+                const [customer, policy] = await Promise.all([
+                    User.findById(claim.customerId).select('email fullName'),
+                    Policy.findById(claim.policyId).select('policyNumber')
+                ]);
+
+                const customerEmail = customer?.email;
+                const customerName = customer?.fullName || 'Customer';
+                const policyLabel = policy?.policyNumber || claim.policyId?.toString();
+                const approvedText = claim.approvedAmount
+                    ? `Amount approved: ₹${parseFloat(claim.approvedAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                    : '';
+
+                if (customerEmail) {
+                    const html = `
+                        <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+                            <h2 style="color: #16a34a;">Claim Approved</h2>
+                            <p>Hi ${customerName},</p>
+                            <p>Your claim <strong>${claim.claimNumber}</strong> for policy <strong>${policyLabel}</strong> has been <strong>approved</strong>.</p>
+                            ${approvedText ? `<p>${approvedText}</p>` : ''}
+                            <p>We will process the payout shortly. You will be notified once the payment is completed.</p>
+                            <p>Thank you for your patience.</p>
+                        </div>
+                    `;
+
+                    await sendEmail({
+                        to: customerEmail,
+                        subject: `Claim Approved - ${claim.claimNumber}`,
+                        html,
+                        text: `Your claim ${claim.claimNumber} for policy ${policyLabel} has been approved. ${approvedText}`.trim()
+                    });
+                }
+            } catch (mailErr) {
+                console.error('[ClaimApprovalEmail] Failed to send claim approval email (non-blocking):', mailErr);
+            }
+        }
 
         res.json({
             success: true,

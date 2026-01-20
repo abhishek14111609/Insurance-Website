@@ -53,7 +53,7 @@ router.put('/agents/:id', updateAgent);
 
 // Customers
 router.get('/customers', getAllCustomers);
-router.get('/customers/:id', getCustomerById); // Added route
+router.get('/customers/:id', getCustomerById); // Added route   ,
 
 // Withdrawals
 router.get('/withdrawals/history', getWithdrawalHistory);

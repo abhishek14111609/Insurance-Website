@@ -139,7 +139,7 @@ export const verifyPayment = async (req, res) => {
             });
         }
 
-        // Update payment record
+        // Update payment record (authoritative fetch by order + customer)
         const payment = await Payment.findOne({
             razorpayOrderId: razorpay_order_id,
             customerId: req.user._id
@@ -158,8 +158,8 @@ export const verifyPayment = async (req, res) => {
         payment.paidAt = new Date();
         await payment.save();
 
-        // Update policy status
-        const policy = await Policy.findById(policyId);
+        // Use policy tied to payment to avoid client tampering / missing id
+        const policy = await Policy.findById(payment.policyId || policyId);
         if (policy) {
             policy.paymentStatus = 'PAID';
             policy.paymentId = razorpay_payment_id;
@@ -169,18 +169,22 @@ export const verifyPayment = async (req, res) => {
         }
 
         let paymentEmailSent = false;
+        let paymentEmailError = null;
         try {
             const customerEmail = policy?.ownerEmail || req.user?.email;
             const customerName = policy?.ownerName || req.user?.fullName || 'Customer';
             const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;
 
             if (customerEmail) {
+                const amountText = amountPaid ? `₹${amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A';
+                const policyLabel = policy?.policyNumber || policyId || payment.policyId?.toString();
+
                 const html = `
                     <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
                         <h2 style="color: #2563eb;">Payment Received</h2>
                         <p>Hi ${customerName},</p>
-                        <p>We have received your payment for policy <strong>${policy?.policyNumber || policyId}</strong>.</p>
-                        <p><strong>Amount:</strong> ${amountPaid ? `₹${amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A'}</p>
+                        <p>We have received your payment for policy <strong>${policyLabel}</strong>.</p>
+                        <p><strong>Amount:</strong> ${amountText}</p>
                         <p><strong>Payment ID:</strong> ${razorpay_payment_id}</p>
                         <p>Your policy is now under review for approval. You will receive the policy documents once approved.</p>
                         <p>Thank you for your payment.</p>
@@ -189,12 +193,14 @@ export const verifyPayment = async (req, res) => {
 
                 await sendEmail({
                     to: customerEmail,
-                    subject: `Payment Successful for Policy ${policy?.policyNumber || ''}`,
-                    html
+                    subject: `Payment Successful for Policy ${policyLabel || ''}`,
+                    html,
+                    text: `Payment received for policy ${policyLabel}. Amount: ${amountText}. Payment ID: ${razorpay_payment_id}.`
                 });
                 paymentEmailSent = true;
             }
         } catch (mailError) {
+            paymentEmailError = mailError?.message || 'Unknown email error';
             console.error('[VerifyPayment] Payment success email failed (non-blocking):', mailError);
         }
 
@@ -204,7 +210,8 @@ export const verifyPayment = async (req, res) => {
             data: {
                 payment,
                 policy,
-                paymentEmailSent
+                paymentEmailSent,
+                paymentEmailError
             }
         });
     } catch (error) {
@@ -299,6 +306,40 @@ async function handlePaymentCaptured(paymentEntity) {
         payment.status = 'success';
         payment.paidAt = new Date();
         await payment.save();
+
+        // Send payment confirmation email via webhook path as a fallback if app-side verify missed
+        try {
+            const policy = await Policy.findById(payment.policyId);
+            const customerEmail = policy?.ownerEmail;
+            const customerName = policy?.ownerName || 'Customer';
+            const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;
+
+            if (customerEmail) {
+                const amountText = amountPaid ? `₹${amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A';
+                const policyLabel = policy?.policyNumber || payment.policyId?.toString();
+
+                const html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+                        <h2 style="color: #2563eb;">Payment Received</h2>
+                        <p>Hi ${customerName},</p>
+                        <p>We have received your payment for policy <strong>${policyLabel}</strong>.</p>
+                        <p><strong>Amount:</strong> ${amountText}</p>
+                        <p><strong>Payment ID:</strong> ${paymentEntity.id}</p>
+                        <p>Your policy is now under review for approval. You will receive the policy documents once approved.</p>
+                        <p>Thank you for your payment.</p>
+                    </div>
+                `;
+
+                await sendEmail({
+                    to: customerEmail,
+                    subject: `Payment Successful for Policy ${policyLabel || ''}`,
+                    html,
+                    text: `Payment received for policy ${policyLabel}. Amount: ${amountText}. Payment ID: ${paymentEntity.id}.`
+                });
+            }
+        } catch (mailErr) {
+            console.error('[Webhook] Payment email failed (non-blocking):', mailErr);
+        }
     }
 }
 

@@ -2,16 +2,8 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
 import './CommissionSettings.css';
 
-const DEFAULT_LEVELS = [
-    { level: 1, label: 'Parent 1 (direct upline)', defaultPct: 5 },
-    { level: 2, label: 'Parent 2', defaultPct: 3 },
-    { level: 3, label: 'Parent 3', defaultPct: 2 },
-    { level: 4, label: 'Parent 4', defaultPct: 2 },
-    { level: 5, label: 'Parent 5', defaultPct: 1 }
-];
-
 const CommissionSettings = () => {
-    const [rows, setRows] = useState(DEFAULT_LEVELS.map(l => ({ ...l, percentage: l.defaultPct, id: null })));
+    const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
@@ -23,7 +15,7 @@ const CommissionSettings = () => {
     const normalize = (val) => {
         const num = parseFloat(val);
         if (Number.isNaN(num)) return 0;
-        return Math.min(100, Math.max(0, num));
+        return Math.min(num, 100);
     };
 
     const loadSettings = async () => {
@@ -31,32 +23,34 @@ const CommissionSettings = () => {
             setLoading(true);
             setError('');
             const response = await adminAPI.getCommissionSettings();
-            if (response?.success && response?.data?.settings) {
-                const fromApi = response.data.settings.map((s) => {
-                    const pct = parseFloat(s.percentage);
-                    return {
-                        id: s.id || s._id,
-                        level: s.level,
-                        percentage: Number.isFinite(pct) ? pct : null,
-                        description: s.description,
-                        isActive: s.isActive !== false
-                    };
-                });
+            console.log(response)
+            if (response?.success && Array.isArray(response?.data?.settings)) {
+                const normalized = response.data.settings
+                    .map((s) => {
+                        const rawPct = s?.percentage;
+                        const pct = (() => {
+                            if (typeof rawPct === 'number') return rawPct;
+                            if (typeof rawPct === 'string') return parseFloat(rawPct);
+                            if (rawPct && typeof rawPct === 'object' && typeof rawPct.$numberDecimal === 'string') {
+                                return parseFloat(rawPct.$numberDecimal);
+                            }
+                            return NaN;
+                        })();
 
-                // Merge API data into defaults (levels 1-5)
-                const merged = DEFAULT_LEVELS.map((base) => {
-                    const match = fromApi.find((s) => s.level === base.level);
-                    const pct = Number.isFinite(match?.percentage) ? match.percentage : base.defaultPct;
-                    return {
-                        ...base,
-                        id: match?.id || null,
-                        percentage: pct,
-                        description: match?.description || '',
-                        isActive: match?.isActive !== false
-                    };
-                });
-
-                setRows(merged);
+                        return {
+                            id: s.id || s._id || null,
+                            level: s.level,
+                            percentage: Number.isFinite(pct) ? pct : 0,
+                            description: s.description || '',
+                            isActive: s.isActive !== false,
+                            label: s.description || `Level ${s.level}`
+                        };
+                    })
+                    .sort((a, b) => a.level - b.level);
+                // console.log(normalized)
+                setRows(normalized);
+            } else {
+                setRows([]);
             }
         } catch (err) {
             console.error('Error loading commission settings:', err);
@@ -119,22 +113,25 @@ const CommissionSettings = () => {
                 </div>
 
                 {error && <div className="error-banner">{error}</div>}
+                {!rows.length && !loading && !error && (
+                    <div className="info-banner">No commission settings found. Please add settings via API.</div>
+                )}
 
                 <div className="settings-form">
                     {rows.map((row, idx) => (
-                        <div className="setting-item" key={row.level}>
+                        <div className="setting-item" key={row.id || row.level}>
                             <div className="setting-label">
-                                <h4>{row.label}</h4>
+                                <h4>{row.label || `Level ${row.level}`}</h4>
                                 <p>Level {row.level} upline</p>
                             </div>
                             <div className="setting-input">
                                 <input
-                                    type="number"
+                                    type="tel"
                                     value={row.percentage}
                                     onChange={(e) => handleChange(idx, e.target.value)}
-                                    min="0"
+                                   
                                     max="100"
-                                    step="0.1"
+                                
                                 />
                                 <span>%</span>
                             </div>

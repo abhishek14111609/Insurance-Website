@@ -34,7 +34,24 @@ const commissionSettingsSchema = new mongoose.Schema(
         }
     },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: {
+            virtuals: true,
+            transform: (doc, ret) => {
+                if (ret._id) ret.id = ret._id.toString();
+                if (ret.percentage instanceof mongoose.Types.Decimal128) {
+                    ret.percentage = parseFloat(ret.percentage.toString());
+                }
+                if (ret.minPolicyAmount instanceof mongoose.Types.Decimal128) {
+                    ret.minPolicyAmount = parseFloat(ret.minPolicyAmount.toString());
+                }
+                if (ret.maxPolicyAmount instanceof mongoose.Types.Decimal128) {
+                    ret.maxPolicyAmount = parseFloat(ret.maxPolicyAmount.toString());
+                }
+                return ret;
+            }
+        },
+        toObject: { virtuals: true }
     }
 );
 
