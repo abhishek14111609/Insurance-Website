@@ -69,6 +69,9 @@
     border: 2px solid #cbd5e1;
     border-radius: 8px;
     font-size: 1rem;
+    color: var(--text-primary);
+    /* Dark text for visibility */
+    background-color: white;
     transition: all 0.3s ease;
 }
 
@@ -76,6 +79,24 @@
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.1);
+}
+
+/* Override browser autofill styles - Fix greyed text */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--text-primary) !important;
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    box-shadow: 0 0 0 1000px white inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Firefox autofill */
+.form-group input:-moz-autofill,
+.form-group input:-moz-autofill-preview {
+    color: var(--text-primary) !important;
+    background-color: white !important;
 }
 
 /* Password Input Wrapper */

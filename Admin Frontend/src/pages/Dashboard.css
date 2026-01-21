@@ -422,7 +422,7 @@
     }
 
     .actions-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .activity-stats {
@@ -440,6 +440,10 @@
     }
 
     .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .activity-stats {
         grid-template-columns: repeat(2, 1fr);
     }
 }
@@ -473,7 +477,40 @@
     .stat-content h3 {
         font-size: 2rem;
     }
+
+    .approval-card {
+        padding: 1.25rem;
+    }
+
+    .action-btn {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+    }
 }
+
+@media (max-width: 640px) {
+    .dashboard-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.75rem;
+    }
+
+    .stat-content h3 {
+        font-size: 1.75rem;
+    }
+}
+
 
 /* Error States */
 .error-state-container {

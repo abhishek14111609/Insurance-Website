@@ -3,16 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
-const rootElement = document.getElementById('root')
-
-// Ensure we only create root once
-if (!rootElement._reactRootContainer) {
-  createRoot(rootElement).render(
-    <StrictMode>
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <ErrorBoundary>
       <AuthProvider>
         <App />
       </AuthProvider>
-    </StrictMode>,
-  )
-}
+    </ErrorBoundary>
+  </StrictMode>,
+)

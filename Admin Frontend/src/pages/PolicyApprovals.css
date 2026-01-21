@@ -85,7 +85,8 @@
 
 .policies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* Changed from 400px */
     gap: 1.5rem;
 }
 
@@ -537,4 +538,83 @@
 
 .btn-info:hover {
     background: #dbeafe;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .policies-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    .modal-content {
+        width: 90vw;
+        max-width: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    .policies-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .policy-card {
+        padding: 1.5rem;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .modal-content {
+        width: 95vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .modal-actions .btn {
+        width: 100%;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .photos-row {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .policy-card {
+        padding: 1.25rem;
+    }
+
+    .policy-header h3 {
+        font-size: 1.125rem;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .modal-content {
+        padding: 1.25rem;
+    }
+
+    .photo-box {
+        width: 120px;
+    }
+
+    .photo-box img {
+        width: 120px;
+        height: 80px;
+    }
 }

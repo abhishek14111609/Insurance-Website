@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,6 +38,7 @@ import './App.css';
 
 const AdminLayout = ({ children }) => {
   const { logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Added state for sidebar
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -44,10 +46,31 @@ const AdminLayout = ({ children }) => {
     }
   };
 
+  // Added functions for sidebar toggle
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="admin-container">
+      {/* Mobile Hamburger Toggle */}
+      <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
+        <span className={`hamburger ${isSidebarOpen ? 'open' : ''}`}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && <div className="sidebar-overlay" onClick={closeSidebar}></div>}
+
       {/* Sidebar */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <h2>🛡️ Pashudhan Suraksha</h2>
         <div className="subtitle">Admin Panel</div>
 
@@ -55,6 +78,7 @@ const AdminLayout = ({ children }) => {
           <NavLink
             to="/"
             className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+            onClick={closeSidebar}
             end
           >
             <span className="icon">📊</span>
@@ -205,7 +229,7 @@ const App = () => {
           style: {
             background: '#333',
             color: '#fff',
-            fontSize: '24px'
+            fontSize: '14px'
           },
         }}
       />

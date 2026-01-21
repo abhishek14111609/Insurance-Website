@@ -157,6 +157,14 @@
     font-size: 1rem;
     transition: all 0.3s ease;
     background: #f8fafc;
+    color: #0f172a;
+    /* Dark text color for visibility */
+}
+
+/* Placeholder styling */
+.form-group input::placeholder {
+    color: #94a3b8;
+    opacity: 1;
 }
 
 .form-group input:focus {
@@ -164,6 +172,24 @@
     border-color: #6366f1;
     background: white;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Override browser autofill styles - Fix greyed text */
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:active {
+    -webkit-text-fill-color: #0f172a !important;
+    -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+    box-shadow: 0 0 0 1000px #f8fafc inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Firefox autofill */
+.form-group input:-moz-autofill,
+.form-group input:-moz-autofill-preview {
+    color: #0f172a !important;
+    background-color: #f8fafc !important;
 }
 
 .password-input-wrapper {
