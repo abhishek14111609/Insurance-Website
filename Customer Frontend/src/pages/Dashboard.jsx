@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, claimAPI } from '../services/api.service';
+import { CardSkeleton } from '../components/Loader';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -68,16 +69,6 @@ const Dashboard = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="dashboard-page">
-                <div className="container" style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
-                    <div className="spinner"></div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="dashboard-page">
             <div className="container">
@@ -87,48 +78,61 @@ const Dashboard = () => {
                 </div>
 
                 <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon">📄</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalPolicies}</h3>
-                            <p>Total Policies</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">✅</div>
-                        <div className="stat-content">
-                            <h3>{stats.activePolicies}</h3>
-                            <p>Active Policies</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">⏳</div>
-                        <div className="stat-content">
-                            <h3>{stats.pendingPolicies}</h3>
-                            <p>Pending Actions</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">💰</div>
-                        <div className="stat-content">
-                            <h3>₹{stats.totalCoverage.toLocaleString()}</h3>
-                            <p>Total Coverage</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🏥</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalClaims}</h3>
-                            <p>Total Claims</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🔍</div>
-                        <div className="stat-content">
-                            <h3>{stats.pendingClaims}</h3>
-                            <p>Pending Claims</p>
-                        </div>
-                    </div>
+                    {loading ? (
+                        <>
+                            <CardSkeleton count={1} />
+                            <CardSkeleton count={1} />
+                            <CardSkeleton count={1} />
+                            <CardSkeleton count={1} />
+                            <CardSkeleton count={1} />
+                            <CardSkeleton count={1} />
+                        </>
+                    ) : (
+                        <>
+                            <div className="stat-card">
+                                <div className="stat-icon">📄</div>
+                                <div className="stat-content">
+                                    <h3>{stats.totalPolicies}</h3>
+                                    <p>Total Policies</p>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">✅</div>
+                                <div className="stat-content">
+                                    <h3>{stats.activePolicies}</h3>
+                                    <p>Active Policies</p>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">⏳</div>
+                                <div className="stat-content">
+                                    <h3>{stats.pendingPolicies}</h3>
+                                    <p>Pending Actions</p>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">💰</div>
+                                <div className="stat-content">
+                                    <h3>₹{stats.totalCoverage.toLocaleString()}</h3>
+                                    <p>Total Coverage</p>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">🏥</div>
+                                <div className="stat-content">
+                                    <h3>{stats.totalClaims}</h3>
+                                    <p>Total Claims</p>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">🔍</div>
+                                <div className="stat-content">
+                                    <h3>{stats.pendingClaims}</h3>
+                                    <p>Pending Claims</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="quick-actions">

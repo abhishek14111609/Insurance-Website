@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ButtonLoader } from '../components/Loader';
 import './Login.css';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, isAuthenticated } = useAuth();
-
+    // ... existing state ...
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -17,6 +18,7 @@ const Login = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // ... existing useEffect and handlers ...
     // Redirect if already logged in
     useEffect(() => {
         if (isAuthenticated) {
@@ -40,7 +42,7 @@ const Login = () => {
 
         // Validate
         if (!formData.email || !formData.password) {
-            setError('Please enter both email and password');
+            setError('Please enter both email and password / કૃપા કરીને ઈમેલ અને પાસવર્ડ બંને દાખલ કરો');
             setIsSubmitting(false);
             return;
         }
@@ -72,7 +74,7 @@ const Login = () => {
             const from = location.state?.from || '/dashboard';
             navigate(from);
         } catch (error) {
-            setError(error.message || 'Login failed. Please check your credentials.');
+            setError(error.message || 'Login failed. Please check your credentials / લૉગિન નિષ્ફળ. કૃપા કરીને તમારા ઓળખપત્રો તપાસો.');
             setIsSubmitting(false);
         }
     };
@@ -81,8 +83,8 @@ const Login = () => {
         <div className="login-page">
             <div className="login-container">
                 <div className="login-header">
-                    <h2>Welcome Back</h2>
-                    <p>Login to access your account</p>
+                    <h2>Welcome Back / સ્વાગત છે</h2>
+                    <p>Login to access your account / તમારા ખાતામાં પ્રવેશ કરવા માટે લોગિન કરો</p>
                 </div>
 
                 {error && (
@@ -94,7 +96,7 @@ const Login = () => {
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="email">Email Address</label>
+                        <label htmlFor="email">Email Address / ઈમેલ સરનામું</label>
                         <input
                             type="email"
                             id="email"
@@ -108,7 +110,7 @@ const Login = () => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
+                        <label htmlFor="password">Password / પાસવર્ડ</label>
                         <div className="password-input-wrapper">
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -138,22 +140,20 @@ const Login = () => {
                                 checked={formData.rememberMe}
                                 onChange={handleInputChange}
                             />
-                            <span>Remember me</span>
+                            <span>Remember me / મને યાદ રાખો</span>
                         </label>
                         <Link to="/forgot-password" className="forgot-password">
-                            Forgot Password?
-                        </Link>
-                        <Link to="/verify-email" className="forgot-password">
-                            Resend verification
+                            Forgot Password? / પાસવર્ડ ભૂલી ગયા?
                         </Link>
                     </div>
 
                     <button type="submit" className="login-btn" disabled={isSubmitting}>
-                        {isSubmitting ? 'Logging in...' : 'Login'}
+                        {isSubmitting && <ButtonLoader />}
+                        {isSubmitting ? 'Logging in... / લૉગિન કરી રહ્યું છે...' : 'Login / લૉગિન'}
                     </button>
 
                     <div className="login-footer">
-                        <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+                        <p>Don't have an account? / ખાતું નથી? <Link to="/register">Sign up / સાઇન અપ કરો</Link></p>
                     </div>
                 </form>
 

@@ -1,0 +1,73 @@
+/* Route Loader Styles - Customer Frontend */
+
+.route-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.route-loader-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(15, 76, 117, 0.1);
+    overflow: hidden;
+}
+
+.route-loader-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #0f4c75 0%, #3282b8 50%, #0f4c75 100%);
+    background-size: 200% 100%;
+    animation: routeProgress 0.8s ease-in-out;
+}
+
+@keyframes routeProgress {
+    0% {
+        width: 0%;
+        background-position: 0% 50%;
+    }
+
+    50% {
+        width: 70%;
+        background-position: 100% 50%;
+    }
+
+    100% {
+        width: 100%;
+        background-position: 0% 50%;
+    }
+}
+
+.route-loader-spinner {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 12px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: fadeInScale 0.2s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .route-loader-spinner {
+        top: 15px;
+        right: 15px;
+        padding: 10px;
+    }
+}

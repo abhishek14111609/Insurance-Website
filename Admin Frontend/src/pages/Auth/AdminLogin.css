@@ -236,6 +236,10 @@
     transition: all 0.3s ease;
     margin-top: 0.5rem;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .login-btn:hover {

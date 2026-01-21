@@ -45,7 +45,7 @@ app.use(cors({
         if (!origin) return callback(null, true);
 
         // Allow any localhost origin (handles different ports for dev)
-        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/)) {
+        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/)) {
             return callback(null, true);
         }
 

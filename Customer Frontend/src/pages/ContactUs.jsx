@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { contactAPI } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
+import { ButtonLoader } from '../components/Loader';
 import toast from 'react-hot-toast';
 import './ContactUs.css';
 
 const ContactUs = () => {
+    // ... existing setup ...
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -15,7 +17,7 @@ const ContactUs = () => {
         message: ''
     });
 
-    // Auto-fill user data if logged in
+    // ... existing useEffect ...
     useEffect(() => {
         if (user) {
             setFormData(prev => ({
@@ -40,14 +42,14 @@ const ContactUs = () => {
         setLoading(true);
         try {
             await contactAPI.submit(formData);
-            toast.success('Thank you for contacting us! We will get back to you soon.');
+            toast.success('Thank you for contacting us! We will get back to you soon. / અમારો સંપર્ક કરવા બદલ આભાર! અમે જલ્દી જ તમારો સંપર્ક કરીશું.');
             setFormData(prev => ({
                 ...prev,
                 subject: '',
                 message: ''
             }));
         } catch (error) {
-            toast.error(error.message || 'Failed to send message. Please try again.');
+            toast.error(error.message || 'Failed to send message. Please try again. / સંદેશ મોકલવામાં નિષ્ફળ. કૃપા કરીને ફરી પ્રયાસ કરો.');
         } finally {
             setLoading(false);
         }
@@ -58,8 +60,8 @@ const ContactUs = () => {
             {/* Hero Section */}
             <section className="page-hero" style={{ marginTop: '150px', marginBottom: '10px' }}>
                 <div className="container">
-                    <h1>Contact Us</h1>
-                    <p>We're here to help! Reach out to us for any queries or assistance</p>
+                    <h1>Contact Us / અમારો સંપર્ક કરો</h1>
+                    <p>We're here to help! Reach out to us for any queries or assistance / અમે મદદ કરવા માટે અહીં છીએ! કોઈપણ પ્રશ્નો અથવા સહાય માટે અમારો સંપર્ક કરો</p>
                 </div>
             </section>
 
@@ -69,21 +71,21 @@ const ContactUs = () => {
                     <div className="contact-grid">
                         {/* Contact Form */}
                         <div className="contact-form-container">
-                            <h2>Send Us a Message</h2>
+                            <h2>Send Us a Message / અમને સંદેશ મોકલો</h2>
                             <form onSubmit={handleSubmit} className="contact-form">
                                 <div className="form-group">
-                                    <label>Full Name *</label>
+                                    <label>Full Name * / પૂરું નામ *</label>
                                     <input
                                         type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        placeholder="Enter your name"
+                                        placeholder="Enter your full name"
                                         required
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Email Address *</label>
+                                    <label>Email Address * / ઈમેલ સરનામું *</label>
                                     <input
                                         type="email"
                                         name="email"
@@ -94,7 +96,7 @@ const ContactUs = () => {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Phone Number *</label>
+                                    <label>Phone Number * / ફોન નંબર *</label>
                                     <input
                                         type="tel"
                                         name="phone"
@@ -105,24 +107,24 @@ const ContactUs = () => {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Subject *</label>
+                                    <label>Subject * / વિષય *</label>
                                     <select
                                         name="subject"
                                         value={formData.subject}
                                         onChange={handleChange}
                                         required
                                     >
-                                        <option value="">Select Subject</option>
-                                        <option value="general">General Inquiry</option>
-                                        <option value="claims">Claims Support</option>
-                                        <option value="policy">Policy Information</option>
-                                        <option value="renewal">Policy Renewal</option>
-                                        <option value="complaint">Complaint</option>
-                                        <option value="feedback">Feedback</option>
+                                        <option value="">Select Subject / વિષય પસંદ કરો</option>
+                                        <option value="general">General Inquiry / સામાન્ય પૂછપરછ</option>
+                                        <option value="claims">Claims Support / દાવા સહાય</option>
+                                        <option value="policy">Policy Information / પોલિસી માહિતી</option>
+                                        <option value="renewal">Policy Renewal / પોલિસી રિન્યુઅલ</option>
+                                        <option value="complaint">Complaint / ફરિયાદ</option>
+                                        <option value="feedback">Feedback / પ્રતિસાદ</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Message *</label>
+                                    <label>Message * / સંદેશ *</label>
                                     <textarea
                                         name="message"
                                         value={formData.message}
@@ -132,8 +134,9 @@ const ContactUs = () => {
                                         required
                                     ></textarea>
                                 </div>
-                                <button type="submit" className="btn btn-primary" disabled={loading}>
-                                    {loading ? 'Sending...' : 'Send Message'}
+                                <button type="submit" className="btn btn-primary" disabled={loading} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                    {loading && <ButtonLoader />}
+                                    {loading ? 'Sending... / મોકલી રહ્યું છે...' : 'Send Message / સંદેશ મોકલો'}
                                 </button>
                             </form>
                         </div>

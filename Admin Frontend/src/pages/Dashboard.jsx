@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { policyAPI, adminAPI } from '../services/api.service';
+import { CardSkeleton, SectionLoader } from '../components/Loader';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -68,8 +69,6 @@ const Dashboard = () => {
         }
     };
 
-    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Dashboard...</div>;
-
     if (error) return (
         <div className="admin-dashboard error-state-container">
             <div className="error-card">
@@ -91,38 +90,51 @@ const Dashboard = () => {
 
             {/* Stats Grid */}
             <div className="stats-grid">
-                <div className="stat-card primary">
-                    <div className="stat-icon">📋</div>
-                    <div className="stat-content">
-                        <h3>{stats.pendingPolicies}</h3>
-                        <p>Pending Policies</p>
-                    </div>
-                </div>
+                {loading ? (
+                    <>
+                        <CardSkeleton count={1} />
+                        <CardSkeleton count={1} />
+                        <CardSkeleton count={1} />
+                        <CardSkeleton count={1} />
+                    </>
+                ) : (
+                    <>
+                        <div className="stat-card primary">
+                            <div className="stat-icon">📋</div>
+                            <div className="stat-content">
+                                <h3>{stats.pendingPolicies}</h3>
+                                <p>Pending Policies</p>
+                            </div>
+                        </div>
 
-                <div className="stat-card success">
-                    <div className="stat-icon">👥</div>
-                    <div className="stat-content">
-                        <h3>{stats.activeAgents}</h3>
-                        <p>Active Agents</p>
-                    </div>
-                </div>
+                        <div className="stat-card success">
+                            <div className="stat-icon">👥</div>
+                            <div className="stat-content">
+                                <h3>{stats.activeAgents}</h3>
+                                <p>Active Agents</p>
+                            </div>
+                        </div>
 
-                <div className="stat-card info">
-                    <div className="stat-icon">👤</div>
-                    <div className="stat-content">
-                        <h3>{stats.totalCustomers}</h3>
-                        <p>Total Customers</p>
-                    </div>
-                </div>
+                        <div className="stat-card info">
+                            <div className="stat-icon">👤</div>
+                            <div className="stat-content">
+                                <h3>{stats.totalCustomers}</h3>
+                                <p>Total Customers</p>
+                            </div>
+                        </div>
 
-                <div className="stat-card warning">
-                    <div className="stat-icon">💰</div>
-                    <div className="stat-content">
-                        <h3>₹{stats.totalRevenue?.toLocaleString() || '0'}</h3>
-                        <p>Total Revenue</p>
-                    </div>
-                </div>
+                        <div className="stat-card warning">
+                            <div className="stat-icon">💰</div>
+                            <div className="stat-content">
+                                <h3>₹{stats.totalRevenue?.toLocaleString() || '0'}</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
+
+
 
             {/* Pending Approvals Section */}
             <div className="approvals-section">
@@ -250,7 +262,7 @@ const Dashboard = () => {
                     </Link>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

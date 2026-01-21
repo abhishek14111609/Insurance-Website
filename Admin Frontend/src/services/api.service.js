@@ -102,6 +102,11 @@ export const policyAPI = {
         return axiosInstance.get('/policies/admin/pending');
     },
 
+    // Get all policies (history)
+    getAll: async (params) => {
+        return axiosInstance.get('/admin/policies', { params });
+    },
+
     // Approve policy
     approve: async (policyId, adminNotes) => {
         return axiosInstance.patch(`/admin/policies/${policyId}/approve`, { adminNotes });
@@ -112,6 +117,15 @@ export const policyAPI = {
         return axiosInstance.patch(`/admin/policies/${policyId}/reject`, { rejectionReason });
     }
 };
+
+// Payment/Transaction API
+export const paymentAPI = {
+    getAll: async (params) => {
+        return axiosInstance.get('/admin/payments', { params });
+    }
+};
+
+
 
 // Admin API
 export const adminAPI = {
@@ -230,6 +244,10 @@ export const policyPlanAPI = {
 
 // Claims API
 export const claimAPI = {
+    getAll: async (params) => {
+        return axiosInstance.get('/admin/claims', { params });
+    },
+
     getAllPending: async () => {
         return axiosInstance.get('/claims/admin/all?status=pending');
     },

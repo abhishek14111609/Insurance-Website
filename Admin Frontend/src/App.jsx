@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import RouteLoader from './components/RouteLoader';
 import { Toaster } from 'react-hot-toast';
 
 // Auth
@@ -33,6 +34,9 @@ import CommissionApprovals from './pages/CommissionApprovals';
 import CustomerDetails from './pages/CustomerDetails';
 import Inquiries from './pages/Inquiries';
 import DatabaseSetup from './pages/DatabaseSetup';
+import PolicyHistory from './pages/PolicyHistory';
+import TransactionHistory from './pages/TransactionHistory';
+import ClaimHistory from './pages/ClaimHistory';
 
 import './App.css';
 
@@ -146,11 +150,27 @@ const AdminLayout = ({ children }) => {
           </NavLink>
 
           <NavLink
+            to="/policy-history"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">📚</span>
+            Policy History
+          </NavLink>
+
+          <NavLink
             to="/claim-approvals"
             className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
           >
             <span className="icon">🩺</span>
             Claim Approvals
+          </NavLink>
+
+          <NavLink
+            to="/claim-history"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">🏥</span>
+            Claim History
           </NavLink>
 
           <div className="nav-section">Financial</div>
@@ -187,6 +207,14 @@ const AdminLayout = ({ children }) => {
             Withdrawals
           </NavLink>
 
+          <NavLink
+            to="/transactions"
+            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
+          >
+            <span className="icon">💸</span>
+            Transactions
+          </NavLink>
+
           <div className="nav-section">Account</div>
 
           <button
@@ -221,6 +249,7 @@ const App = () => {
 
   return (
     <Router>
+      <RouteLoader />
       <Toaster
         position="top-right"
         reverseOrder={false}
@@ -262,13 +291,16 @@ const App = () => {
                   <Route path="/policy-plans/add" element={<AddPolicyPlan />} />
                   <Route path="/policy-plans/edit/:id" element={<EditPolicyPlan />} />
                   <Route path="/policy-approvals" element={<PolicyApprovals />} />
+                  <Route path="/policy-history" element={<PolicyHistory />} />
 
                   {/* Financial */}
                   <Route path="/commission-settings" element={<CommissionSettings />} />
                   <Route path="/commission-history" element={<CommissionHistory />} />
                   <Route path="/commission-approvals" element={<CommissionApprovals />} />
                   <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
+                  <Route path="/transactions" element={<TransactionHistory />} />
                   <Route path="/claim-approvals" element={<ClaimApprovals />} />
+                  <Route path="/claim-history" element={<ClaimHistory />} />
                   <Route path="/inquiries" element={<Inquiries />} />
                   <Route path="/database-setup" element={<DatabaseSetup />} />
                 </Routes>

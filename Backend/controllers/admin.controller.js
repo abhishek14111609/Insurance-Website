@@ -1673,3 +1673,91 @@ export const setupDatabase = async (req, res) => {
         });
     }
 };
+
+// @desc    Get all payments (Transaction History)
+// @route   GET /api/admin/payments
+// @access  Private (admin)
+export const getAllPayments = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search, status, paymentMethod } = req.query;
+        const offset = (page - 1) * limit;
+
+        const where = {};
+        if (status && status !== 'all') where.status = status;
+        if (paymentMethod && paymentMethod !== 'all') where.paymentMethod = paymentMethod;
+
+        if (search) {
+            where.$or = [
+                { razorpayOrderId: { $regex: search, $options: 'i' } },
+                { razorpayPaymentId: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const count = await Payment.countDocuments(where);
+        const payments = await Payment.find(where)
+            .populate('customerId', 'fullName email phone')
+            .populate('policy', 'policyNumber planId')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
+
+        res.json({
+            success: true,
+            count,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            data: { payments }
+        });
+
+    } catch (error) {
+        console.error('Get all payments error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching payments',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get all claims (Claim History)
+// @route   GET /api/admin/claims
+// @access  Private (admin)
+export const getAllClaims = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search, status } = req.query;
+        const offset = (page - 1) * limit;
+
+        const where = {};
+        if (status && status !== 'all') where.status = status;
+
+        if (search) {
+            where.$or = [
+                { claimNumber: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const count = await Claim.countDocuments(where);
+        const claims = await Claim.find(where)
+            .populate('customerId', 'fullName email phone')
+            .populate('policyId', 'policyNumber coverageAmount')
+            .sort({ createdAt: -1 })
+            .skip(offset)
+            .limit(parseInt(limit));
+
+        res.json({
+            success: true,
+            count,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            data: { claims }
+        });
+
+    } catch (error) {
+        console.error('Get all claims error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching claims',
+            error: error.message
+        });
+    }
+};

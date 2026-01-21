@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ButtonLoader } from '../components/Loader';
 import toast from 'react-hot-toast';
 import './Register.css';
 
 const Register = () => {
+    // ... existing setup ...
     const navigate = useNavigate();
     const { register, isAuthenticated, isAgent } = useAuth();
+    // ... existing logic ...
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -53,35 +56,35 @@ const Register = () => {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+        if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required / પૂરું નામ જરૂરી છે';
         if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = 'Email is required / ઈમેલ જરૂરી છે';
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
+            newErrors.email = 'Email is invalid / ઈમેલ અમાન્ય છે';
         }
         if (!formData.phone.trim()) {
-            newErrors.phone = 'Phone number is required';
+            newErrors.phone = 'Phone number is required / ફોન નંબર જરૂરી છે';
         } else if (!/^[0-9]{10}$/.test(formData.phone)) {
-            newErrors.phone = 'Phone number must be 10 digits';
+            newErrors.phone = 'Phone number must be 10 digits / ફોન નંબર 10 અંકોનો હોવો જોઈએ';
         }
         if (!formData.password) {
-            newErrors.password = 'Password is required';
+            newErrors.password = 'Password is required / પાસવર્ડ જરૂરી છે';
         } else if (formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
+            newErrors.password = 'Password must be at least 6 characters / પાસવર્ડ ઓછામાં ઓછા 6 અક્ષરોનો હોવો જોઈએ';
         }
         if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+            newErrors.confirmPassword = 'Passwords do not match / પાસવર્ડ મેચ થતા નથી';
         }
-        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-        if (!formData.city.trim()) newErrors.city = 'City is required';
-        if (!formData.state.trim()) newErrors.state = 'State is required';
+        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required / જન્મ તારીખ જરૂરી છે';
+        if (!formData.city.trim()) newErrors.city = 'City is required / શહેર જરૂરી છે';
+        if (!formData.state.trim()) newErrors.state = 'State is required / રાજ્ય જરૂરી છે';
         if (!formData.pincode.trim()) {
-            newErrors.pincode = 'Pincode is required';
+            newErrors.pincode = 'Pincode is required / પીન કોડ જરૂરી છે';
         } else if (!/^[0-9]{6}$/.test(formData.pincode)) {
-            newErrors.pincode = 'Pincode must be 6 digits';
+            newErrors.pincode = 'Pincode must be 6 digits / પીન કોડ 6 અંકોનો હોવો જોઈએ';
         }
         if (!formData.agreeTerms) {
-            newErrors.agreeTerms = 'You must agree to terms and conditions';
+            newErrors.agreeTerms = 'You must agree to terms and conditions / તમારે નિયમો અને શરતો સાથે સંમત થવું આવશ્યક છે';
         }
 
         setErrors(newErrors);
@@ -109,10 +112,10 @@ const Register = () => {
                 role: 'customer'
             });
 
-            toast.success('Registration successful! Please verify your email, then log in.', { duration: 6000 });
+            toast.success('Registration successful! Please verify your email, then log in. / નોંધણી સફળ! કૃપા કરીને તમારો ઇમેઇલ ચકાસો, પછી લોગ ઇન કરો.', { duration: 6000 });
             navigate('/login');
         } catch (error) {
-            setErrors({ email: error.message || 'Registration failed. Please try again.' });
+            setErrors({ email: error.message || 'Registration failed. Please try again. / નોંધણી નિષ્ફળ. કૃપા કરીને ફરી પ્રયાસ કરો.' });
             setIsSubmitting(false);
         }
     };
@@ -121,18 +124,18 @@ const Register = () => {
         <div className="register-page">
             <div className="register-container">
                 <div className="register-header">
-                    <h1>Create Your Account</h1>
+                    <h1>Create Your Account / તમારું ખાતું બનાવો</h1>
                     <p>Join Pashudhan Suraksha and protect what matters most</p>
                 </div>
 
                 <form className="register-form" onSubmit={handleSubmit}>
                     {/* Personal Information */}
                     <div className="form-section">
-                        <h2 className="section-title">Personal Information</h2>
+                        <h2 className="section-title">Personal Information / વ્યક્તિગત માહિતી</h2>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Full Name *</label>
+                                <label>Full Name * / પૂરું નામ *</label>
                                 <input
                                     type="text"
                                     name="fullName"
@@ -144,7 +147,7 @@ const Register = () => {
                                 {errors.fullName && <span className="error-message">{errors.fullName}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Date of Birth *</label>
+                                <label>Date of Birth * / જન્મ તારીખ *</label>
                                 <input
                                     type="date"
                                     name="dateOfBirth"
@@ -159,7 +162,7 @@ const Register = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Email Address *</label>
+                                <label>Email Address * / ઈમેલ સરનામું *</label>
                                 <input
                                     type="email"
                                     name="email"
@@ -171,7 +174,7 @@ const Register = () => {
                                 {errors.email && <span className="error-message">{errors.email}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Phone Number *</label>
+                                <label>Phone Number * / ફોન નંબર *</label>
                                 <input
                                     type="tel"
                                     name="phone"
@@ -186,21 +189,21 @@ const Register = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Gender *</label>
+                            <label>Gender * / લિંગ *</label>
                             <select name="gender" value={formData.gender} onChange={handleInputChange}>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
+                                <option value="male">Male / પુરુષ</option>
+                                <option value="female">Female / સ્ત્રી</option>
+                                <option value="other">Other / અન્ય</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Address Information */}
                     <div className="form-section">
-                        <h2 className="section-title">Address Information</h2>
+                        <h2 className="section-title">Address Information / સરનામાની માહિતી</h2>
 
                         <div className="form-group">
-                            <label>Address</label>
+                            <label>Address / સરનામું</label>
                             <textarea
                                 name="address"
                                 value={formData.address}
@@ -212,7 +215,7 @@ const Register = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>City *</label>
+                                <label>City * / શહેર *</label>
                                 <input
                                     type="text"
                                     name="city"
@@ -224,7 +227,7 @@ const Register = () => {
                                 {errors.city && <span className="error-message">{errors.city}</span>}
                             </div>
                             <div className="form-group">
-                                <label>State *</label>
+                                <label>State * / રાજ્ય *</label>
                                 <input
                                     type="text"
                                     name="state"
@@ -236,7 +239,7 @@ const Register = () => {
                                 {errors.state && <span className="error-message">{errors.state}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Pincode *</label>
+                                <label>Pincode * / પીન કોડ *</label>
                                 <input
                                     type="text"
                                     name="pincode"
@@ -253,11 +256,11 @@ const Register = () => {
 
                     {/* Security */}
                     <div className="form-section">
-                        <h2 className="section-title">Security</h2>
+                        <h2 className="section-title">Security / સુરક્ષા</h2>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Password *</label>
+                                <label>Password * / પાસવર્ડ *</label>
                                 <div className="password-input-wrapper">
                                     <input
                                         type={showPassword ? "text" : "password"}
@@ -279,7 +282,7 @@ const Register = () => {
                                 {errors.password && <span className="error-message">{errors.password}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Confirm Password *</label>
+                                <label>Confirm Password * / પાસવર્ડની પુષ્ટિ કરો *</label>
                                 <div className="password-input-wrapper">
                                     <input
                                         type={showConfirmPassword ? "text" : "password"}
@@ -320,11 +323,12 @@ const Register = () => {
                     </div>
 
                     <button type="submit" className="btn btn-primary btn-block" disabled={isSubmitting}>
-                        {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                        {isSubmitting && <ButtonLoader />}
+                        {isSubmitting ? 'Creating Account... / ખાતું બનાવી રહ્યું છે...' : 'Create Account / ખાતું બનાવો'}
                     </button>
 
                     <div className="form-footer">
-                        <p>Already have an account? <Link to="/login">Login here</Link></p>
+                        <p>Already have an account? / પહેલાથી જ ખાતું છે? <Link to="/login">Login here / અહીં લોગિન કરો</Link></p>
                     </div>
                 </form>
             </div>

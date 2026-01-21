@@ -23,7 +23,9 @@ import {
     updateAgent,
     createAgent,
     setupDatabase,
-    verifyAgentKYC
+    verifyAgentKYC,
+    getAllPayments,
+    getAllClaims
 } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -55,6 +57,12 @@ router.put('/agents/:id', updateAgent);
 // Customers
 router.get('/customers', getAllCustomers);
 router.get('/customers/:id', getCustomerById); // Added route   ,
+
+// Payments / Transactions
+router.get('/payments', getAllPayments);
+
+// Claims
+router.get('/claims', getAllClaims);
 
 // Withdrawals
 router.get('/withdrawals/history', getWithdrawalHistory);

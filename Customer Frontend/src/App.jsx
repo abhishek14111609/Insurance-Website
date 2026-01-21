@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import RouteLoader from './components/RouteLoader';
 
 // Pages
 import Home from './pages/Home';
@@ -72,6 +73,7 @@ function App() {
 
   return (
     <div className="app">
+      <RouteLoader />
       <Toaster
         position="top-center"
         reverseOrder={false}
