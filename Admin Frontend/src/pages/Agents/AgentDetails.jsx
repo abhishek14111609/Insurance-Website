@@ -11,6 +11,17 @@ const AgentDetails = () => {
     const [policies, setPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const normalizeFileUrl = (value) => {
+        if (!value) return null;
+        if (value.startsWith('http') || value.startsWith('data:')) return value;
+        let clean = value.trim();
+        if (clean.startsWith('/')) clean = clean.slice(1);
+        if (!clean.toLowerCase().startsWith('uploads/')) {
+            clean = `uploads/${clean}`;
+        }
+        return `${BASE_URL}/${clean}`;
+    };
+
     useEffect(() => {
         loadData();
     }, [id]);
@@ -184,7 +195,16 @@ const AgentDetails = () => {
                         <div className="doc-value">
                             {agent.panNumber ? <strong>{agent.panNumber}</strong> : <span className="text-muted">Not provided</span>}
                             {agent.panPhoto && (
-                                <a href={`${BASE_URL}/${agent.panPhoto}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">View Photo</a>
+                                <div className="doc-preview-container">
+                                    <img
+                                        src={normalizeFileUrl(agent.panPhoto)}
+                                        alt="PAN Card"
+                                        className="clickable-photo"
+                                        title="Click to view full size"
+                                        onClick={() => window.open(normalizeFileUrl(agent.panPhoto), '_blank')}
+                                    />
+                                    <span className="preview-hint">Click to enlarge</span>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -193,12 +213,30 @@ const AgentDetails = () => {
                         <span className="doc-label">Aadhaar Card:</span>
                         <div className="doc-value">
                             {agent.aadharNumber ? <strong>{agent.aadharNumber}</strong> : <span className="text-muted">Not provided</span>}
-                            <div className="doc-links">
+                            <div className="doc-previews-list">
                                 {agent.aadharPhotoFront && (
-                                    <a href={`${BASE_URL}/${agent.aadharPhotoFront}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">Front</a>
+                                    <div className="doc-preview-container">
+                                        <img
+                                            src={normalizeFileUrl(agent.aadharPhotoFront)}
+                                            alt="Aadhaar Front"
+                                            className="clickable-photo"
+                                            title="Click to view full size"
+                                            onClick={() => window.open(normalizeFileUrl(agent.aadharPhotoFront), '_blank')}
+                                        />
+                                        <span className="preview-hint">Front</span>
+                                    </div>
                                 )}
                                 {agent.aadharPhotoBack && (
-                                    <a href={`${BASE_URL}/${agent.aadharPhotoBack}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">Back</a>
+                                    <div className="doc-preview-container">
+                                        <img
+                                            src={normalizeFileUrl(agent.aadharPhotoBack)}
+                                            alt="Aadhaar Back"
+                                            className="clickable-photo"
+                                            title="Click to view full size"
+                                            onClick={() => window.open(normalizeFileUrl(agent.aadharPhotoBack), '_blank')}
+                                        />
+                                        <span className="preview-hint">Back</span>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -211,7 +249,16 @@ const AgentDetails = () => {
                                 <span>{agent.bankName} - {agent.accountNumber}</span>
                             ) : <span className="text-muted">No Bank Details</span>}
                             {agent.bankProofPhoto && (
-                                <a href={`${BASE_URL}/${agent.bankProofPhoto}`} target="_blank" rel="noopener noreferrer" className="view-doc-link">View Proof</a>
+                                <div className="doc-preview-container">
+                                    <img
+                                        src={normalizeFileUrl(agent.bankProofPhoto)}
+                                        alt="Bank Proof"
+                                        className="clickable-photo"
+                                        title="Click to view full size"
+                                        onClick={() => window.open(normalizeFileUrl(agent.bankProofPhoto), '_blank')}
+                                    />
+                                    <span className="preview-hint">Click to enlarge</span>
+                                </div>
                             )}
                         </div>
                     </div>

@@ -387,6 +387,44 @@
     color: #b91c1c !important;
 }
 
+.doc-previews-list {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.doc-preview-container {
+    margin-top: 0.75rem;
+    position: relative;
+    width: fit-content;
+}
+
+.clickable-photo {
+    width: 140px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: block;
+}
+
+.clickable-photo:hover {
+    transform: scale(1.05);
+    border-color: #6366f1;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+}
+
+.preview-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+    text-align: center;
+    font-weight: 500;
+}
+
 .doc-links {
     display: flex;
     gap: 0.5rem;

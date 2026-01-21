@@ -195,6 +195,15 @@
     box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
 }
 
+.clickable-photo {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.clickable-photo:hover {
+    transform: scale(1.05);
+}
+
 .policy-actions {
     display: flex;
     gap: 1rem;

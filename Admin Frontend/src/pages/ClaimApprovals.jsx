@@ -3,7 +3,7 @@ import { claimAPI, BASE_URL } from '../services/api.service';
 
 const normalizeFileUrl = (value) => {
     if (!value) return null;
-    if (value.startsWith('http')) return value;
+    if (value.startsWith('http') || value.startsWith('data:')) return value;
     let clean = value.trim();
     if (clean.startsWith('/')) clean = clean.slice(1);
     if (!clean.toLowerCase().startsWith('uploads/')) {
@@ -164,12 +164,18 @@ const ClaimApprovals = () => {
                                     <div className="docs-list">
                                         {claim.documents.map((doc, idx) => {
                                             const url = normalizeFileUrl(doc);
-                                            const isImage = url ? url.match(/\.(jpg|jpeg|png|webp|gif)$/i) : false;
+                                            const isImage = url ? (url.match(/\.(jpg|jpeg|png|webp|gif)$/i) || url.startsWith('data:image/')) : false;
                                             return (
                                                 <div key={idx} className="doc-item">
                                                     {isImage ? (
                                                         <a href={url} target="_blank" rel="noopener noreferrer" className="doc-thumb">
-                                                            <img src={url} alt={`Document ${idx + 1}`} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/120x120?text=No+Image'; }} />
+                                                            <img
+                                                                src={url}
+                                                                alt={`Document ${idx + 1}`}
+                                                                className="clickable-photo"
+                                                                title="Click to view full size"
+                                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/120x120?text=No+Image'; }}
+                                                            />
                                                         </a>
                                                     ) : (
                                                         <a href={url || '#'} target="_blank" rel="noopener noreferrer" className="doc-link">

@@ -150,7 +150,7 @@ export const getAllClaims = async (req, res) => {
 
         const count = await Claim.countDocuments(where);
         const claims = await Claim.find(where)
-            .select('-documents -description -adminNotes -rejectionReason')
+            .select('-description -adminNotes -rejectionReason')
             .populate({ path: 'policy', select: 'policyNumber status', strictPopulate: false })
             .populate({ path: 'customer', select: 'fullName email', strictPopulate: false })
             .populate({ path: 'reviewer', select: 'fullName', strictPopulate: false })

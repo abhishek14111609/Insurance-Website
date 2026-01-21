@@ -11,6 +11,17 @@ const AgentApprovals = () => {
     const [rejectionReason, setRejectionReason] = useState('');
     const [loading, setLoading] = useState(true);
 
+    const normalizeFileUrl = (value) => {
+        if (!value) return null;
+        if (value.startsWith('http') || value.startsWith('data:')) return value;
+        let clean = value.trim();
+        if (clean.startsWith('/')) clean = clean.slice(1);
+        if (!clean.toLowerCase().startsWith('uploads/')) {
+            clean = `uploads/${clean}`;
+        }
+        return `${BASE_URL}/${clean}`;
+    };
+
     useEffect(() => {
         loadAgents();
     }, []);
@@ -248,30 +259,56 @@ const AgentApprovals = () => {
 
                                 <div className="review-section">
                                     <h3>KYC Documents</h3>
-                                    <div className="document-previews">
+                                    <div className="document-previews-grid">
                                         {selectedAgent?.panPhoto ? (
-                                            <div className="doc-item">
-                                                <span>PAN Number: {selectedAgent.panNumber}</span>
-                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.panPhoto}`} target="_blank" className="btn-link">View PAN Photo</a>
+                                            <div className="doc-preview-item">
+                                                <span className="doc-label">PAN Card ({selectedAgent.panNumber})</span>
+                                                <div className="img-container">
+                                                    <img
+                                                        src={normalizeFileUrl(selectedAgent.panPhoto)}
+                                                        alt="PAN Card"
+                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.panPhoto), '_blank')}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : <p className="text-muted">No PAN photo uploaded</p>}
 
                                         {selectedAgent?.aadharPhotoFront ? (
-                                            <div className="doc-item">
-                                                <span>Aadhaar Number: {selectedAgent.aadharNumber}</span>
-                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.aadharPhotoFront}`} target="_blank" className="btn-link">View Aadhaar Front</a>
+                                            <div className="doc-preview-item">
+                                                <span className="doc-label">Aadhaar Front ({selectedAgent.aadharNumber})</span>
+                                                <div className="img-container">
+                                                    <img
+                                                        src={normalizeFileUrl(selectedAgent.aadharPhotoFront)}
+                                                        alt="Aadhaar Front"
+                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoFront), '_blank')}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : <p className="text-muted">No Aadhaar front uploaded</p>}
 
                                         {selectedAgent?.aadharPhotoBack ? (
-                                            <div className="doc-item">
-                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.aadharPhotoBack}`} target="_blank" className="btn-link">View Aadhaar Back</a>
+                                            <div className="doc-preview-item">
+                                                <span className="doc-label">Aadhaar Back</span>
+                                                <div className="img-container">
+                                                    <img
+                                                        src={normalizeFileUrl(selectedAgent.aadharPhotoBack)}
+                                                        alt="Aadhaar Back"
+                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoBack), '_blank')}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : null}
 
                                         {selectedAgent?.bankProofPhoto ? (
-                                            <div className="doc-item">
-                                                <a href={`${BASE_URL.replace('/api', '')}/${selectedAgent.bankProofPhoto}`} target="_blank" className="btn-link">View Bank Proof</a>
+                                            <div className="doc-preview-item">
+                                                <span className="doc-label">Bank Proof</span>
+                                                <div className="img-container">
+                                                    <img
+                                                        src={normalizeFileUrl(selectedAgent.bankProofPhoto)}
+                                                        alt="Bank Proof"
+                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.bankProofPhoto), '_blank')}
+                                                    />
+                                                </div>
                                             </div>
                                         ) : <p className="text-muted">No bank proof uploaded</p>}
                                     </div>

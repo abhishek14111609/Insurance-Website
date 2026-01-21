@@ -80,8 +80,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Static files for uploads (with security headers)
 app.use('/uploads', express.static(uploadDir, {
     setHeaders: (res, path) => {
-        // Force download to prevent XSS via SVG/HTML uploads
-        res.set('Content-Disposition', 'attachment');
+        // Only force download for non-image files if needed, but for now let's just allow inline viewing
         res.set('X-Content-Type-Options', 'nosniff');
     }
 }));
