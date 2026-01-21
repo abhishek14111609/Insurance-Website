@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import './HealthInsurance.css';
 
 const HealthInsurance = () => {
@@ -12,7 +13,7 @@ const HealthInsurance = () => {
 
     const handleCalculate = (e) => {
         e.preventDefault();
-        alert('Health Insurance Plans for your family loading...');
+        toast.success('Health Insurance Plans for your family loading...');
     };
 
     return (

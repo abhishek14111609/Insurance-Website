@@ -67,6 +67,7 @@ const NotificationBell = () => {
             withdrawal: '💸',
             claim: '🏥',
             agent: '👤',
+            inquiry: '✉️',
             system: '📢'
         };
         return icons[type] || '🔔';

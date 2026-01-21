@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, claimAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import PhotoUpload from '../components/PhotoUpload';
 import './ClaimForm.css';
 
@@ -99,13 +100,13 @@ const ClaimForm = () => {
         try {
             // Validate
             if (!formData.policyId) {
-                alert('Please select a policy');
+                toast.error('Please select a policy');
                 setLoading(false);
                 return;
             }
 
             if (!documentPreviews.incident) {
-                alert('Please upload at least one incident photo');
+                toast.error('Please upload at least one incident photo');
                 setLoading(false);
                 return;
             }
@@ -132,14 +133,14 @@ const ClaimForm = () => {
             const response = await claimAPI.create(claimData);
 
             if (response.success) {
-                alert('Claim submitted successfully! Our team will review it shortly.');
+                toast.success('Claim submitted successfully! Our team will review it shortly.');
                 navigate('/claims');
             } else {
                 throw new Error(response.message || 'Failed to submit claim');
             }
         } catch (error) {
             console.error('Claim submission error:', error);
-            alert(error.message || 'Failed to submit claim. Please try again.');
+            toast.error(error.message || 'Failed to submit claim. Please try again.');
         } finally {
             setLoading(false);
         }

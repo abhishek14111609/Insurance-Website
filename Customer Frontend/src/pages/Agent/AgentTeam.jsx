@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { agentAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AgentTeam.css';
 
 const AgentTeam = () => {
@@ -102,7 +103,7 @@ const AgentTeam = () => {
                         className="btn btn-sm btn-primary"
                         onClick={() => {
                             navigator.clipboard.writeText(user?.agentCode || '');
-                            alert('Referral code copied!');
+                            toast.success('Referral code copied!');
                         }}
                     >
                         Copy

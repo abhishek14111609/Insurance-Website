@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AllAgents.css';
 
 const AllAgents = () => {
@@ -87,21 +88,21 @@ const AllAgents = () => {
         if (reason === null) return; // User cancelled
 
         if (!reason.trim()) {
-            alert('A reason is required to block an agent.');
+            toast.error('A reason is required to block an agent.');
             return;
         }
 
         try {
             const result = await adminAPI.rejectAgent(agentId, reason);
             if (result.success) {
-                alert('Agent blocked successfully');
+                toast.success('Agent blocked successfully');
                 loadAgents();
             } else {
-                alert(result.message || 'Failed to block agent');
+                toast.error(result.message || 'Failed to block agent');
             }
         } catch (err) {
             console.error(err);
-            alert('An error occurred: ' + err.message);
+            toast.error('An error occurred: ' + err.message);
         }
     };
 

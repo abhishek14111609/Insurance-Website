@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { contactAPI } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import './ContactUs.css';
 
 const ContactUs = () => {
@@ -39,14 +40,14 @@ const ContactUs = () => {
         setLoading(true);
         try {
             await contactAPI.submit(formData);
-            alert('Thank you for contacting us! We will get back to you soon.');
+            toast.success('Thank you for contacting us! We will get back to you soon.');
             setFormData(prev => ({
                 ...prev,
                 subject: '',
                 message: ''
             }));
         } catch (error) {
-            alert(error.message || 'Failed to send message. Please try again.');
+            toast.error(error.message || 'Failed to send message. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -144,16 +145,16 @@ const ContactUs = () => {
                                 <div className="info-card">
                                     <div className="info-icon">📞</div>
                                     <h3>Call Us</h3>
-                                    <p style={{fontWeight: "bold"}}>Customer Care: 79903 39567</p>
-                                    <p style={{fontWeight: "bold"}}>For Claims: 83479 46718</p>
+                                    <p style={{ fontWeight: "bold" }}>Customer Care: 79903 39567</p>
+                                    <p style={{ fontWeight: "bold" }}>For Claims: 83479 46718</p>
                                     <p>Mon-Sat: 9 AM - 7 PM</p>
                                 </div>
 
                                 <div className="info-card">
                                     <div className="info-icon">✉️</div>
                                     <h3>Email Us</h3>
-                                    <p style={{fontWeight: "bold"}}>pashudhansuraksha2026@gmail.com</p>
-                                    
+                                    <p style={{ fontWeight: "bold" }}>pashudhansuraksha2026@gmail.com</p>
+
                                     <p>Response within 24 hours</p>
                                 </div>
 
@@ -214,7 +215,7 @@ const ContactUs = () => {
             {/* FAQ Section */}
             <section className="section">
                 <div className="container">
-                    <h2 className="section-title" style={{justifyContent: "center"}}>Frequently Asked Questions</h2>
+                    <h2 className="section-title" style={{ justifyContent: "center" }}>Frequently Asked Questions</h2>
                     <div className="faq-grid">
                         <div className="faq-item">
                             <h3>How can I buy insurance online?</h3>

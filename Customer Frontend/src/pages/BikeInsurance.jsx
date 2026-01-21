@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import './BikeInsurance.css';
 
 const BikeInsurance = () => {
@@ -10,7 +11,7 @@ const BikeInsurance = () => {
 
     const handleCalculate = (e) => {
         e.preventDefault();
-        alert('Premium calculator will show results here!');
+        toast.success('Premium calculator will show results here!');
     };
 
     return (

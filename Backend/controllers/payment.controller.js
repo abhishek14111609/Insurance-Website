@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { Payment, Policy, Commission, Agent } from '../models/index.js';
 import { calculateAndDistributeCommissions } from '../utils/commission.util.js';
 import { sendEmail } from '../utils/email.util.js';
+import { notifyPaymentSuccess } from '../utils/notification.util.js';
 
 // Initialize Razorpay only if keys are present
 let razorpay = null;
@@ -168,6 +169,13 @@ export const verifyPayment = async (req, res) => {
             await policy.save();
         }
 
+        // Send Notification
+        try {
+            await notifyPaymentSuccess(payment, policy);
+        } catch (notifyError) {
+            console.error('[VerifyPayment] Notification failed (non-blocking):', notifyError);
+        }
+
         let paymentEmailSent = false;
         let paymentEmailError = null;
         try {
@@ -307,9 +315,17 @@ async function handlePaymentCaptured(paymentEntity) {
         payment.paidAt = new Date();
         await payment.save();
 
+        const policy = await Policy.findById(payment.policyId);
+
+        // Send Notification
+        try {
+            await notifyPaymentSuccess(payment, policy);
+        } catch (notifyError) {
+            console.error('[Webhook] Notification failed (non-blocking):', notifyError);
+        }
+
         // Send payment confirmation email via webhook path as a fallback if app-side verify missed
         try {
-            const policy = await Policy.findById(payment.policyId);
             const customerEmail = policy?.ownerEmail;
             const customerName = policy?.ownerName || 'Customer';
             const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;

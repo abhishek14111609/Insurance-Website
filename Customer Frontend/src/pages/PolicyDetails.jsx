@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './PolicyDetails.css';
 
 const PolicyDetails = () => {
@@ -42,7 +43,7 @@ const PolicyDetails = () => {
     }, [policyId]);
 
     const handleDownload = () => {
-        alert('Policy PDF download will be available soon!');
+        toast.success('Policy PDF download will be available soon!');
     };
 
     const handlePrint = () => {

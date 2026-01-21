@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './WithdrawalApprovals.css';
 
 const WithdrawalApprovals = () => {
@@ -59,48 +60,48 @@ const WithdrawalApprovals = () => {
             // Processing withdrawal with status 'approve'
             const selectedId = getWithdrawalId(selectedWithdrawal);
             if (!selectedId) {
-                alert('Missing withdrawal ID. Please refresh and try again.');
+                toast.error('Missing withdrawal ID. Please refresh and try again.');
                 return;
             }
             const result = await adminAPI.processWithdrawal(selectedId, 'approve', notes);
 
             if (result.success) {
-                alert('Withdrawal approved! Agent wallet updated.');
+                toast.success('Withdrawal approved! Agent wallet updated.');
                 loadWithdrawals();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to approve withdrawal');
+                toast.error(result.message || 'Failed to approve withdrawal');
             }
         } catch (error) {
             console.error(error);
-            alert('An error occurred during approval');
+            toast.error('An error occurred during approval');
         }
     };
 
     const handleConfirmReject = async () => {
         if (!rejectionReason.trim()) {
-            alert('Please provide a rejection reason');
+            toast.error('Please provide a rejection reason');
             return;
         }
 
         try {
             const selectedId = getWithdrawalId(selectedWithdrawal);
             if (!selectedId) {
-                alert('Missing withdrawal ID. Please refresh and try again.');
+                toast.error('Missing withdrawal ID. Please refresh and try again.');
                 return;
             }
             const result = await adminAPI.processWithdrawal(selectedId, 'reject', rejectionReason);
 
             if (result.success) {
-                alert('Withdrawal rejected.');
+                toast.success('Withdrawal rejected.');
                 loadWithdrawals();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to reject withdrawal');
+                toast.error(result.message || 'Failed to reject withdrawal');
             }
         } catch (error) {
             console.error(error);
-            alert('An error occurred during rejection');
+            toast.error('An error occurred during rejection');
         }
     };
 

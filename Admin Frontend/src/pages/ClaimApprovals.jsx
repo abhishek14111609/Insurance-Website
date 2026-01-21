@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { claimAPI, BASE_URL } from '../services/api.service';
+import toast from 'react-hot-toast';
 
 const normalizeFileUrl = (value) => {
     if (!value) return null;
@@ -64,7 +65,7 @@ const ClaimApprovals = () => {
                 status = 'rejected';
                 data.rejectionReason = rejectionReason;
                 if (!rejectionReason) {
-                    alert('Please provide a rejection reason');
+                    toast.error('Please provide a rejection reason');
                     return;
                 }
             } else if (modalType === 'pay') {
@@ -77,13 +78,13 @@ const ClaimApprovals = () => {
             });
 
             if (response.success) {
-                alert(`Claim ${status} successfully!`);
+                toast.success(`Claim ${status} successfully!`);
                 loadPendingClaims();
                 closeModal();
             }
         } catch (err) {
             console.error('Error updating claim:', err);
-            alert(err.message || 'Action failed');
+            toast.error(err.message || 'Action failed');
         }
     };
 

@@ -757,6 +757,7 @@ export const getAllAgents = async (req, res) => {
 
             return {
                 ...agent,
+                id: idStr,
                 status: (agent.status || 'pending').toLowerCase(),
                 kycStatus: agent.kycStatus || 'not_submitted',
                 user: agent.userId || null,
@@ -1156,16 +1157,31 @@ export const verifyAgentKYC = async (req, res) => {
             });
         }
 
-        agent.kycStatus = status;
         if (status === 'rejected') {
+            agent.kycStatus = 'rejected';
             agent.kycRejectionReason = reason;
+
+            // Send notification
+            try {
+                await notifyAgentRejection(agent);
+            } catch (err) {
+                console.error('Agent KYC rejection notification failed:', err);
+            }
         } else if (status === 'verified') {
+            agent.kycStatus = 'verified';
             agent.kycRejectionReason = null;
             // Optionally auto-activate agent if KYC is verified and they were pending
             if (agent.status === 'pending') {
                 agent.status = 'active';
                 agent.approvedAt = new Date();
                 agent.approvedBy = req.user._id;
+
+                // Send notification
+                try {
+                    await notifyAgentApproval(agent);
+                } catch (err) {
+                    console.error('Agent KYC approval notification failed:', err);
+                }
             }
         }
 

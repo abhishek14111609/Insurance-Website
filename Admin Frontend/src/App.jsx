@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 // Auth
 import AdminLogin from './pages/Auth/AdminLogin';
@@ -196,6 +197,18 @@ const App = () => {
 
   return (
     <Router>
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#333',
+            color: '#fff',
+            fontSize: '24px'
+          },
+        }}
+      />
       <Routes>
         {/* Public Routes */}
         <Route

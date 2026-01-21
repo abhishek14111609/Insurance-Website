@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AddAgent.css';
 
 const AddAgent = () => {
@@ -95,14 +96,14 @@ const AddAgent = () => {
             const response = await adminAPI.createAgent(agentData);
 
             if (response.success) {
-                alert(`Agent created successfully!\n\nAgent Code: ${agentData.agentCode}\nPassword: ${generatedPassword}\n\nPlease save these credentials!`);
+                toast.success(`Agent created successfully!\n\nAgent Code: ${agentData.agentCode}\nPassword: ${generatedPassword}\n\nPlease save these credentials!`, { duration: 10000 });
                 navigate('/agents');
             } else {
-                alert(response.message || 'Error creating agent');
+                toast.error(response.message || 'Error creating agent');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(error.message || 'Failed to connect to server');
+            toast.error(error.message || 'Failed to connect to server');
         } finally {
             setIsSubmitting(false);
         }
@@ -206,7 +207,7 @@ const AddAgent = () => {
                             >
                                 <option value="">None (Root Level)</option>
                                 {agents.map(agent => (
-                                    <option key={agent.id} value={agent.id}>
+                                    <option key={agent.id || agent._id} value={agent.id || agent._id}>
                                         {agent.agentCode} - {agent.user?.fullName}
                                     </option>
                                 ))}

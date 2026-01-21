@@ -81,6 +81,40 @@ export const authenticate = async (req, res, next) => {
     }
 };
 
+export const optionalAuthenticate = async (req, res, next) => {
+    try {
+        let token = null;
+
+        const url = req.originalUrl || '';
+        const isAdminRoute = url.startsWith('/api/admin') || url.includes('/admin/');
+
+        if (isAdminRoute && req.cookies?.admin_token) {
+            token = req.cookies.admin_token;
+        } else {
+            token = req.cookies?.token || null;
+        }
+
+        if (!token && req.header('Authorization')) {
+            token = req.header('Authorization').replace('Bearer ', '');
+        }
+
+        if (!token) {
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (user && user.status === 'active') {
+            req.user = user;
+        }
+        next();
+    } catch (error) {
+        // Silently fail if optional authentication fails
+        next();
+    }
+};
+
 export const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -13,6 +14,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import CustomerProfile from './pages/CustomerProfile';
+import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 
 // Insurance Pages
@@ -40,6 +42,7 @@ import AgentCommissions from './pages/Agent/AgentCommissions';
 import AgentWallet from './pages/Agent/AgentWallet';
 import AgentTeam from './pages/Agent/AgentTeam';
 import AgentProfile from './pages/Agent/AgentProfile';
+import AgentNotifications from './pages/Agent/AgentNotifications';
 import AgentLayout from './components/Agent/AgentLayout';
 import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
@@ -69,6 +72,19 @@ function App() {
 
   return (
     <div className="app">
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '10px',
+            fontSize: '24px',
+          },
+        }}
+      />
       {showNavFooter && <Navbar />}
 
       <main className="main-content">
@@ -128,6 +144,14 @@ function App() {
             element={
               <ProtectedCustomerRoute>
                 <CustomerProfile />
+              </ProtectedCustomerRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedCustomerRoute>
+                <Notifications />
               </ProtectedCustomerRoute>
             }
           />
@@ -276,6 +300,14 @@ function App() {
               element={
                 <ProtectedAgentRoute>
                   <AgentProfile />
+                </ProtectedAgentRoute>
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <ProtectedAgentRoute>
+                  <AgentNotifications />
                 </ProtectedAgentRoute>
               }
             />

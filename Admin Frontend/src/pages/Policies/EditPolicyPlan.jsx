@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { policyPlanAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AddPolicyPlan.css'; // Reuse add styles
 
 // Helper function to convert Decimal128 or other objects to string
@@ -41,7 +42,7 @@ const EditPolicyPlan = () => {
 
     useEffect(() => {
         if (!id) {
-            alert('Invalid plan ID');
+            toast.error('Invalid plan ID');
             navigate('/policy-plans');
             return;
         }
@@ -70,7 +71,7 @@ const EditPolicyPlan = () => {
             }
         } catch (err) {
             console.error('Error loading plan:', err);
-            alert('Failed to load plan details');
+            toast.error('Failed to load plan details');
             navigate('/policy-plans');
         } finally {
             setLoading(false);
@@ -121,14 +122,14 @@ const EditPolicyPlan = () => {
             const response = await policyPlanAPI.update(id, planData);
 
             if (response.success) {
-                alert('Policy plan updated successfully!');
+                toast.success('Policy plan updated successfully!');
                 navigate('/policy-plans');
             } else {
-                alert('Error updating plan: ' + response.message);
+                toast.error('Error updating plan: ' + response.message);
             }
         } catch (err) {
             console.error('Error:', err);
-            alert('Failed to connect to server');
+            toast.error('Failed to connect to server');
         } finally {
             setSaving(false);
         }

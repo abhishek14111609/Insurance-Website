@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './CommissionApprovals.css';
 
 const CommissionApprovals = () => {
@@ -45,15 +46,15 @@ const CommissionApprovals = () => {
             setProcessingId(id);
             const response = await adminAPI.approveCommission(id);
             if (response.success) {
-                alert('Commission approved successfully!');
+                toast.success('Commission approved successfully!');
                 // Reload data from server
                 await loadPendingCommissions();
             } else {
-                alert(response.message || 'Failed to approve commission');
+                toast.error(response.message || 'Failed to approve commission');
             }
         } catch (error) {
             console.error('Approve commission error:', error);
-            alert('An error occurred while approving the commission');
+            toast.error('An error occurred while approving the commission');
         } finally {
             setProcessingId(null);
         }
@@ -71,15 +72,15 @@ const CommissionApprovals = () => {
             setProcessingId(id);
             const response = await adminAPI.rejectCommission(id, notes);
             if (response.success) {
-                alert('Commission rejected successfully!');
+                toast.success('Commission rejected successfully!');
                 // Reload data from server
                 await loadPendingCommissions();
             } else {
-                alert(response.message || 'Failed to reject commission');
+                toast.error(response.message || 'Failed to reject commission');
             }
         } catch (error) {
             console.error('Reject commission error:', error);
-            alert('An error occurred while rejecting the commission');
+            toast.error('An error occurred while rejecting the commission');
         } finally {
             setProcessingId(null);
         }
@@ -106,7 +107,7 @@ const CommissionApprovals = () => {
             }
         }
 
-        alert(`Process complete! Success: ${successCount}, Failed: ${failCount}`);
+        toast(`Process complete! Success: ${successCount}, Failed: ${failCount}`);
         loadPendingCommissions();
     };
 

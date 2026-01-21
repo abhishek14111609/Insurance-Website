@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminAPI, BASE_URL } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AgentDetails.css';
 
 const AgentDetails = () => {
@@ -32,14 +33,14 @@ const AgentDetails = () => {
             reason = prompt('Please enter the reason for rejection:');
             if (reason === null) return; // Cancelled
             if (!reason.trim()) {
-                alert('Rejection reason is required');
+                toast.error('Rejection reason is required');
                 return;
             }
         }
 
         const agentId = agent?._id || agent?.id;
         if (!agentId) {
-            alert('Missing agent identifier. Please reload and try again.');
+            toast.error('Missing agent identifier. Please reload and try again.');
             return;
         }
 
@@ -47,14 +48,14 @@ const AgentDetails = () => {
             setLoading(true);
             const response = await adminAPI.verifyAgentKYC(agentId, status, reason);
             if (response.success) {
-                alert(`KYC ${status === 'verified' ? 'Approved' : 'Rejected'} successfully`);
+                toast.success(`KYC ${status === 'verified' ? 'Approved' : 'Rejected'} successfully`);
                 loadData();
             } else {
-                alert(response.message || 'Failed to update KYC status');
+                toast.error(response.message || 'Failed to update KYC status');
             }
         } catch (error) {
             console.error('Error verifying KYC:', error);
-            alert('Error updating status');
+            toast.error('Error updating status');
         } finally {
             setLoading(false);
         }

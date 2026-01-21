@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { policyPlanAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AllPolicyPlans.css';
 
 const AllPolicyPlans = () => {
@@ -34,14 +35,14 @@ const AllPolicyPlans = () => {
             try {
                 const response = await policyPlanAPI.delete(planId);
                 if (response.success) {
-                    alert('Plan deleted successfully');
+                    toast.success('Plan deleted successfully');
                     loadPlans();
                 } else {
-                    alert('Failed to delete plan: ' + response.message);
+                    toast.error('Failed to delete plan: ' + response.message);
                 }
             } catch (err) {
                 console.error('Error deleting plan:', err);
-                alert('An error occurred while deleting the plan');
+                toast.error('An error occurred while deleting the plan');
             }
         }
     };

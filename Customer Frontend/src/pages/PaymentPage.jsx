@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, paymentAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './PaymentPage.css';
 
 const PaymentPage = () => {
@@ -113,7 +114,7 @@ const PaymentPage = () => {
                         }
                     } catch (err) {
                         console.error('Verification Error:', err);
-                        alert('Payment verification failed. Please contact support.');
+                        toast.error('Payment verification failed. Please contact support.');
                         setIsProcessing(false);
                     }
                 },

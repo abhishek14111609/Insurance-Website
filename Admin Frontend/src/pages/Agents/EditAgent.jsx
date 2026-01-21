@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AddAgent.css';
 
 const EditAgent = () => {
@@ -34,7 +35,7 @@ const EditAgent = () => {
                         code: foundFn.agentCode || foundFn.code
                     });
                 } else {
-                    alert('Agent not found');
+                    toast.error('Agent not found');
                     navigate('/agents');
                 }
             }
@@ -68,14 +69,14 @@ const EditAgent = () => {
 
             const result = await adminAPI.updateAgent(id, updatePayload);
             if (result.success) {
-                alert('Agent updated successfully!');
+                toast.success('Agent updated successfully!');
                 navigate('/agents');
             } else {
-                alert(result.message || 'Error updating agent');
+                toast.error(result.message || 'Error updating agent');
             }
         } catch (error) {
             console.error('Error updating agent:', error);
-            alert('An error occurred while updating agent.');
+            toast.error('An error occurred while updating agent.');
         } finally {
             setIsSubmitting(false);
         }

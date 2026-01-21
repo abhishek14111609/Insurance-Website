@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { agentAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AgentCustomers.css';
 
 const AgentCustomers = () => {
@@ -23,7 +24,7 @@ const AgentCustomers = () => {
             }
         } catch (error) {
             console.error('Error saving notes:', error);
-            alert('Failed to save notes');
+            toast.error('Failed to save notes');
         }
     };
 

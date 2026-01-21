@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import './TravelInsurance.css';
 
 const TravelInsurance = () => {
@@ -12,7 +13,7 @@ const TravelInsurance = () => {
 
     const handleCalculate = (e) => {
         e.preventDefault();
-        alert('Travel Insurance Plans loading...');
+        toast.success('Travel Insurance Plans loading...');
     };
 
     return (

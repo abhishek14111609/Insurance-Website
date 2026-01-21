@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../constants/policyPlans';
+import toast from 'react-hot-toast';
 import './RenewalForm.css';
 
 const RenewalForm = () => {
@@ -43,7 +44,7 @@ const RenewalForm = () => {
         e.preventDefault();
 
         if (!formData.agreeTerms) {
-            alert('Please agree to terms and conditions');
+            toast.error('Please agree to terms and conditions');
             return;
         }
 

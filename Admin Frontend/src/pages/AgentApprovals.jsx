@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI, BASE_URL } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './AgentApprovals.css';
 
 const AgentApprovals = () => {
@@ -59,76 +60,76 @@ const AgentApprovals = () => {
 
     const handleConfirmApprove = async () => {
         try {
-            const result = await adminAPI.approveAgent(selectedAgent.id, notes);
+            const result = await adminAPI.approveAgent(selectedAgent.id || selectedAgent._id, notes);
             if (result.success) {
-                alert('Agent approved successfully!');
+                toast.success('Agent approved successfully!');
                 loadAgents();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to approve agent');
+                toast.error(result.message || 'Failed to approve agent');
             }
         } catch (error) {
             console.error('Approval error:', error);
-            alert('An error occurred during approval');
+            toast.error('An error occurred during approval');
         }
     };
 
     const handleConfirmKYCApprove = async () => {
         try {
-            const result = await adminAPI.verifyAgentKYC(selectedAgent.id, 'verified');
+            const result = await adminAPI.verifyAgentKYC(selectedAgent.id || selectedAgent._id, 'verified');
             if (result.success) {
-                alert('KYC verified successfully!');
+                toast.success('KYC verified successfully!');
                 loadAgents();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to verify KYC');
+                toast.error(result.message || 'Failed to verify KYC');
             }
         } catch (error) {
             console.error('KYC Verification error:', error);
-            alert('An error occurred during KYC verification');
+            toast.error('An error occurred during KYC verification');
         }
     };
 
     const handleConfirmReject = async () => {
         if (!rejectionReason.trim()) {
-            alert('Please provide a rejection reason');
+            toast.error('Please provide a rejection reason');
             return;
         }
 
         try {
-            const result = await adminAPI.rejectAgent(selectedAgent.id, rejectionReason);
+            const result = await adminAPI.rejectAgent(selectedAgent.id || selectedAgent._id, rejectionReason);
 
             if (result.success) {
-                alert('Agent rejected.');
+                toast.success('Agent rejected.');
                 loadAgents();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to reject agent');
+                toast.error(result.message || 'Failed to reject agent');
             }
         } catch (error) {
             console.error('Rejection error:', error);
-            alert('An error occurred during rejection');
+            toast.error('An error occurred during rejection');
         }
     };
 
     const handleConfirmKYCReject = async () => {
         if (!rejectionReason.trim()) {
-            alert('Please provide a rejection reason');
+            toast.error('Please provide a rejection reason');
             return;
         }
 
         try {
-            const result = await adminAPI.verifyAgentKYC(selectedAgent.id, 'rejected', rejectionReason);
+            const result = await adminAPI.verifyAgentKYC(selectedAgent.id || selectedAgent._id, 'rejected', rejectionReason);
             if (result.success) {
-                alert('KYC rejected.');
+                toast.success('KYC rejected.');
                 loadAgents();
                 closeModal();
             } else {
-                alert(result.message || 'Failed to reject KYC');
+                toast.error(result.message || 'Failed to reject KYC');
             }
         } catch (error) {
             console.error('KYC Rejection error:', error);
-            alert('An error occurred during KYC rejection');
+            toast.error('An error occurred during KYC rejection');
         }
     };
 
@@ -162,8 +163,8 @@ const AgentApprovals = () => {
                 </div>
             ) : (
                 <div className="agents-grid">
-                    {agents.map(agent => (
-                        <div key={agent.id} className="agent-card">
+                    {agents.map((agent, index) => (
+                        <div key={agent.id || agent._id || index} className="agent-card">
                             <div className="agent-header">
                                 <div>
                                     <h3>{agent.agentCode || agent.code || 'PENDING'}</h3>

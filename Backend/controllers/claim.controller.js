@@ -1,5 +1,5 @@
 import { Claim, Policy, User } from '../models/index.js';
-import { notifyClaimStatusUpdate } from '../utils/notification.util.js';
+import { notifyClaimStatusUpdate, notifyClaimSubmitted } from '../utils/notification.util.js';
 import { sendEmail } from '../utils/email.util.js';
 
 // @desc    Create new claim
@@ -54,6 +54,13 @@ export const createClaim = async (req, res) => {
             documents: documents || [],
             status: 'pending'
         });
+
+        // Send notification
+        try {
+            await notifyClaimSubmitted(claim);
+        } catch (notifyError) {
+            console.error('Claim submission notification failed (non-blocking):', notifyError);
+        }
 
         res.status(201).json({
             success: true,

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { policyAPI, BASE_URL } from '../services/api.service';
 import { formatCurrency } from '../utils/numberUtils';
+import toast from 'react-hot-toast';
 import './PolicyApprovals.css';
 
 // Normalize any stored path (bare filename, relative path, or absolute URL) to a fetchable URL
@@ -76,15 +77,15 @@ const PolicyApprovals = () => {
 
             const result = await policyAPI.approve(policyId, notes);
             if (result.success) {
-                alert('Policy approved successfully!');
+                toast.success('Policy approved successfully!');
                 loadPolicies();
                 closeModal();
             } else {
-                alert(result.message || 'Approval failed');
+                toast.error(result.message || 'Approval failed');
             }
         } catch (err) {
             console.error('Approval error:', err);
-            alert(err.message || 'Approval failed');
+            toast.error(err.message || 'Approval failed');
         } finally {
             setIsSubmitting(false);
         }
@@ -92,7 +93,7 @@ const PolicyApprovals = () => {
 
     const handleConfirmReject = async () => {
         if (!rejectionReason.trim()) {
-            alert('Please provide a rejection reason');
+            toast.error('Please provide a rejection reason');
             return;
         }
 
@@ -107,15 +108,15 @@ const PolicyApprovals = () => {
 
             const result = await policyAPI.reject(policyId, rejectionReason);
             if (result.success) {
-                alert('Policy rejected.');
+                toast.success('Policy rejected.');
                 loadPolicies();
                 closeModal();
             } else {
-                alert(result.message || 'Rejection failed');
+                toast.error(result.message || 'Rejection failed');
             }
         } catch (err) {
             console.error('Rejection error:', err);
-            alert(err.message || 'Rejection failed');
+            toast.error(err.message || 'Rejection failed');
         } finally {
             setIsSubmitting(false);
         }

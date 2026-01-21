@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { contactAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './Inquiries.css';
 
 const Inquiries = () => {
@@ -38,13 +39,13 @@ const Inquiries = () => {
             setReplyLoading(true);
             const response = await contactAPI.reply(selectedInquiry._id, replyMessage);
             if (response.success) {
-                alert('Reply sent successfully!');
+                toast.success('Reply sent successfully!');
                 setReplyMessage('');
                 setSelectedInquiry(null);
                 fetchInquiries(); // Refresh list to show updated status
             }
         } catch (error) {
-            alert(error.message || 'Failed to send reply');
+            toast.error(error.message || 'Failed to send reply');
         } finally {
             setReplyLoading(false);
         }

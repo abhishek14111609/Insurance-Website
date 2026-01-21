@@ -226,6 +226,68 @@ export const notifyPaymentSuccess = async (payment, policy) => {
 };
 
 /**
+ * Notify user about claim submission
+ * @param {Object} claim - Claim record
+ * @returns {Promise<Object>} Created notification
+ */
+export const notifyClaimSubmitted = async (claim) => {
+    return await createNotification({
+        userId: claim.customerId,
+        type: 'claim',
+        title: 'Claim Submitted! 📋',
+        message: `Your claim ${claim.claimNumber} has been received and is under initial review.`,
+        data: {
+            claimId: claim.id,
+            claimNumber: claim.claimNumber
+        },
+        priority: 'medium',
+        actionUrl: `/claims/${claim.id}`
+    });
+};
+
+/**
+ * Notify user about inquiry submission
+ * @param {Object} inquiry - Inquiry record
+ * @returns {Promise<Object>} Created notification
+ */
+export const notifyInquirySubmitted = async (inquiry) => {
+    if (!inquiry.userId) return null;
+    return await createNotification({
+        userId: inquiry.userId,
+        type: 'inquiry',
+        title: 'Inquiry Received! ✉️',
+        message: `Your inquiry about "${inquiry.subject}" has been received. Our team will get back to you soon.`,
+        data: {
+            inquiryId: inquiry.id,
+            subject: inquiry.subject
+        },
+        priority: 'low',
+        actionUrl: '/contact'
+    });
+};
+
+/**
+ * Notify user about inquiry reply
+ * @param {Object} inquiry - Inquiry record
+ * @returns {Promise<Object>} Created notification
+ */
+export const notifyInquiryReplied = async (inquiry) => {
+    if (!inquiry.userId) return null;
+    return await createNotification({
+        userId: inquiry.userId,
+        type: 'inquiry',
+        title: 'Inquiry Replied! 📩',
+        message: `Your inquiry about "${inquiry.subject}" has been answered by our team. Check the reply now.`,
+        data: {
+            inquiryId: inquiry.id,
+            subject: inquiry.subject
+        },
+        priority: 'medium',
+        actionUrl: '/contact'
+    });
+};
+
+/**
  * Broadcast notification to all users or specific role
  * @param {Object} data - Notification data
  * @param {string} role - User role (optional)
@@ -252,8 +314,11 @@ export default {
     notifyWithdrawalApproved,
     notifyWithdrawalRejected,
     notifyClaimStatusUpdate,
+    notifyClaimSubmitted,
     notifyAgentApproval,
     notifyAgentRejection,
     notifyPaymentSuccess,
+    notifyInquirySubmitted,
+    notifyInquiryReplied,
     broadcastNotification
 };

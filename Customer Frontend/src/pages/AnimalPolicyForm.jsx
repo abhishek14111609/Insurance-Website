@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, paymentAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import PhotoUpload from '../components/PhotoUpload';
 import AgentCodeInput from '../components/AgentCodeInput';
 import { formatCurrency } from '../constants/policyPlans';
@@ -113,12 +114,12 @@ const AnimalPolicyForm = () => {
 
         // Validate photos
         if (!photoPreviews.front || !photoPreviews.back || !photoPreviews.left || !photoPreviews.right) {
-            alert('Please upload all 4 required photos of the cattle.');
+            toast.error('Please upload all 4 required photos of the cattle.');
             return;
         }
 
         if (!formData.agreeTerms) {
-            alert('Please agree to terms and conditions');
+            toast.error('Please agree to terms and conditions');
             return;
         }
 
@@ -235,12 +236,12 @@ const AnimalPolicyForm = () => {
                         }
                     } catch (err) {
                         console.error('Verification Error:', err);
-                        alert('Payment verification failed. Please contact support.');
+                        toast.error('Payment verification failed. Please contact support.');
                     }
                 },
                 modal: {
                     ondismiss: function () {
-                        alert('Payment cancelled by user');
+                        toast.error('Payment cancelled by user');
                     }
                 }
             };
@@ -261,7 +262,7 @@ const AnimalPolicyForm = () => {
 
         } catch (error) {
             console.error('Submission Error:', error);
-            alert(error.message || 'An error occurred while processing your request.');
+            toast.error(error.message || 'An error occurred while processing your request.');
         }
     };
 

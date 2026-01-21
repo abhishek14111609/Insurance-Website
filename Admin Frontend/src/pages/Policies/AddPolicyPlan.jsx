@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { policyPlanAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AddPolicyPlan.css';
 
 const AddPolicyPlan = () => {
@@ -64,14 +65,14 @@ const AddPolicyPlan = () => {
             const response = await policyPlanAPI.create(planData);
 
             if (response.success) {
-                alert('Policy plan created successfully!');
+                toast.success('Policy plan created successfully!');
                 navigate('/policy-plans');
             } else {
-                alert('Error creating plan: ' + response.message);
+                toast.error('Error creating plan: ' + response.message);
             }
         } catch (err) {
             console.error('Error:', err);
-            alert('Failed to connect to server');
+            toast.error('Failed to connect to server');
         } finally {
             setLoading(false);
         }

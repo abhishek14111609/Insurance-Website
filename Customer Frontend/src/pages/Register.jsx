@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import './Register.css';
 
 const Register = () => {
@@ -108,7 +109,7 @@ const Register = () => {
                 role: 'customer'
             });
 
-            alert('Registration successful! Please verify your email, then log in.');
+            toast.success('Registration successful! Please verify your email, then log in.', { duration: 6000 });
             navigate('/login');
         } catch (error) {
             setErrors({ email: error.message || 'Registration failed. Please try again.' });

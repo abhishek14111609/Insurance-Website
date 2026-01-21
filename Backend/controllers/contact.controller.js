@@ -1,5 +1,6 @@
 import { Inquiry } from '../models/index.js';
 import { sendInquiryReply } from '../utils/email.util.js';
+import { notifyInquirySubmitted, notifyInquiryReplied } from '../utils/notification.util.js';
 
 // @desc    Submit a new inquiry
 // @route   POST /api/contact/submit
@@ -9,6 +10,7 @@ export const submitInquiry = async (req, res) => {
         const { name, email, phone, subject, message } = req.body;
 
         const inquiry = await Inquiry.create({
+            userId: req.user ? req.user._id : null,
             name,
             email,
             phone,
@@ -16,6 +18,15 @@ export const submitInquiry = async (req, res) => {
             message,
             status: 'pending'
         });
+
+        // Send notification if user is logged in
+        if (req.user) {
+            try {
+                await notifyInquirySubmitted(inquiry);
+            } catch (notifyError) {
+                console.error('Inquiry submission notification failed:', notifyError);
+            }
+        }
 
         res.status(201).json({
             success: true,
@@ -89,6 +100,15 @@ export const replyToInquiry = async (req, res) => {
         inquiry.adminReply = message;
         inquiry.repliedAt = new Date();
         await inquiry.save();
+
+        // Send notification if inquiry belongs to a user
+        if (inquiry.userId) {
+            try {
+                await notifyInquiryReplied(inquiry);
+            } catch (notifyError) {
+                console.error('Inquiry reply notification failed:', notifyError);
+            }
+        }
 
         if (emailError) {
             return res.status(200).json({

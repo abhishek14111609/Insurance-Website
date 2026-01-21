@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
+import toast from 'react-hot-toast';
 import './CommissionHistory.css';
 
 const CommissionHistory = () => {
@@ -70,11 +71,11 @@ const CommissionHistory = () => {
                     }));
                 }
             } else {
-                alert(response.message || 'Failed to approve commission');
+                toast.error(response.message || 'Failed to approve commission');
             }
         } catch (error) {
             console.error('Approve error:', error);
-            alert('An error occurred during approval');
+            toast.error('An error occurred during approval');
         } finally {
             setProcessingId(null);
         }

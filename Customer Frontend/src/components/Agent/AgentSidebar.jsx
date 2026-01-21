@@ -39,6 +39,9 @@ const AgentSidebar = () => {
                     <NavLink to="/agent/team" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                         <span className="icon">🌳</span> My Team
                     </NavLink>
+                    <NavLink to="/agent/notifications" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+                        <span className="icon">🔔</span> Notifications
+                    </NavLink>
                 </div>
 
                 <div className="nav-group">

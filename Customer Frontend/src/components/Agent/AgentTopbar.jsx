@@ -89,6 +89,8 @@ const AgentTopbar = () => {
             case 'withdrawal': return '💸';
             case 'claim': return '🏥';
             case 'agent': return '👤';
+            case 'inquiry': return '✉️';
+            case 'system': return '📢';
             default: return '🔔';
         }
     };
@@ -156,7 +158,15 @@ const AgentTopbar = () => {
                                 )}
                             </div>
                             <div className="dropdown-footer">
-                                <button className="view-all-btn">View All Notifications</button>
+                                <button
+                                    className="view-all-btn"
+                                    onClick={() => {
+                                        navigate('/agent/notifications');
+                                        setShowDropdown(false);
+                                    }}
+                                >
+                                    View All Notifications
+                                </button>
                             </div>
                         </div>
                     )}
