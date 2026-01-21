@@ -115,53 +115,19 @@ const AgentLanding = () => {
     };
 
     return (
+
+
+
+
+
+
+
+
         <div className="agent-landing">
-            {/* Hero Section */}
-            <section className="agent-hero">
-                <div className="agent-hero-content animate-fade-in">
-                    <span className="brand-badge">Join Our Network</span>
-                    <h1>Become a Certified POSP Agent</h1>
-                    <p>Start your journey with Pashudhan Suraksha today. Zero investment, unlimited earning potential, and complete training support.</p>
-                    <button className="btn btn-secondary" onClick={() => document.getElementById('register-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                        Register Now
-                    </button>
-                </div>
-            </section>
+<br></br>
 
-            {/* Benefits Section */}
-            <section className="section">
-                <div className="container">
-                    <div className="text-center mb-5">
-                        <h2 className="section-title">Why Partner With Us?</h2>
-                        <p className="section-subtitle">Join thousands of successful agents who trust Pashudhan Suraksha</p>
-                    </div>
-                    <div className="benefits-grid">
-                        <div className="benefit-card">
-                            <span className="benefit-icon">💰</span>
-                            <h3>High Commissions</h3>
-                            <p>Earn industry-leading commission rates on every policy you sell.</p>
-                        </div>
-                        <div className="benefit-card">
-                            <span className="benefit-icon">🎓</span>
-                            <h3>Free Training</h3>
-                            <p>Get certified with our comprehensive online training modules.</p>
-                        </div>
-                        <div className="benefit-card">
-                            <span className="benefit-icon">📱</span>
-                            <h3>Digital Portal</h3>
-                            <p>Manage customers and policies with our state-of-the-art app.</p>
-                        </div>
-                        <div className="benefit-card">
-                            <span className="benefit-icon">🎁</span>
-                            <h3>Rewards</h3>
-                            <p>Win exciting rewards and international trips on hitting targets.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
-            {/* Authentication Section */}
-            <section className="registration-section" id="auth-form">
+ <section className="registration-section" id="auth-form">
                 <div className="container" style={{ display: 'flex', justifyContent: 'center' }}>
                     <div className="registration-card animate-fade-in">
                         <div className="auth-tabs">
@@ -362,6 +328,57 @@ const AgentLanding = () => {
                     </div>
                 </div>
             </section>
+
+
+
+
+
+            {/* Hero Section */}
+            <section className="agent-hero">
+                <div className="agent-hero-content animate-fade-in">
+                    <span className="brand-badge">Join Our Network</span>
+                    <h1>Become a Certified POSP Agent</h1>
+                    <p>Start your journey with Pashudhan Suraksha today. Zero investment, unlimited earning potential, and complete training support.</p>
+                    <button className="btn btn-secondary" onClick={() => document.getElementById('register-form')?.scrollIntoView({ behavior: 'smooth' })}>
+                        Register Now
+                    </button>
+                </div>
+            </section>
+
+            {/* Benefits Section
+            <section className="section">
+                <div className="container">
+                    <div className="text-center mb-5">
+                        <h2 className="section-title">Why Partner With Us?</h2>
+                        <p className="section-subtitle">Join thousands of successful agents who trust Pashudhan Suraksha</p>
+                    </div>
+                    <div className="benefits-grid">
+                        <div className="benefit-card">
+                            <span className="benefit-icon">💰</span>
+                            <h3>High Commissions</h3>
+                            <p>Earn industry-leading commission rates on every policy you sell.</p>
+                        </div>
+                        <div className="benefit-card">
+                            <span className="benefit-icon">🎓</span>
+                            <h3>Free Training</h3>
+                            <p>Get certified with our comprehensive online training modules.</p>
+                        </div>
+                        <div className="benefit-card">
+                            <span className="benefit-icon">📱</span>
+                            <h3>Digital Portal</h3>
+                            <p>Manage customers and policies with our state-of-the-art app.</p>
+                        </div>
+                        <div className="benefit-card">
+                            <span className="benefit-icon">🎁</span>
+                            <h3>Rewards</h3>
+                            <p>Win exciting rewards and international trips on hitting targets.</p>
+                        </div>
+                    </div>
+                </div>
+            </section> */}
+
+            {/* Authentication Section */}
+           
         </div>
     );
 };
