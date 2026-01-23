@@ -31,7 +31,7 @@ const AgentLogin = () => {
                     // Check agent status from agent profile
                     if (agentProfile) {
                         if (agentProfile.status === 'pending') {
-                            setError('Your agent account is pending approval by admin. Please check back later.');
+                            setError('Your agent account is pending approval. (Admin: Please approve in Admin Panel)');
                             return;
                         }
                         if (agentProfile.status === 'rejected') {
@@ -42,6 +42,8 @@ const AgentLogin = () => {
                     navigate('/agent/dashboard');
                 } else {
 
+                    localStorage.removeItem('customer:auth_user'); // Clear storage
+                    window.location.reload(); // Hard reload to clear context
                     setError('This account is not registered as an agent.');
                 }
             }

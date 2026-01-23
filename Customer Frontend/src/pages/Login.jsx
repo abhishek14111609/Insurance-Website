@@ -22,6 +22,15 @@ const Login = () => {
     // Redirect if already logged in
     useEffect(() => {
         if (isAuthenticated) {
+            // Check if user is agent and redirect accordingly
+            const storedUser = localStorage.getItem('customer:auth_user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                if (user.role === 'agent') {
+                    navigate('/agent/dashboard');
+                    return;
+                }
+            }
             navigate('/');
         }
     }, [isAuthenticated, navigate]);
@@ -162,7 +171,7 @@ const Login = () => {
                 </div>
 
                 <div className="other-logins">
-                    <Link to="/become-agent" className="agent-login-link">
+                    <Link to="/agent/login" className="agent-login-link">
                         Are you an agent? <strong>Login here</strong>
                     </Link>
                 </div>

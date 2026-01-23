@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { policyAPI } from '../services/api.service';
+import { policyAPI, BASE_URL } from '../services/api.service';
 import toast from 'react-hot-toast';
 import './PolicyDetails.css';
 
@@ -43,7 +43,12 @@ const PolicyDetails = () => {
     }, [policyId]);
 
     const handleDownload = () => {
-        toast.success('Policy PDF download will be available soon!');
+        if (policy.documentUrl) {
+            const url = `${BASE_URL}/${policy.documentUrl}`;
+            window.open(url, '_blank');
+        } else {
+            toast.error('Policy document is not generated yet.');
+        }
     };
 
     const handlePrint = () => {
@@ -303,7 +308,7 @@ const PolicyDetails = () => {
 
                 {/* Action Buttons */}
                 <div className="action-buttons">
-                    {/* {policy.status === 'APPROVED' && (
+                    {policy.status === 'APPROVED' && (
                         <>
                             <button onClick={handleDownload} className="btn btn-primary">
                                 📄 Download PDF
@@ -312,7 +317,7 @@ const PolicyDetails = () => {
                                 🖨️ Print Policy
                             </button>
                         </>
-                    )} */}
+                    )}
                     <Link to="/my-policies" className="btn btn-secondary">
                         Back to My Policies
                     </Link>

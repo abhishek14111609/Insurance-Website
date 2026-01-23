@@ -161,6 +161,10 @@ const policySchema = new mongoose.Schema(
         adminNotes: {
             type: String,
             default: null
+        },
+        documentUrl: {
+            type: String,
+            default: null
         }
     },
     {

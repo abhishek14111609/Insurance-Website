@@ -96,7 +96,7 @@ const AgentTeam = () => {
 
             {/* Referral Info */}
             <div className="referral-card">
-                <h3>Your Referral Code</h3>
+                <h3 style={{ color: 'white' }}>Your Referral Code</h3>
                 <div className="referral-code-display">
                     <code>{user?.agentCode || 'Loading...'}</code>
                     <button
@@ -104,12 +104,41 @@ const AgentTeam = () => {
                         onClick={() => {
                             navigator.clipboard.writeText(user?.agentCode || '');
                             toast.success('Referral code copied!');
-                        }}
+                        }}          
                     >
                         Copy
                     </button>
                 </div>
-                <p>Share this code with new agents to build your team</p>
+                <p style={{"color": 'white'}}>Share this code with new agents to build your team</p>
+
+                <div className="referral-link-section" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                    <h4 style={{ fontSize: '0.9rem', color: 'white', marginBottom: '0.5rem' }}>OR Share Referral Link</h4>
+                    <div className="referral-code-display">
+                        <input
+                            type="text"
+                            readOnly
+                            value={`${window.location.origin}/become-agent?ref=${user?.agentCode || ''}`}
+                            style={{
+                                width: '100%',
+                                border: 'none',
+                                background: 'transparent',
+                                fontSize: '0.9rem',
+                                color: 'white',
+                                textOverflow: 'ellipsis'
+                            }}
+                        />
+                        <button style={{ color: 'white' }}
+                            className="btn btn-sm btn-outline"
+                            onClick={() => {
+                                const link = `${window.location.origin}/become-agent?ref=${user?.agentCode || ''}`;
+                                navigator.clipboard.writeText(link);
+                                toast.success('Referral link copied!');
+                            }}
+                        >
+                            Copy Link
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Filter Tabs */}

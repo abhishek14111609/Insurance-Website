@@ -220,7 +220,7 @@ const AgentWallet = () => {
                                         value={withdrawAmount}
                                         onChange={(e) => setWithdrawAmount(e.target.value)}
                                         placeholder="Enter amount"
-                                        min="500"
+                                        min="100"
                                         max={walletData?.balance}
                                         required
                                     />

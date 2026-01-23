@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { agentAPI } from '../../services/api.service';
 import AgentCodeInput from '../../components/AgentCodeInput';
@@ -28,13 +28,27 @@ const AgentLanding = () => {
     const [loginCredentials, setLoginCredentials] = useState({ email: '', password: '' });
     const [loginError, setLoginError] = useState('');
 
+    const [searchParams] = useSearchParams();
+
     useEffect(() => {
         if (location.hash === '#login') {
             setActiveTab('login');
             const form = document.getElementById('auth-form');
             if (form) form.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [location]);
+
+        // Handle referral link
+        const refCode = searchParams.get('ref');
+        if (refCode) {
+            setActiveTab('register');
+            setRegistrationData(prev => ({ ...prev, parentAgentCode: refCode }));
+            // Wait for DOM to update then scroll
+            setTimeout(() => {
+                const form = document.getElementById('auth-form');
+                if (form) form.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+    }, [location, searchParams]);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -124,10 +138,10 @@ const AgentLanding = () => {
 
 
         <div className="agent-landing">
-<br></br>
+            <br></br>
 
 
- <section className="registration-section" id="auth-form">
+            <section className="registration-section" id="auth-form">
                 <div className="container" style={{ display: 'flex', justifyContent: 'center' }}>
                     <div className="registration-card animate-fade-in">
                         <div className="auth-tabs">
@@ -378,7 +392,7 @@ const AgentLanding = () => {
             </section> */}
 
             {/* Authentication Section */}
-           
+
         </div>
     );
 };

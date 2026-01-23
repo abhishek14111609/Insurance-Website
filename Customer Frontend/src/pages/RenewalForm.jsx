@@ -78,28 +78,28 @@ const RenewalForm = () => {
             <div className="container">
                 <div className="form-container">
                     <div className="form-header">
-                        <h1>Renew Your Policy</h1>
-                        <p>Continue your protection with Pashudhan Suraksha</p>
+                        <h1>Renew Your Policy / તમારી પોલિસી રિન્યુ કરો</h1>
+                        <p>Continue your protection with Pashudhan Suraksha / પશુધન સુરક્ષા સાથે તમારું રક્ષણ ચાલુ રાખો</p>
                     </div>
 
                     {/* Current Policy Info */}
                     <div className="current-policy-card">
-                        <h3>Current Policy Details</h3>
+                        <h3>Current Policy Details / વર્તમાન પોલિસી વિગતો</h3>
                         <div className="policy-info-grid">
                             <div className="info-item">
-                                <span>Policy Number:</span>
+                                <span>Policy Number / પોલિસી નંબર:</span>
                                 <strong>{policy.policyNumber}</strong>
                             </div>
                             <div className="info-item">
-                                <span>Cattle Tag ID:</span>
+                                <span>Cattle Tag ID / પશુ ટેગ આઈડી:</span>
                                 <strong>{policy.tagId || policy.petName}</strong>
                             </div>
                             <div className="info-item">
-                                <span>Coverage:</span>
+                                <span>Coverage / કવરેજ:</span>
                                 <strong>₹{policy.coverageAmount?.toLocaleString()}</strong>
                             </div>
                             <div className="info-item">
-                                <span>Expiry Date:</span>
+                                <span>Expiry Date / સમાપ્તિ તારીખ:</span>
                                 <strong className="text-error">{policy.endDate}</strong>
                             </div>
                         </div>
@@ -108,7 +108,7 @@ const RenewalForm = () => {
                     <form onSubmit={handleSubmit} className="renewal-form">
                         {/* Renewal Duration */}
                         <div className="form-section">
-                            <h2 className="section-title">Select Renewal Duration</h2>
+                            <h2 className="section-title">Select Renewal Duration / રિન્યુઅલ સમયગાળો પસંદ કરો</h2>
 
                             <div className="duration-options">
                                 <label className={`duration-card ${formData.renewalDuration === '1' ? 'selected' : ''}`}>
@@ -120,9 +120,9 @@ const RenewalForm = () => {
                                         onChange={(e) => setFormData({ ...formData, renewalDuration: e.target.value })}
                                     />
                                     <div className="duration-content">
-                                        <h3>1 Year</h3>
+                                        <h3>1 Year / 1 વર્ષ</h3>
                                         <p className="duration-price">₹2,460</p>
-                                        <p className="duration-note">₹2,460/year</p>
+                                        <p className="duration-note">₹2,460/year / ₹2,460/વર્ષ</p>
                                     </div>
                                 </label>
 
@@ -136,9 +136,9 @@ const RenewalForm = () => {
                                     />
                                     <div className="duration-content">
                                         <div className="best-value-badge">BEST VALUE</div>
-                                        <h3>2 Years</h3>
+                                        <h3>2 Years / 2 વર્ષ</h3>
                                         <p className="duration-price">₹4,620</p>
-                                        <p className="duration-note">₹2,310/year • Save ₹300</p>
+                                        <p className="duration-note">₹2,310/year • Save ₹300 / ₹2,310/વર્ષ • ₹300 બચાવો</p>
                                     </div>
                                 </label>
 
@@ -152,9 +152,9 @@ const RenewalForm = () => {
                                     />
                                     <div className="duration-content">
                                         <div className="max-savings-badge">MAX SAVINGS</div>
-                                        <h3>3 Years</h3>
+                                        <h3>3 Years / 3 વર્ષ</h3>
                                         <p className="duration-price">₹6,590</p>
-                                        <p className="duration-note">₹2,197/year • Save ₹789</p>
+                                        <p className="duration-note">₹2,197/year • Save ₹789 / ₹2,197/વર્ષ • ₹789 બચાવો</p>
                                     </div>
                                 </label>
                             </div>
@@ -171,35 +171,35 @@ const RenewalForm = () => {
                                     required
                                 />
                                 <label htmlFor="agreeTerms">
-                                    I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and confirm that the cattle is in good health
+                                    I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and confirm that the cattle is in good health / હું નિયમો અને શરતો સાથે સંમત છું અને પુષ્ટિ કરું છું કે પશુની તબિયત સારી છે
                                 </label>
                             </div>
                         </div>
 
                         {/* Payment Summary */}
                         <div className="payment-summary">
-                            <h3>Payment Summary</h3>
+                            <h3>Payment Summary / ચુકવણી સારાંશ</h3>
                             <div className="summary-row">
-                                <span>Renewal Duration:</span>
+                                <span>Renewal Duration / રિન્યુઅલ સમયગાળો:</span>
                                 <span>{formData.renewalDuration} Year{formData.renewalDuration > 1 ? 's' : ''}</span>
                             </div>
                             <div className="summary-row">
-                                <span>Coverage Amount:</span>
+                                <span>Coverage Amount / કવરેજ રકમ:</span>
                                 <span>₹{policy.coverageAmount?.toLocaleString()}</span>
                             </div>
                             <div className="summary-row">
-                                <span>Premium:</span>
+                                <span>Premium / પ્રીમિયમ:</span>
                                 <span>{formatCurrency(premium)}</span>
                             </div>
                             <div className="summary-row total">
-                                <span>Total Payable:</span>
+                                <span>Total Payable / કુલ ચૂકવવાપાત્ર:</span>
                                 <span>{formatCurrency(premium)}</span>
                             </div>
                         </div>
 
                         {/* Submit Button */}
                         <button type="submit" className="btn btn-primary btn-block btn-large">
-                            Proceed to Payment - {formatCurrency(premium)}
+                            Proceed to Payment / ચુકવણી માટે આગળ વધો - {formatCurrency(premium)}
                         </button>
 
                         <div className="secure-badge">

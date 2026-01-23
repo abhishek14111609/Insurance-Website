@@ -31,7 +31,7 @@ const AdminLogin = () => {
         setIsSubmitting(true);
 
         if (!formData.username || !formData.password) {
-            setError('Please enter both username and password / કૃપા કરીને વપરાશકર્તા નામ અને પાસવર્ડ બંને દાખલ કરો');
+            setError('Please enter both username and password');
             setIsSubmitting(false);
             return;
         }
@@ -56,7 +56,7 @@ const AdminLogin = () => {
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError(err.message || 'Login failed. Please check your credentials / લૉગિન નિષ્ફળ. કૃપા કરીને તમારા ઓળખપત્રો તપાસો.');
+            setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
             setIsSubmitting(false);
         }
@@ -67,8 +67,8 @@ const AdminLogin = () => {
             <div className="login-container">
                 <div className="login-header">
                     <div className="logo">🛡️</div>
-                    <h1>Pashudhan Suraksha Admin <br /> પશુધન સુરક્ષા એડમિન</h1>
-                    <p>Sign in to access the admin panel / એડમિન પેનલ ઍક્સેસ કરવા માટે સાઇન ઇન કરો</p>
+                    <h1>Pashudhan Suraksha Admin</h1>
+                    <p>Sign in to access the admin panel</p>
                 </div>
 
                 {error && (
@@ -80,7 +80,7 @@ const AdminLogin = () => {
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="username">Email or Username / ઈમેલ અથવા વપરાશકર્તા નામ</label>
+                        <label htmlFor="username">Email or Username</label>
                         <input
                             type="text"
                             id="username"
@@ -93,7 +93,7 @@ const AdminLogin = () => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Password / પાસવર્ડ</label>
+                        <label htmlFor="password">Password</label>
                         <div className="password-input-wrapper">
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -119,7 +119,7 @@ const AdminLogin = () => {
                         disabled={isSubmitting}
                     >
                         {isSubmitting && <ButtonLoader />}
-                        {isSubmitting ? 'Signing in... / સાઇન ઇન કરી રહ્યું છે...' : 'Sign In / સાઇન ઇન કરો'}
+                        {isSubmitting ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 

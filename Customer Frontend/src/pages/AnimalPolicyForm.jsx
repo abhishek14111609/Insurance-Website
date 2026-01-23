@@ -272,8 +272,8 @@ const AnimalPolicyForm = () => {
         <div className="animal-policy-form">
             <div className="form-container">
                 <div className="form-header">
-                    <h1>Cattle Insurance Application</h1>
-                    <p>Complete the form to secure your livestock</p>
+                    <h1>Cattle Insurance Application / પશુ વીમા અરજી</h1>
+                    <p>Complete the form to secure your livestock / તમારા પશુધન માટે ફોર્મ ભરો</p>
 
                     {/* Selected Plan Summary */}
                     <div className="selected-plan-summary">
@@ -282,9 +282,9 @@ const AnimalPolicyForm = () => {
                             <span className="plan-name">{selectedPlan.name}</span>
                         </div>
                         <div className="plan-details">
-                            <div>Coverage: <strong>{formatCurrency(selectedPlan.coverageAmount)}</strong></div>
-                            <div>Premium: <strong>{formatCurrency(selectedPlan.premium)}</strong></div>
-                            <div style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.8 }}>Duration: {selectedPlan.duration}</div>
+                            <div>Coverage / કવરેજ: <strong>{formatCurrency(selectedPlan.coverageAmount)}</strong></div>
+                            <div>Premium / પ્રીમિયમ: <strong>{formatCurrency(selectedPlan.premium)}</strong></div>
+                            <div style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.8 }}>Duration / મુદત: {selectedPlan.duration}</div>
                         </div>
                     </div>
                 </div>
@@ -292,24 +292,24 @@ const AnimalPolicyForm = () => {
                 <form onSubmit={handleSubmit} className="policy-form">
                     {/* Cattle Details */}
                     <div className="form-section">
-                        <h2 className="section-title">🐄 Cattle Details</h2>
+                        <h2 className="section-title">🐄 Cattle Details / પશુ વિગતો</h2>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Cattle Type *</label>
+                                <label>Cattle Type / પશુ પ્રકાર *</label>
                                 <select name="cattleType" value={formData.cattleType} onChange={handleInputChange} required>
-                                    <option value="cow">🐄 Cow</option>
-                                    <option value="buffalo">🐃 Buffalo</option>
+                                    <option value="cow">🐄 Cow / ગાય</option>
+                                    <option value="buffalo">🐃 Buffalo / ભેંસ</option>
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Tag ID / Name *</label>
+                                <label>Tag ID / Name / ટેગ આઈડી / નામ *</label>
                                 <input
                                     type="text"
                                     name="tagId"
                                     value={formData.tagId}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Ear Tag Number"
+                                    placeholder="Enter Ear Tag Number / કાન ટેગ નંબર દાખલ કરો"
                                     required
                                 />
                             </div>
@@ -317,7 +317,7 @@ const AnimalPolicyForm = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Age (Years) *</label>
+                                <label>Age (Years) / ઉંમર (વર્ષ) *</label>
                                 <input
                                     type="number"
                                     name="age"
@@ -330,7 +330,7 @@ const AnimalPolicyForm = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Breed</label>
+                                <label>Breed / જાતિ</label>
                                 <input
                                     type="text"
                                     name="breed"
@@ -343,14 +343,14 @@ const AnimalPolicyForm = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Gender *</label>
+                                <label>Gender / લિંગ *</label>
                                 <select name="gender" value={formData.gender} onChange={handleInputChange} required>
-                                    <option value="female">Female</option>
-                                    <option value="male">Male</option>
+                                    <option value="female">Female / સ્ત્રી</option>
+                                    <option value="male">Male / પુરુષ</option>
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Milk Yield (Liters/Day)</label>
+                                <label>Milk Yield (Liters/Day) / દૂધ ઉત્પાદન (લિટર/દિવસ)</label>
                                 <input
                                     type="number"
                                     name="milkYield"
@@ -362,44 +362,44 @@ const AnimalPolicyForm = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Health Status *</label>
+                            <label>Health Status / આરોગ્ય સ્થિતિ *</label>
                             <select name="healthStatus" value={formData.healthStatus} onChange={handleInputChange} required>
-                                <option value="healthy">Healthy</option>
-                                <option value="under_treatment">Under Treatment</option>
+                                <option value="healthy">Healthy / સ્વસ્થ</option>
+                                <option value="under_treatment">Under Treatment / સારવાર હેઠળ</option>
                             </select>
                         </div>
                     </div>
 
                     {/* 4 Photos Section */}
                     <div className="photo-upload-section">
-                        <h3>Cattle Photos (Required)</h3>
-                        <p className="section-hint">Upload clear photos from all 4 sides. Maximum 1MB per photo.</p>
+                        <h3>Cattle Photos (Required) / પશુ ના ફોટા (જરૂરી)</h3>
+                        <p className="section-hint">Upload clear photos from all 4 sides. Maximum 1MB per photo. / ચારેય બાજુથી સ્પષ્ટ ફોટા અપલોડ કરો. ફોટો દીઠ મહત્તમ 1MB.</p>
 
                         <div className="photos-grid">
                             <PhotoUpload
                                 side="front"
-                                label="Front View"
+                                label="Front View / આગળનો ભાગ"
                                 value={photoPreviews.front}
                                 onChange={handlePhotoChange}
                                 required
                             />
                             <PhotoUpload
                                 side="back"
-                                label="Back View"
+                                label="Back View / પાછળનો ભાગ"
                                 value={photoPreviews.back}
                                 onChange={handlePhotoChange}
                                 required
                             />
                             <PhotoUpload
                                 side="left"
-                                label="Left Side"
+                                label="Left Side / ડાબી બાજુ"
                                 value={photoPreviews.left}
                                 onChange={handlePhotoChange}
                                 required
                             />
                             <PhotoUpload
                                 side="right"
-                                label="Right Side"
+                                label="Right Side / જમણી બાજુ"
                                 value={photoPreviews.right}
                                 onChange={handlePhotoChange}
                                 required
@@ -409,14 +409,14 @@ const AnimalPolicyForm = () => {
 
                     {/* Owner Details */}
                     <div className="form-section">
-                        <h2 className="section-title">👤 Owner Details</h2>
+                        <h2 className="section-title">👤 Owner Details / માલિકની વિગતો</h2>
                         <div className="alert-info">
-                            ℹ️ Details pre-filled from your profile
+                            ℹ️ Details pre-filled from your profile / તમારી પ્રોફાઇલમાંથી વિગતો પહેલાથી ભરેલી છે
                         </div>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Full Name *</label>
+                                <label>Full Name / પૂરું નામ *</label>
                                 <input
                                     type="text"
                                     name="ownerName"
@@ -427,7 +427,7 @@ const AnimalPolicyForm = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Email *</label>
+                                <label>Email / ઈમેલ *</label>
                                 <input
                                     type="email"
                                     name="email"
@@ -441,7 +441,7 @@ const AnimalPolicyForm = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Phone Number *</label>
+                                <label>Phone Number / ફોન નંબર *</label>
                                 <input
                                     type="tel"
                                     name="phone"
@@ -452,7 +452,7 @@ const AnimalPolicyForm = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>City *</label>
+                                <label>City / શહેર *</label>
                                 <input
                                     type="text"
                                     name="city"
@@ -466,7 +466,7 @@ const AnimalPolicyForm = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>State *</label>
+                                <label>State / રાજ્ય *</label>
                                 <input
                                     type="text"
                                     name="state"
@@ -477,7 +477,7 @@ const AnimalPolicyForm = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Pincode *</label>
+                                <label>Pincode / પિનકોડ *</label>
                                 <input
                                     type="text"
                                     name="pincode"
@@ -491,7 +491,7 @@ const AnimalPolicyForm = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Address *</label>
+                            <label>Address / સરનામું *</label>
                             <textarea
                                 name="address"
                                 value={formData.address}
@@ -505,11 +505,11 @@ const AnimalPolicyForm = () => {
 
                     {/* Agent Code */}
                     <div className="form-section">
-                        <h2 className="section-title">🤝 Agent Referral (Optional)</h2>
+                        <h2 className="section-title">🤝 Agent Referral (Optional) / એજન્ટ રેફરલ (વૈકલ્પિક)</h2>
                         <AgentCodeInput
                             value={formData.agentCode}
                             onChange={(code) => setFormData({ ...formData, agentCode: code })}
-                            label="Agent Code"
+                            label="Agent Code / એજન્ટ કોડ"
                         />
                     </div>
 
@@ -525,35 +525,35 @@ const AnimalPolicyForm = () => {
                                 required
                             />
                             <label htmlFor="agreeTerms">
-                                I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+                                I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a> / હું નિયમો અને શરતો અને ગોપનીયતા નીતિ સાથે સંમત છું
                             </label>
                         </div>
                     </div>
 
                     {/* Premium Summary */}
                     <div className="premium-summary">
-                        <h3>Payment Summary</h3>
+                        <h3>Payment Summary / ચુકવણી સારાંશ</h3>
                         <div className="summary-row">
-                            <span>Plan:</span>
+                            <span>Plan / પ્લાન:</span>
                             <span>{selectedPlan.name} ({selectedPlan.duration})</span>
                         </div>
                         <div className="summary-row">
-                            <span>Coverage Amount:</span>
+                            <span>Coverage Amount / કવરેજ રકમ:</span>
                             <span>{formatCurrency(selectedPlan.coverageAmount)}</span>
                         </div>
                         <div className="summary-row">
-                            <span>Premium:</span>
+                            <span>Premium / પ્રીમિયમ:</span>
                             <span>{formatCurrency(selectedPlan.premium)}</span>
                         </div>
                         <div className="summary-row total">
-                            <span>Total Payable:</span>
+                            <span>Total Payable / કુલ ચૂકવવાપાત્ર:</span>
                             <span>{formatCurrency(selectedPlan.premium)}</span>
                         </div>
                     </div>
 
                     {/* Submit Button */}
                     <button type="submit" className="btn btn-primary btn-block btn-large">
-                        Proceed to Payment - {formatCurrency(selectedPlan.premium)}
+                        Proceed to Payment / ચુકવણી માટે આગળ વધો - {formatCurrency(selectedPlan.premium)}
                     </button>
 
                     <div className="secure-badge">

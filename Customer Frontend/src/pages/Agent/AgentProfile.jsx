@@ -48,23 +48,32 @@ const AgentProfile = () => {
 
     useEffect(() => {
         if (user) {
-            setProfileData({
+            setProfileData(prev => ({
+                ...prev,
                 fullName: user.fullName || '',
                 email: user.email || '',
                 phone: user.phone || '',
                 address: user.address || '',
                 city: user.city || '',
                 state: user.state || '',
-                pincode: user.pincode || '',
-                bankName: user.bankName || '',
-                accountNumber: user.accountNumber || '',
-                ifscCode: user.ifscCode || '',
-                accountHolderName: user.accountHolderName || '',
-                panNumber: user.panNumber || '',
-                aadharNumber: user.aadharNumber || ''
-            });
+                pincode: user.pincode || ''
+            }));
         }
     }, [user]);
+
+    useEffect(() => {
+        if (agentInfo) {
+            setProfileData(prev => ({
+                ...prev,
+                bankName: agentInfo.bankName || '',
+                accountNumber: agentInfo.accountNumber || '',
+                ifscCode: agentInfo.ifscCode || '',
+                accountHolderName: agentInfo.accountHolderName || '',
+                panNumber: agentInfo.panNumber || '',
+                aadharNumber: agentInfo.aadharNumber || ''
+            }));
+        }
+    }, [agentInfo]);
 
     const fetchAgentProfile = async () => {
         try {

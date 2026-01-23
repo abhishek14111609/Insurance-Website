@@ -179,16 +179,16 @@ const ClaimForm = () => {
         <div className="claim-form-page">
             <div className="container">
                 <div className="form-header">
-                    <h1>File Insurance Claim</h1>
-                    <p>Submit your claim for review. Our team will process it within 3-5 business days.</p>
+                    <h1>File Insurance Claim / વીમા દાવો દાખલ કરો</h1>
+                    <p>Submit your claim for review. Our team will process it within 3-5 business days. / સમીક્ષા માટે તમારો દાવો સબમિટ કરો. અમારી ટીમ 3-5 કામકાજના દિવસોમાં તેની પ્રક્રિયા કરશે.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="claim-form">
                     {/* Policy Selection */}
                     <div className="form-section">
-                        <h2>Select Policy</h2>
+                        <h2>Select Policy / પોલિસી પસંદ કરો</h2>
                         <div className="form-group">
-                            <label>Policy *</label>
+                            <label>Policy / પોલિસી *</label>
                             <select
                                 name="policyId"
                                 value={formData.policyId}
@@ -196,7 +196,7 @@ const ClaimForm = () => {
                                 required
                                 disabled={!!preSelectedPolicy}
                             >
-                                <option value="">Select a policy</option>
+                                <option value="">Select a policy / પોલિસી પસંદ કરો</option>
                                 {policies.map(policy => {
                                     const policyId = policy._id || policy.id;
                                     return (
@@ -211,27 +211,27 @@ const ClaimForm = () => {
 
                     {/* Claim Details */}
                     <div className="form-section">
-                        <h2>Claim Details</h2>
+                        <h2>Claim Details / દાવાની વિગતો</h2>
 
                         <div className="form-group">
-                            <label>Claim Type *</label>
+                            <label>Claim Type / દાવાનો પ્રકાર *</label>
                             <select
                                 name="claimType"
                                 value={formData.claimType}
                                 onChange={handleInputChange}
                                 required
                             >
-                                <option value="death">Death</option>
-                                <option value="accident">Accident</option>
-                                <option value="disease">Disease</option>
-                                <option value="disability">Permanent Disability</option>
-                                <option value="other">Other</option>
+                                <option value="death">Death / મૃત્યુ</option>
+                                <option value="accident">Accident / અકસ્માત</option>
+                                <option value="disease">Disease / રોગ</option>
+                                <option value="disability">Permanent Disability / કાયમી અપંગતા</option>
+                                <option value="other">Other / અન્ય</option>
                             </select>
                         </div>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Incident Date *</label>
+                                <label>Incident Date / ઘટનાની તારીખ *</label>
                                 <input
                                     type="date"
                                     name="incidentDate"
@@ -243,7 +243,7 @@ const ClaimForm = () => {
                             </div>
 
                             <div className="form-group">
-                                <label>Incident Location *</label>
+                                <label>Incident Location / ઘટનાનું સ્થાન *</label>
                                 <input
                                     type="text"
                                     name="incidentLocation"
@@ -256,7 +256,7 @@ const ClaimForm = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Claim Amount (₹) *</label>
+                            <label>Claim Amount (₹) / દાવાની રકમ (₹) *</label>
                             <input
                                 type="number"
                                 name="claimAmount"
@@ -273,7 +273,7 @@ const ClaimForm = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Description *</label>
+                            <label>Description / વર્ણન *</label>
                             <textarea
                                 name="description"
                                 value={formData.description}
@@ -287,34 +287,34 @@ const ClaimForm = () => {
 
                     {/* Document Upload */}
                     <div className="form-section">
-                        <h2>Upload Documents</h2>
+                        <h2>Upload Documents / દસ્તાવેજો અપલોડ કરો</h2>
                         <p className="section-hint">
-                            Upload clear photos of relevant documents. At least one incident photo is required.
+                            Upload clear photos of relevant documents. At least one incident photo is required. / સંબંધિત દસ્તાવેજોના સ્પષ્ટ ફોટા અપલોડ કરો. ઓછામાં ઓછો એક ઘટનાનો ફોટો આવશ્યક છે.
                         </p>
 
                         <div className="documents-grid">
                             <PhotoUpload
                                 side="incident"
-                                label="Incident Photo *"
+                                label="Incident Photo / ઘટનાનો ફોટો *"
                                 value={documentPreviews.incident}
                                 onChange={handlePhotoChange}
                                 required
                             />
                             <PhotoUpload
                                 side="postmortem"
-                                label="Post-mortem Report"
+                                label="Post-mortem Report / પોસ્ટમોર્ટમ રિપોર્ટ"
                                 value={documentPreviews.postmortem}
                                 onChange={handlePhotoChange}
                             />
                             <PhotoUpload
                                 side="veterinary"
-                                label="Veterinary Certificate"
+                                label="Veterinary Certificate / વેટરનરી સર્ટિફિકેટ"
                                 value={documentPreviews.veterinary}
                                 onChange={handlePhotoChange}
                             />
                             <PhotoUpload
                                 side="other"
-                                label="Other Documents"
+                                label="Other Documents / અન્ય દસ્તાવેજો"
                                 value={documentPreviews.other}
                                 onChange={handlePhotoChange}
                             />
@@ -323,13 +323,13 @@ const ClaimForm = () => {
 
                     {/* Important Notes */}
                     <div className="info-box">
-                        <h4>📋 Important Notes</h4>
+                        <h4>📋 Important Notes / મહત્વપૂર્ણ નોંધો</h4>
                         <ul>
-                            <li>Claims must be filed within 24 hours of the incident</li>
-                            <li>Post-mortem report is mandatory for death claims</li>
-                            <li>Veterinary certificate is required for disease/disability claims</li>
-                            <li>All documents should be clear and legible</li>
-                            <li>False claims may result in policy cancellation</li>
+                            <li>Claims must be filed within 24 hours of the incident / ઘટનાના 24 કલાકની અંદર દાવાઓ ફાઇલ કરવા આવશ્યક છે</li>
+                            <li>Post-mortem report is mandatory for death claims / મૃત્યુના દાવા માટે પોસ્ટમોર્ટમ રિપોર્ટ ફરજિયાત છે</li>
+                            <li>Veterinary certificate is required for disease/disability claims / રોગ/અપંગતાના દાવાઓ માટે વેટરનરી સર્ટિફિકેટ જરૂરી છે</li>
+                            <li>All documents should be clear and legible / બધા દસ્તાવેજો સ્પષ્ટ અને વાંચી શકાય તેવા હોવા જોઈએ</li>
+                            <li>False claims may result in policy cancellation / ખોટા દાવાઓને કારણે પોલિસી રદ થઈ શકે છે</li>
                         </ul>
                     </div>
 
@@ -340,14 +340,14 @@ const ClaimForm = () => {
                             className="btn btn-secondary"
                             onClick={() => navigate('/claims')}
                         >
-                            Cancel
+                            Cancel / રદ કરો
                         </button>
                         <button
                             type="submit"
                             className="btn btn-primary"
                             disabled={loading}
                         >
-                            {loading ? 'Submitting...' : 'Submit Claim'}
+                            {loading ? 'Submitting... / સબમિટ થઈ રહ્યું છે...' : 'Submit Claim / દાવો સબમિટ કરો'}
                         </button>
                     </div>
                 </form>

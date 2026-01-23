@@ -7,6 +7,8 @@ const isLocalhost = isBrowser && /(localhost|127\.0\.0\.1)/.test(window.location
 const API_BASE_URL = import.meta.env.VITE_API_URL
     || (isLocalhost ? 'http://localhost:5000/api' : DEFAULT_PROD_API);
 
+export const BASE_URL = API_BASE_URL.replace('/api', '');
+
 // Create axios instance
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,

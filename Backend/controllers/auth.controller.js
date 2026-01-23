@@ -95,8 +95,8 @@ export const register = async (req, res) => {
             pincode,
             role: targetRole,
             status: 'active',
-            emailVerified: targetRole === 'admin' ? true : false,
-            verificationToken: targetRole === 'admin' ? null : hashToken(verificationToken)
+            emailVerified: targetRole === 'admin' || !isProd ? true : false,
+            verificationToken: targetRole === 'admin' || !isProd ? null : hashToken(verificationToken)
         });
 
         // Generate tokens
@@ -113,7 +113,7 @@ export const register = async (req, res) => {
             res.cookie('admin_token', token, cookieOptions);
         }
 
-        if (targetRole !== 'admin') {
+        if (targetRole !== 'admin' && isProd) {
             // Send verification email (non-blocking best-effort)
             sendVerificationEmail(user, verificationToken).catch((err) => {
                 console.error('Send verification email failed:', err);
@@ -174,8 +174,8 @@ export const registerAgent = async (req, res) => {
             pincode: pincode || '',
             role: 'agent',
             status: 'active',
-            emailVerified: false,
-            verificationToken: hashToken(verificationToken)
+            emailVerified: !isProd,
+            verificationToken: !isProd ? null : hashToken(verificationToken)
         }], { session });
 
         // Generate unique agent code (AG + 4 digits)
@@ -209,10 +209,12 @@ export const registerAgent = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        // Send verification email (non-blocking)
-        sendVerificationEmail(user, verificationToken).catch((err) => {
-            console.error('Send verification email failed:', err);
-        });
+        // Send verification email (non-blocking) - Only in PROD
+        if (isProd) {
+            sendVerificationEmail(user, verificationToken).catch((err) => {
+                console.error('Send verification email failed:', err);
+            });
+        }
 
         res.status(201).json({
             success: true,
@@ -275,7 +277,7 @@ export const login = async (req, res) => {
             });
         }
 
-        if (user.role !== 'admin' && !user.emailVerified) {
+        if (user.role !== 'admin' && !user.emailVerified && isProd) {
             return res.status(403).json({
                 success: false,
                 message: 'Please verify your email before logging in. A verification link has been sent to your email.'

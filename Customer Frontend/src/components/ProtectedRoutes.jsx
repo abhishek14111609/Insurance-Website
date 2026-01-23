@@ -65,7 +65,7 @@ export const ProtectedCustomerRoute = ({ children }) => {
             return <Navigate to="/agent/dashboard" replace />;
         }
         if (user?.role === 'admin') {
-            return <Navigate to="/login" replace />;
+            return <Navigate to="/" replace />;
         }
         // For any other role, redirect to home
         return <Navigate to="/" replace />;
