@@ -182,29 +182,43 @@ export const AuthProvider = ({ children }) => {
 
     const updateUser = async (profileData) => {
         try {
+            setLoading(true); // Show loading during update
             setError(null);
             const response = await authAPI.updateProfile(profileData);
             if (response.success) {
-                const updatedUserData = response.data.user;
-                if (response.data.agentProfile) {
-                    Object.assign(updatedUserData, response.data.agentProfile);
-                }
-                setUser(updatedUserData);
+                // IMPORTANT: Merge with current user state to preserve fields not returned by update API
+                // (like kycStatus, level, agentCode if the update API only returns base user fields)
+                const userData = response.data.user;
+                const agentData = response.data.agentProfile;
+
+                const updatedState = {
+                    ...user, // Start with everything we have
+                    ...userData, // Overwrite with new user fields
+                    ...(agentData || {}) // Overwrite with new agent fields if available
+                };
+
+                setUser(updatedState);
+
                 // Persist minimal updated user data
                 const minimalUser = {
-                    id: updatedUserData.id,
-                    email: updatedUserData.email,
-                    fullName: updatedUserData.fullName,
-                    role: updatedUserData.role
+                    id: updatedState.id,
+                    email: updatedState.email,
+                    fullName: updatedState.fullName,
+                    role: updatedState.role
                 };
                 localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(minimalUser));
+
                 // Broadcast to other tabs
                 broadcastAuthState('login', minimalUser);
-                return response;
+
+                return { success: true, message: response.message };
             }
+            return { success: false, message: response.message || 'Update failed' };
         } catch (err) {
             setError(err?.message || 'Update failed');
-            throw err;
+            return { success: false, message: err?.message || 'Update failed' };
+        } finally {
+            setLoading(false);
         }
     };
 

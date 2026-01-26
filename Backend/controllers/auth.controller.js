@@ -413,10 +413,19 @@ export const updateProfile = async (req, res) => {
         user.pincode = pincode || user.pincode;
         await user.save();
 
+        // Fetch agent profile if user is an agent
+        let agentProfile = null;
+        if (user.role === 'agent') {
+            agentProfile = await Agent.findOne({ userId: user._id });
+        }
+
         res.json({
             success: true,
             message: 'Profile updated successfully',
-            data: { user: user.toJSON() }
+            data: {
+                user: user.toJSON(),
+                agentProfile: agentProfile ? agentProfile.toJSON() : null
+            }
         });
     } catch (error) {
         console.error('Update profile error:', error);

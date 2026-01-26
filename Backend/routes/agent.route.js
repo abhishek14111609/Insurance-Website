@@ -14,7 +14,9 @@ import {
     getAgentCustomers,
     updateCustomerNotes,
     updateSubAgentTraining,
-    submitKYC
+    submitKYC,
+    searchCustomer,
+    agentAddPolicy
 } from '../controllers/agent.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { uploadAgentDocs } from '../middleware/upload.middleware.js';
@@ -47,6 +49,8 @@ router.get('/withdrawals', authorize('agent'), getWithdrawals);
 router.get('/commissions', authorize('agent'), getCommissions);
 router.get('/policies', authorize('agent'), getPoliciesSold);
 router.get('/customers', authorize('agent'), getAgentCustomers);
+router.get('/customers/search/:phone', authorize('agent'), searchCustomer);
+router.post('/policies/add', authorize('agent'), agentAddPolicy);
 router.patch('/customers/:id/notes', authorize('agent'), updateCustomerNotes);
 router.patch('/team/:id/training', authorize('agent'), updateSubAgentTraining);
 

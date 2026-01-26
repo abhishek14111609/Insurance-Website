@@ -61,6 +61,41 @@ const AgentDetails = () => {
         }
     };
 
+    const handleResetPassword = async () => {
+        const agentId = agent?._id || agent?.id;
+        if (!agentId) return;
+
+        if (!window.confirm(`Are you sure you want to regenerate the password for ${agent.user?.fullName}? The old password will stop working immediately.`)) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await adminAPI.resetAgentPassword(agentId);
+            if (response.success) {
+                const newPassword = response.data.newPassword;
+                // Show modal or persistent toast with new password
+                // Since we don't have a modal component ready, let's use a prompt/alert for simple copy-paste
+                // or a custom toast
+
+                // Copy to clipboard automatically if supported
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(newPassword);
+                    toast.success('New password copied to clipboard!', { duration: 5000 });
+                }
+
+                alert(`PASSWORD RESET SUCCESSFUL\n\nNew Password: ${newPassword}\n\nPlease copy this password immediately. It will not be shown again.`);
+            } else {
+                toast.error(response.message || 'Failed to reset password');
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            toast.error('Error resetting password');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const loadData = async () => {
         try {
             setLoading(true);
@@ -100,9 +135,17 @@ const AgentDetails = () => {
                     <p>{agent.agentCode || agent.code} - {agent.user?.fullName}</p>
                 </div>
                 {agentId && (
-                    <Link to={`/agents/edit/${agentId}`} className="btn btn-primary">
-                        ✏️ Edit Agent
-                    </Link>
+                    <div className="header-actions">
+                        <Link to={`/agents/edit/${agentId}`} className="btn btn-primary">
+                            ✏️ Edit Agent
+                        </Link>
+                        <button
+                            onClick={handleResetPassword}
+                            className="btn btn-warning"
+                        >
+                            🔐 Regenerate Password
+                        </button>
+                    </div>
                 )}
             </div>
 

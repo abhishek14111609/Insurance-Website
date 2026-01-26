@@ -682,3 +682,83 @@
         gap: 1rem;
     }
 }
+
+/* Sell Policy Action Card Styles */
+.quick-actions {
+    margin-bottom: 2.5rem;
+}
+
+.quick-actions h2 {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.action-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    border: 1px solid #edf2f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border-color: #4299e1;
+}
+
+.action-card.highlight {
+    background: linear-gradient(135deg, #ebf8ff 0%, #ffffff 100%);
+    border: 2px solid #bee3f8;
+}
+
+.action-card.highlight:hover {
+    border-color: #4299e1;
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    width: 60px;
+    height: 60px;
+    background: #f7fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.action-card.highlight .action-icon {
+    background: #4299e1;
+    color: white;
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+}
+
+.action-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+    font-weight: 700;
+}
+
+.action-card p {
+    font-size: 0.85rem;
+    color: #718096;
+    margin: 0;
+}

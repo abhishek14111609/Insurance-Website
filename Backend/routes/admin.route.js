@@ -25,7 +25,8 @@ import {
     setupDatabase,
     verifyAgentKYC,
     getAllPayments,
-    getAllClaims
+    getAllClaims,
+    resetAgentPassword
 } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
@@ -53,6 +54,7 @@ router.patch('/agents/:id/approve', approveAgent);
 router.patch('/agents/:id/reject', rejectAgent);
 router.patch('/agents/:id/verify-kyc', verifyAgentKYC);
 router.put('/agents/:id', updateAgent);
+router.patch('/agents/:id/reset-password', resetAgentPassword);
 
 // Customers
 router.get('/customers', getAllCustomers);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { agentAPI } from '../../services/api.service';
+import { agentAPI, authAPI } from '../../services/api.service';
 import './AgentProfile.css';
 
 const AgentProfile = () => {
@@ -228,8 +228,8 @@ const AgentProfile = () => {
                     </div>
                     <div className="info-item">
                         <label>KYC Status</label>
-                        <span className={`status-badge status-${agentInfo.kycStatus || 'not_submitted'}`}>
-                            {agentInfo.kycStatus || 'Not Submitted'}
+                        <span className={`status-badge status-${(agentInfo.kycStatus || 'not_submitted').toLowerCase()}`}>
+                            {(agentInfo.kycStatus || 'Not Submitted').replace('_', ' ')}
                         </span>
                     </div>
                 </div>
@@ -283,7 +283,7 @@ const AgentProfile = () => {
                                 pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                                 maxLength="10"
                                 required
-                                disabled={agentInfo.kycStatus === 'verified'}
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                         </div>
                         <div className="form-group">
@@ -293,6 +293,7 @@ const AgentProfile = () => {
                                 name="panPhoto"
                                 onChange={handleFileChange}
                                 accept="image/*,.pdf"
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                             {agentInfo.panPhoto && <span className="text-success small">✓ PAN Document Uploaded</span>}
                         </div>
@@ -307,6 +308,7 @@ const AgentProfile = () => {
                                 pattern="[0-9]{12}"
                                 maxLength="12"
                                 required
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                         </div>
                         <div className="form-group">
@@ -316,6 +318,7 @@ const AgentProfile = () => {
                                 name="aadharPhotoFront"
                                 onChange={handleFileChange}
                                 accept="image/*,.pdf"
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                             {agentInfo.aadharPhotoFront && <span className="text-success small">✓ Front Uploaded</span>}
                         </div>
@@ -326,6 +329,7 @@ const AgentProfile = () => {
                                 name="aadharPhotoBack"
                                 onChange={handleFileChange}
                                 accept="image/*,.pdf"
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                             {agentInfo.aadharPhotoBack && <span className="text-success small">✓ Back Uploaded</span>}
                         </div>
@@ -336,6 +340,7 @@ const AgentProfile = () => {
                                 name="bankProofPhoto"
                                 onChange={handleFileChange}
                                 accept="image/*,.pdf"
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                             {agentInfo.bankProofPhoto && <span className="text-success small">✓ Bank Proof Uploaded</span>}
                         </div>
@@ -351,6 +356,7 @@ const AgentProfile = () => {
                                 value={profileData.bankName}
                                 onChange={handleInputChange}
                                 required
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                         </div>
 
@@ -362,6 +368,7 @@ const AgentProfile = () => {
                                 value={profileData.accountNumber}
                                 onChange={handleInputChange}
                                 required
+                                disabled={agentInfo.kycStatus?.toLowerCase() === 'verified'}
                             />
                         </div>
 
@@ -389,7 +396,7 @@ const AgentProfile = () => {
                         </div>
                     </div>
 
-                    {agentInfo.kycStatus !== 'verified' && (
+                    {agentInfo.kycStatus?.toLowerCase() !== 'verified' && (
                         <button type="submit" className="btn btn-primary" disabled={loading}>
                             {loading ? 'Submitting...' : 'Submit KYC for Verification'}
                         </button>
@@ -499,6 +506,57 @@ const AgentProfile = () => {
                             {loading ? 'Saving...' : 'Save Changes'}
                         </button>
                     )}
+                </form>
+            </div>
+
+            {/* Change Password */}
+            <div className="profile-section">
+                <div className="section-header">
+                    <h2>Security</h2>
+                    <span className="text-muted small">Update your password</span>
+                </div>
+                <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    setMessage({ type: '', text: '' });
+
+                    const currentPassword = e.target.currentPassword.value;
+                    const newPassword = e.target.newPassword.value;
+                    const confirmPassword = e.target.confirmPassword.value;
+
+                    if (newPassword !== confirmPassword) {
+                        setMessage({ type: 'error', text: 'New passwords do not match' });
+                        setLoading(false);
+                        return;
+                    }
+
+                    try {
+                        await authAPI.changePassword({ currentPassword, newPassword });
+                        setMessage({ type: 'success', text: 'Password updated successfully' });
+                        e.target.reset();
+                    } catch (error) {
+                        setMessage({ type: 'error', text: error.message || 'Failed to update password' });
+                    } finally {
+                        setLoading(false);
+                    }
+                }}>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label>Current Password</label>
+                            <input type="password" name="currentPassword" required />
+                        </div>
+                        <div className="form-group">
+                            <label>New Password</label>
+                            <input type="password" name="newPassword" required minLength="6" />
+                        </div>
+                        <div className="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" name="confirmPassword" required minLength="6" />
+                        </div>
+                    </div>
+                    <button type="submit" className="btn btn-secondary mt-3" disabled={loading}>
+                        {loading ? 'Updating...' : 'Change Password'}
+                    </button>
                 </form>
             </div>
         </div>

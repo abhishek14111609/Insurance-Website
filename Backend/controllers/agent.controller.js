@@ -1,4 +1,4 @@
-import { Agent, User, Policy, Commission, Withdrawal } from '../models/index.js';
+import { Agent, User, Policy, Commission, Withdrawal, Payment } from '../models/index.js';
 import mongoose from 'mongoose';
 import { getAgentCommissionSummary } from '../utils/commission.util.js';
 import { notifyAgentApproval } from '../utils/notification.util.js';
@@ -705,7 +705,7 @@ export const getAgentCustomers = async (req, res) => {
         const policies = await Policy.find({ agentId: agent._id })
             .populate('customer')
             .sort({ createdAt: -1 });
-        
+
         // Group by customer
         const customerMap = new Map();
         policies.forEach(policy => {
@@ -726,7 +726,7 @@ export const getAgentCustomers = async (req, res) => {
                 }
             }
         });
-        
+
         const customers = Array.from(customerMap.values());
 
         res.json({
@@ -756,7 +756,7 @@ export const updateCustomerNotes = async (req, res) => {
 
         // Verify customer belongs to this agent (has sold them a policy)
         const policy = await Policy.findOne({
-            agentId: agent._id, 
+            agentId: agent._id,
             customerId: id
         });
 
@@ -794,7 +794,7 @@ export const updateSubAgentTraining = async (req, res) => {
 
         // Verify sub-agent is a direct downline
         const subAgent = await Agent.findOne({
-            _id: id, 
+            _id: id,
             parentAgentId: parentAgent._id
         });
 
@@ -883,6 +883,181 @@ export const submitKYC = async (req, res) => {
             success: false,
             message: 'Error submitting KYC documents',
             error: error.message
+        });
+    }
+};
+
+// @desc    Search customer by phone
+// @route   GET /api/agents/customers/search/:phone
+// @access  Private (agent)
+export const searchCustomer = async (req, res) => {
+    try {
+        const { phone } = req.params;
+        const user = await User.findOne({ phone, role: 'customer' });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'Customer not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                user: {
+                    id: user._id,
+                    fullName: user.fullName,
+                    email: user.email,
+                    phone: user.phone,
+                    address: user.address,
+                    city: user.city,
+                    state: user.state,
+                    pincode: user.pincode
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Search customer error:', error);
+        res.status(500).json({ success: false, message: 'Server error searching customer' });
+    }
+};
+
+// @desc    Add policy for a customer (direct entry by agent)
+// @route   POST /api/agents/policies/add
+// @access  Private (agent)
+export const agentAddPolicy = async (req, res) => {
+    try {
+        const agent = await Agent.findOne({ userId: req.user._id });
+        if (!agent) {
+            return res.status(404).json({ success: false, message: 'Agent profile not found' });
+        }
+
+        // Standardize status checks
+        const isAgentActive = agent.status?.toLowerCase() === 'active';
+        const isKycVerified = agent.kycStatus?.toLowerCase() === 'verified';
+
+        if (!isAgentActive || !isKycVerified) {
+            return res.status(403).json({
+                success: false,
+                message: 'Your agent account must be approved and KYC verified to sell policies',
+                details: { status: agent.status, kycStatus: agent.kycStatus }
+            });
+        }
+
+        const {
+            customerId,
+            customerData,
+            policyData
+        } = req.body;
+
+        let finalCustomerId = customerId;
+
+        // 1. Handle Customer (Find or Create)
+        if (!finalCustomerId) {
+            if (!customerData || !customerData.phone) {
+                return res.status(400).json({ success: false, message: 'Customer phone number is required' });
+            }
+
+            let existingUser = await User.findOne({ phone: customerData.phone });
+            if (existingUser) {
+                finalCustomerId = existingUser._id;
+                // Optionally update profile if email was missing
+                if (!existingUser.email && customerData.email) {
+                    existingUser.email = customerData.email;
+                    await existingUser.save().catch(e => console.error('Silent failure updating customer email:', e));
+                }
+            } else {
+                // If new user, email is required by schema
+                if (!customerData.email) {
+                    return res.status(400).json({ success: false, message: 'Customer email is required to create a new account' });
+                }
+
+                const newUser = await User.create({
+                    ...customerData,
+                    role: 'customer',
+                    password: `PS@${customerData.phone.slice(-4)}`
+                });
+                finalCustomerId = newUser._id;
+            }
+        }
+
+        // 2. Create Policy
+        const policyNumber = `POL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        // Normalize dates
+        const startDate = policyData.startDate ? new Date(policyData.startDate) : new Date();
+        const endDate = policyData.endDate ? new Date(policyData.endDate) : new Date();
+
+        if (!policyData.endDate && policyData.duration) {
+            const yearsMatch = String(policyData.duration).match(/\d+/);
+            const years = yearsMatch ? parseInt(yearsMatch[0]) : 1;
+            endDate.setFullYear(startDate.getFullYear() + years);
+        }
+
+        // Normalize policyData fields to avoid BSON casting errors
+        const normalizedPolicyData = { ...policyData };
+        if (normalizedPolicyData.milkYield === '') {
+            normalizedPolicyData.milkYield = null;
+        }
+
+        const policyDoc = {
+            ...normalizedPolicyData,
+            policyNumber,
+            customerId: finalCustomerId,
+            agentId: agent._id,
+            agentCode: agent.agentCode,
+            startDate,
+            endDate,
+            status: 'PENDING_APPROVAL',
+            paymentStatus: policyData.paymentMethod === 'Online' ? 'PENDING' : 'PAID',
+            paymentDate: policyData.paymentMethod === 'Online' ? null : new Date(),
+            paymentId: null
+        };
+
+        const policy = await Policy.create(policyDoc);
+
+        // 3. Handle Payment Recording (Offline)
+        if (policyData.paymentMethod !== 'Online') {
+            try {
+                const payment = await Payment.create({
+                    policyId: policy._id,
+                    customerId: finalCustomerId,
+                    amount: policy.premium,
+                    currency: 'INR',
+                    status: 'success',
+                    paymentMethod: policyData.paymentMethod || 'Cash',
+                    paidAt: new Date(),
+                    description: `Policy payment collected by Agent ${agent.agentCode}`
+                });
+
+                policy.paymentId = payment._id.toString();
+                await policy.save();
+            } catch (payErr) {
+                console.error('Failed to create payment record after policy creation:', payErr);
+                // We keep the policy but warn about payment record failure? 
+                // Better to throw so we can investigate why Payment.create failed.
+                throw payErr;
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            message: policyData.paymentMethod === 'Online'
+                ? 'Policy created. Please proceed to payment.'
+                : 'Policy added successfully and sent for admin approval',
+            data: {
+                policy,
+                requiresOnlinePayment: policyData.paymentMethod === 'Online'
+            }
+        });
+
+    } catch (error) {
+        console.error('CRITICAL: Agent add policy error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding policy: ' + error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

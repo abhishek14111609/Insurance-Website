@@ -148,10 +148,10 @@ const TransactionHistory = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        {payment.policy ? (
+                                        {payment.policyId ? (
                                             <div className="plan-cell">
-                                                <span>{payment.policy.policyNumber}</span>
-                                                <span className="sub-text">ID: {payment.policy._id}</span>
+                                                <span>{payment.policyId.policyNumber}</span>
+                                                <span className="sub-text">ID: {payment.policyId._id}</span>
                                             </div>
                                         ) : (
                                             <span className="sub-text">N/A</span>

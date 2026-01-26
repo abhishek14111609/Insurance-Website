@@ -35,16 +35,30 @@ export const createOrder = async (req, res) => {
         const { policyId } = req.body;
         console.log(`[CreateOrder] Request received for Policy: ${policyId}`);
 
-        // Verify policy belongs to user
-        const policy = await Policy.findOne({
-            _id: policyId,
-            customerId: req.user._id
-        });
+        // Verify policy belongs to user or was sold by this agent
+        const policy = await Policy.findById(policyId);
 
         if (!policy) {
             return res.status(404).json({
                 success: false,
                 message: 'Policy not found'
+            });
+        }
+
+        const isCustomer = policy.customerId.toString() === req.user._id.toString();
+        let isAuthorizedAgent = false;
+
+        if (req.user.role === 'agent') {
+            const agent = await Agent.findOne({ userId: req.user._id });
+            if (agent && policy.agentId && policy.agentId.toString() === agent._id.toString()) {
+                isAuthorizedAgent = true;
+            }
+        }
+
+        if (!isCustomer && !isAuthorizedAgent) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to pay for this policy'
             });
         }
 
@@ -88,7 +102,7 @@ export const createOrder = async (req, res) => {
         // Create payment record
         const payment = await Payment.create({
             policyId,
-            customerId: req.user._id,
+            customerId: policy.customerId, // Use the actual customer of the policy
             razorpayOrderId: order.id,
             amount: numericAmount,
             currency: 'INR',
@@ -140,10 +154,9 @@ export const verifyPayment = async (req, res) => {
             });
         }
 
-        // Update payment record (authoritative fetch by order + customer)
+        // Update payment record
         const payment = await Payment.findOne({
-            razorpayOrderId: razorpay_order_id,
-            customerId: req.user._id
+            razorpayOrderId: razorpay_order_id
         });
 
         if (!payment) {
@@ -153,14 +166,34 @@ export const verifyPayment = async (req, res) => {
             });
         }
 
+        // Authorization check
+        const policy = await Policy.findById(payment.policyId || policyId);
+        if (!policy) {
+            return res.status(404).json({ success: false, message: 'Policy not found' });
+        }
+
+        const isCustomer = policy.customerId.toString() === req.user._id.toString();
+        let isAuthorizedAgent = false;
+        if (req.user.role === 'agent') {
+            const agent = await Agent.findOne({ userId: req.user._id });
+            if (agent && policy.agentId && policy.agentId.toString() === agent._id.toString()) {
+                isAuthorizedAgent = true;
+            }
+        }
+
+        if (!isCustomer && !isAuthorizedAgent) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to verify this payment'
+            });
+        }
+
         payment.razorpayPaymentId = razorpay_payment_id;
         payment.razorpaySignature = razorpay_signature;
         payment.status = 'success';
         payment.paidAt = new Date();
         await payment.save();
 
-        // Use policy tied to payment to avoid client tampering / missing id
-        const policy = await Policy.findById(payment.policyId || policyId);
         if (policy) {
             policy.paymentStatus = 'PAID';
             policy.paymentId = razorpay_payment_id;

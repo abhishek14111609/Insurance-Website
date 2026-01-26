@@ -28,7 +28,12 @@ axiosInstance.interceptors.response.use(
         const status = error.response?.status;
 
         // Try refresh once on 401
-        if (status === 401 && !originalRequest._retry) {
+        // Skip refresh for login/register/logout requests to avoid infinite loops or unnecessary checks
+        const isAuthRequest = originalRequest.url.includes('/auth/login') ||
+            originalRequest.url.includes('/auth/register') ||
+            originalRequest.url.includes('/auth/logout');
+
+        if (status === 401 && !originalRequest._retry && !isAuthRequest) {
             originalRequest._retry = true;
             try {
                 await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
@@ -243,6 +248,16 @@ export const agentAPI = {
                 'Content-Type': 'multipart/form-data'
             }
         });
+    },
+
+    // Search customer by phone
+    searchCustomer: async (phone) => {
+        return axiosInstance.get(`/agents/customers/search/${phone}`);
+    },
+
+    // Add policy for a customer
+    addPolicy: async (policyData) => {
+        return axiosInstance.post('/agents/policies/add', policyData);
     }
 };
 

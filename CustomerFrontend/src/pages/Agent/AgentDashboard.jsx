@@ -79,15 +79,15 @@ const AgentDashboard = () => {
                     <div className="kyc-content">
                         <div className="kyc-icon">📑</div>
                         <div className="kyc-info">
-                            <h2>{user?.kycStatus === 'pending' ? 'KYC Under Review' : 'Complete Your KYC'}</h2>
+                            <h2>{user?.kycStatus?.toLowerCase() === 'pending' ? 'KYC Under Review' : 'Complete Your KYC'}</h2>
                             <p>
-                                {user?.kycStatus === 'pending'
+                                {user?.kycStatus?.toLowerCase() === 'pending'
                                     ? 'Your KYC documents are being verified by our team. You will be notified once approved.'
                                     : 'Please upload your identity and bank documents to start selling policies and withdrawing commissions.'}
                             </p>
                         </div>
                     </div>
-                    {user?.kycStatus !== 'pending' && (
+                    {user?.kycStatus?.toLowerCase() !== 'pending' && (
                         <Link to="/agent/profile" className="btn btn-primary">
                             Upload Documents Now
                         </Link>
@@ -138,6 +138,12 @@ const AgentDashboard = () => {
             <div className="quick-actions">
                 <h2>Quick Actions</h2>
                 <div className="actions-grid">
+                    <Link to="/agent/sell" className="action-card highlight">
+                        <span className="action-icon">➕</span>
+                        <h3>Sell New Policy</h3>
+                        <p>Enroll a new customer now</p>
+                    </Link>
+
                     <Link to="/agent/policies" className="action-card">
                         <span className="action-icon">📄</span>
                         <h3>My Policies</h3>

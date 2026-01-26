@@ -1,0 +1,367 @@
+.agent-add-policy {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.agent-add-policy .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+}
+
+.agent-add-policy h1 {
+    font-size: 2rem;
+    color: #1a202c;
+    margin-bottom: 0.5rem;
+}
+
+.agent-add-policy .page-header p {
+    color: #718096;
+    font-size: 1.1rem;
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-indicator .step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #718096;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.step-indicator .step.active {
+    background: #4299e1;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.2);
+}
+
+.step-indicator .step.done {
+    background: #48bb78;
+    color: white;
+}
+
+.step-indicator .step-line {
+    width: 24px;
+    height: 2px;
+    background: #e2e8f0;
+}
+
+/* Card & Forms */
+.form-container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.form-step h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+}
+
+.search-box {
+    max-width: 500px;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.input-with-button input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    transition: border-color 0.2s;
+}
+
+.input-with-button input:focus {
+    outline: none;
+    border-color: #4299e1;
+}
+
+/* Grid Layouts */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.form-group.full-width {
+    grid-column: span 2;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #f8fafc;
+}
+
+.form-group input.read-only {
+    background: #edf2f7;
+    cursor: not-allowed;
+}
+
+/* Plans Grid */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.plan-item-card {
+    padding: 1.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.plan-item-card:hover {
+    border-color: #4299e1;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.plan-item-card h3 {
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+.plan-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2b6cb0;
+    margin-bottom: 1rem;
+}
+
+.plan-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+/* Photos Section */
+.photos-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+/* Review Section */
+.review-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.review-section h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #718096;
+    margin-bottom: 1rem;
+}
+
+.review-section p {
+    margin-bottom: 0.5rem;
+}
+
+.total-box {
+    grid-column: span 2;
+    background: #ebf8ff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px dashed #4299e1;
+}
+
+.total-box span {
+    font-weight: 600;
+    color: #2c5282;
+}
+
+.total-box h2 {
+    color: #2b6cb0;
+    margin: 0;
+}
+
+/* Actions */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+
+/* Payment Method Selection */
+.payment-method-selection h3 {
+    font-size: 1.1rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+}
+
+.payment-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.payment-option {
+    position: relative;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.payment-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.payment-option:hover {
+    border-color: #cbd5e0;
+    background: #f8fafc;
+}
+
+.payment-option.selected {
+    border-color: #4299e1;
+    background: #ebf8ff;
+}
+
+.option-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.option-icon {
+    font-size: 1.75rem;
+    width: 48px;
+    height: 48px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.option-text strong {
+    display: block;
+    font-size: 1rem;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.option-text p {
+    font-size: 0.85rem;
+    color: #718096;
+    margin: 0;
+}
+
+.payment-confirmation {
+    background: #fff5f5;
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid #fed7d7;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.checkbox-group input {
+    margin-top: 0.25rem;
+    width: 18px;
+    height: 18px;
+}
+
+.checkbox-group label {
+    font-size: 0.95rem;
+    color: #c53030;
+    font-weight: 500;
+}
+
+.mt-3 {
+    margin-top: 0.75rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .agent-add-policy .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+
+    .form-grid,
+    .photos-row,
+    .review-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full-width {
+        grid-column: span 1;
+    }
+
+    .total-box {
+        grid-column: span 1;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}

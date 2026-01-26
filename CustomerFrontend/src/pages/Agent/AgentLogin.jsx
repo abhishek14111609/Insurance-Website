@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../services/api.service';
 import './AgentPublic.css';
 
 const AgentLogin = () => {
@@ -41,10 +42,17 @@ const AgentLogin = () => {
                     }
                     navigate('/agent/dashboard');
                 } else {
+                    // Log out immediately if role mismatch (e.g. used customer creds on agent portal)
+                    // We need to clear the session we just established to avoid stuck state
+                    try {
+                        await authAPI.logout();
+                    } catch (e) {
+                        console.error('Logout error during role cleanup:', e);
+                    }
 
                     localStorage.removeItem('customer:auth_user'); // Clear storage
-                    window.location.reload(); // Hard reload to clear context
-                    setError('This account is not registered as an agent.');
+                    // do not reload, just show error
+                    setError('This account is not registered as an agent. Please login with an Agent account.');
                 }
             }
         } catch (err) {

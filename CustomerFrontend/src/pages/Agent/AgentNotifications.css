@@ -143,20 +143,31 @@
 }
 
 .notification-msg {
-    margin: 0 0 0.75rem;
-    color: #444;
-    line-height: 1.4;
+    margin: 0.5rem 0 0.75rem;
+    color: #334155;
+    /* Darker slate for better contrast */
+    line-height: 1.6;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    /* Preserve line breaks if any */
+    word-break: break-word;
+    /* Prevent overflow on long words */
 }
 
 .view-action {
+    display: inline-block;
     color: var(--primary-color);
     font-weight: 600;
     font-size: 0.9rem;
     text-decoration: none;
+    padding: 0.25rem 0;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s;
 }
 
 .view-action:hover {
-    text-decoration: underline;
+    text-decoration: none;
+    border-bottom-color: var(--primary-color);
 }
 
 .notification-ctrl {

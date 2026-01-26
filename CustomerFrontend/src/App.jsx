@@ -44,6 +44,8 @@ import AgentWallet from './pages/Agent/AgentWallet';
 import AgentTeam from './pages/Agent/AgentTeam';
 import AgentProfile from './pages/Agent/AgentProfile';
 import AgentNotifications from './pages/Agent/AgentNotifications';
+import AgentAddPolicy from './pages/Agent/AgentAddPolicy';
+import AgentPayment from './pages/Agent/AgentPayment';
 import AgentLayout from './components/Agent/AgentLayout';
 import AgentLanding from './pages/Agent/AgentLanding';
 import AgentLogin from './pages/Agent/AgentLogin';
@@ -270,6 +272,22 @@ function App() {
               element={
                 <ProtectedAgentRoute>
                   <AgentPolicies />
+                </ProtectedAgentRoute>
+              }
+            />
+            <Route
+              path="sell"
+              element={
+                <ProtectedAgentRoute>
+                  <AgentAddPolicy />
+                </ProtectedAgentRoute>
+              }
+            />
+            <Route
+              path="payment"
+              element={
+                <ProtectedAgentRoute>
+                  <AgentPayment />
                 </ProtectedAgentRoute>
               }
             />

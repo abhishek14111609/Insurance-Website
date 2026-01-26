@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { notificationAPI } from '../../services/api.service';
 import './AgentTopbar.css';
 
-const AgentTopbar = () => {
+const AgentTopbar = ({ onToggleSidebar }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
@@ -22,9 +22,10 @@ const AgentTopbar = () => {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await notificationAPI.getAll({ limit: 5 });
+            // Fetch all for now to debug, and ensure array safety
+            const response = await notificationAPI.getAll();
             if (response.success) {
-                setNotifications(response.data.notifications);
+                setNotifications(response.data.notifications || []);
                 setUnreadCount(response.unreadCount);
             }
         } catch (error) {
@@ -53,11 +54,12 @@ const AgentTopbar = () => {
     }, []);
 
     const handleNotificationClick = async (notification) => {
+        const notificationId = notification._id || notification.id;
         if (!notification.isRead) {
             try {
-                await notificationAPI.markAsRead(notification.id);
+                await notificationAPI.markAsRead(notificationId);
                 setNotifications(notifications.map(n =>
-                    n.id === notification.id ? { ...n, isRead: true } : n
+                    (n._id || n.id) === notificationId ? { ...n, isRead: true } : n
                 ));
                 setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
@@ -108,6 +110,10 @@ const AgentTopbar = () => {
 
     return (
         <header className="agent-topbar">
+            {/* Mobile Toggle */}
+            <button className="sidebar-toggle-btn" onClick={onToggleSidebar}>
+                ☰
+            </button>
             {/* <div className="topbar-search">
                 <input type="text" placeholder="Search policies, customers..." />
             </div> */}
@@ -117,6 +123,9 @@ const AgentTopbar = () => {
                     <button
                         className={`icon-btn ${unreadCount > 0 ? 'has-notifications' : ''}`}
                         onClick={() => setShowDropdown(!showDropdown)}
+                        title={unreadCount > 0 && notifications.length > 0
+                            ? `${unreadCount} unread: ${notifications[0].title || 'New Notification'}`
+                            : 'No new notifications'}
                     >
                         🔔
                         {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
@@ -138,9 +147,9 @@ const AgentTopbar = () => {
                                 ) : notifications.length === 0 ? (
                                     <div className="dropdown-empty">No notifications</div>
                                 ) : (
-                                    notifications.map(notification => (
+                                    notifications.slice(0, 5).map(notification => (
                                         <div
-                                            key={notification.id}
+                                            key={notification._id || notification.id}
                                             className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
                                             onClick={() => handleNotificationClick(notification)}
                                         >

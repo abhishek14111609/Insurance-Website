@@ -1273,7 +1273,16 @@ export const verifyAgentKYC = async (req, res) => {
             });
         }
 
-        if (status === 'rejected') {
+        const normalizedStatus = String(status).toLowerCase();
+
+        if (!['verified', 'rejected'].includes(normalizedStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid KYC status. Must be verified or rejected.'
+            });
+        }
+
+        if (normalizedStatus === 'rejected') {
             agent.kycStatus = 'rejected';
             agent.kycRejectionReason = reason;
 
@@ -1283,9 +1292,10 @@ export const verifyAgentKYC = async (req, res) => {
             } catch (err) {
                 console.error('Agent KYC rejection notification failed:', err);
             }
-        } else if (status === 'verified') {
+        } else if (normalizedStatus === 'verified') {
             agent.kycStatus = 'verified';
             agent.kycRejectionReason = null;
+
             // Optionally auto-activate agent if KYC is verified and they were pending
             if (agent.status === 'pending') {
                 agent.status = 'active';
@@ -1812,7 +1822,7 @@ export const getAllPayments = async (req, res) => {
         const count = await Payment.countDocuments(where);
         const payments = await Payment.find(where)
             .populate('customerId', 'fullName email phone')
-            .populate('policy', 'policyNumber planId')
+            .populate('policyId', 'policyNumber planId')
             .sort({ createdAt: -1 })
             .skip(offset)
             .limit(parseInt(limit));
@@ -1873,6 +1883,56 @@ export const getAllClaims = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching claims',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Reset agent password
+// @route   PATCH /api/admin/agents/:id/reset-password
+// @access  Private (admin)
+export const resetAgentPassword = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Populate userId to get the actual User document to update
+        const agent = await Agent.findOne({ _id: id });
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agent not found'
+            });
+        }
+
+        let userId = agent.userId;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Associated user not found'
+            });
+        }
+
+        // Generate random 8-char password
+        const newPassword = crypto.randomBytes(4).toString('hex'); // 8 chars
+
+        // Update password (model pre-save hook will hash it)
+        user.password = newPassword;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully',
+            data: {
+                newPassword // Return to admin to share manually
+            }
+        });
+
+    } catch (error) {
+        console.error('Reset agent password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error resetting password',
             error: error.message
         });
     }

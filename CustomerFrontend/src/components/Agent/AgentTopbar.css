@@ -3,12 +3,33 @@
     background: var(--background-white);
     display: flex;
     align-items: center;
-    justify-content: end;
+    justify-content: space-between;
+    /* Changed from end to space-between to accommodate toggle btn */
     padding: 0 2.5rem;
     box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
     z-index: 900;
+}
+
+.sidebar-toggle-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+    .agent-topbar {
+        padding: 0 1rem;
+    }
+
+    .sidebar-toggle-btn {
+        display: block;
+    }
 }
 
 .topbar-search {
@@ -33,6 +54,8 @@
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    margin-left: auto;
+    /* Pushes content to the right side */
 }
 
 .notification-wrapper {
@@ -79,26 +102,43 @@
 .notification-dropdown {
     position: absolute;
     top: calc(100% + 15px);
-    right: -100px;
+    right: -60px;
+    /* Centered relative to bell */
     width: 360px;
     background: white;
     border-radius: var(--radius-lg);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(0, 0, 0, 0.05);
     z-index: 1000;
     overflow: hidden;
     animation: slideUp 0.3s ease;
+    transform-origin: top right;
+}
+
+/* Dropdown Arrow */
+.notification-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 70px;
+    /* Adjusted to match new right offset */
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(10px) scale(0.95);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -150,12 +190,16 @@
     gap: 1rem;
     cursor: pointer;
     transition: all 0.2s;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     position: relative;
+    background-color: #fff;
+    /* Explicit white background */
+    z-index: 1;
 }
 
 .notification-item:hover {
-    background: var(--background-body);
+    background: #f8fafc;
+    /* Slate-50 */
 }
 
 .notification-item.unread {
@@ -176,20 +220,26 @@
 
 .notification-info {
     flex: 1;
+    min-width: 0;
+    /* Enable text truncation/wrapping inside flex item */
 }
 
 .notification-title {
     font-weight: 700;
     font-size: 0.9rem;
-    color: var(--text-primary);
+    color: #1e293b;
+    /* Ensure dark color */
     margin: 0 0 0.25rem 0;
 }
 
 .notification-message {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: #475569;
+    /* Ensure high contrast */
     margin: 0 0 0.4rem 0;
     line-height: 1.4;
+    word-break: break-word;
+    /* Prevent overflow */
 }
 
 .notification-time {
@@ -273,4 +323,26 @@
     font-weight: 700;
     font-size: 0.9rem;
     box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 480px) {
+    .notification-dropdown {
+        width: 280px;
+        right: -60px;
+        /* Center relative to bell */
+    }
+
+    .topbar-actions {
+        gap: 0.75rem;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
 }

@@ -163,6 +163,10 @@ export const adminAPI = {
         return axiosInstance.put(`/admin/agents/${agentId}`, agentData);
     },
 
+    resetAgentPassword: async (agentId) => {
+        return axiosInstance.patch(`/admin/agents/${agentId}/reset-password`);
+    },
+
     // Policy Management
     getAllPolicies: async () => {
         return axiosInstance.get('/admin/policies');

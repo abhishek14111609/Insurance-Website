@@ -78,9 +78,11 @@
 }
 
 .nav-item.active {
-    background: linear-gradient(90deg, rgba(50, 130, 184, 0.2) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
     color: var(--background-white);
     border-left-color: var(--primary-light);
+    box-shadow: inset 4px 0 0 var(--primary-light);
+    /* Adds a glow effect on the left */
 }
 
 .nav-item .icon {
