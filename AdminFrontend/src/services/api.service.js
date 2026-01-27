@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Configuration with safer defaults for deployed builds
-const DEFAULT_PROD_API = 'https://pashudhansurakshabackend.onrender.com/api';
+const DEFAULT_PROD_API = 'https://backend.pashudhansuraksha.com/api';
 const isBrowser = typeof window !== 'undefined';
 const isLocalhost = isBrowser && /(localhost|127\.0\.0\.1)/.test(window.location.hostname);
 const API_BASE_URL = import.meta.env.VITE_API_URL
