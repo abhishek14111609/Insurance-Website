@@ -3,6 +3,24 @@ import { adminAPI, BASE_URL } from '../services/api.service';
 import toast from 'react-hot-toast';
 import './AgentApprovals.css';
 
+import {
+    Users,
+    CheckCircle,
+    Clock,
+    ShieldCheck,
+    AlertCircle,
+    X,
+    ExternalLink,
+    FileText,
+    CreditCard,
+    Building,
+    User,
+    Mail,
+    Phone,
+    MapPin,
+    ArrowRight
+} from 'lucide-react';
+
 const AgentApprovals = () => {
     const [agents, setAgents] = useState([]);
     const [selectedAgent, setSelectedAgent] = useState(null);
@@ -32,7 +50,6 @@ const AgentApprovals = () => {
             setLoading(true);
             const response = await adminAPI.getAllAgents();
             if (response.success) {
-                // Filter agents that are either pending status OR pending KYC
                 const pending = (response.data.agents || []).filter(a =>
                     (a.status || 'PENDING').toUpperCase() === 'PENDING' ||
                     a.kycStatus === 'pending'
@@ -98,7 +115,6 @@ const AgentApprovals = () => {
 
         try {
             const result = await adminAPI.rejectAgent(selectedAgent.id || selectedAgent._id, rejectionReason);
-
             if (result.success) {
                 toast.success('Agent rejected.');
                 loadAgents();
@@ -133,7 +149,6 @@ const AgentApprovals = () => {
         }
     };
 
-
     const closeModal = () => {
         setShowModal(false);
         setSelectedAgent(null);
@@ -141,97 +156,70 @@ const AgentApprovals = () => {
         setRejectionReason('');
     };
 
-    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Pending Agents...</div>;
+    if (loading) return <div className="loading-container"><div className="loader"></div></div>;
 
     return (
         <div className="agent-approvals-page">
-            <div className="page-header">
-                <div>
-                    <h1>👥 Agent Approvals</h1>
-                    <p>Review and approve pending agent applications</p>
+            <div className="page-header-modern">
+                <div className="header-info">
+                    <h1>Request Verification</h1>
+                    <p>Screen new agent applications and KYC submissions</p>
                 </div>
-                <div className="header-stats">
-                    <span className="stat-badge">{agents.length} Pending</span>
+                <div className="header-stats-pill">
+                    <Clock size={16} />
+                    <span>{agents.length} Applications Pending</span>
                 </div>
             </div>
 
             {agents.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-icon">✅</div>
-                    <h3>All Caught Up!</h3>
-                    <p>No pending agent approvals.</p>
+                <div className="approval-empty-state">
+                    <div className="empty-illustration">
+                        <CheckCircle size={64} color="var(--color-success)" />
+                    </div>
+                    <h3>Inbox Cleared!</h3>
+                    <p>There are no pending agent requests to review at this moment.</p>
                 </div>
             ) : (
-                <div className="agents-grid">
+                <div className="agents-grid-modern">
                     {agents.map((agent, index) => (
-                        <div key={agent.id || agent._id || index} className="agent-card">
-                            <div className="agent-header">
-                                <div>
-                                    <h3>{agent.agentCode || agent.code || 'PENDING'}</h3>
-                                    <span className="status-badge pending">Pending Approval</span>
-                                </div>
-                                <div className="agent-level">Level {agent.level || 1}</div>
+                        <div key={agent.id || agent._id || index} className="approval-card-modern">
+                            <div className="card-badge-status">
+                                <span className="dot pulse"></span>
+                                {agent.kycStatus === 'pending' ? 'KYC Verification' : 'New Enrollment'}
                             </div>
 
-                            <div className="agent-details">
-                                <div className="detail-row">
-                                    <span className="label">Name:</span>
-                                    <span className="value">{agent.user?.fullName}</span>
+                            <div className="agent-profile-header">
+                                <div className="agent-avatar-lg">
+                                    {agent.user?.fullName?.charAt(0) || 'A'}
                                 </div>
-                                <div className="detail-row">
-                                    <span className="label">Email:</span>
-                                    <span className="value">{agent.user?.email}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Phone:</span>
-                                    <span className="value">{agent.user?.phone}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">City:</span>
-                                    <span className="value">{agent.user?.city || 'N/A'}</span>
-                                </div>
-                                {agent.role === 'agent' && (
-                                    <div className="detail-row">
-                                        <span className="label">Role:</span>
-                                        <span className="value">POSP Agent</span>
-                                    </div>
-                                )}
-                                <div className="detail-row">
-                                    <span className="label">Parent Code:</span>
-                                    <span className="value">{agent.parentAgent?.agentCode || 'None'}</span>
-                                </div>
-                                <div className="detail-divider"></div>
-                                <div className="detail-row">
-                                    <span className="label">PAN:</span>
-                                    <span className="value">{agent.panNumber}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Aadhar:</span>
-                                    <span className="value">{agent.aadharNumber}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Bank:</span>
-                                    <span className="value">{agent.bankName}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">A/C:</span>
-                                    <span className="value">{agent.accountNumber}</span>
-                                </div>
-                                <div className="detail-divider"></div>
-                                <div className="detail-row">
-                                    <span className="label">KYC Status:</span>
-                                    <span className={`status-badge ${agent.kycStatus || 'not_submitted'}`}>
-                                        {agent.kycStatus?.replace('_', ' ') || 'NOT SUBMITTED'}
-                                    </span>
+                                <div className="agent-titles">
+                                    <h3>{agent.user?.fullName}</h3>
+                                    <span>Code: {agent.agentCode || agent.code || 'PENDING'}</span>
                                 </div>
                             </div>
 
-                            <div className="agent-actions">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => handleApproveClick(agent)}
-                                >
-                                    🔍 Review & Verify
+                            <div className="agent-info-grid">
+                                <div className="info-item">
+                                    <Mail size={14} />
+                                    <span>{agent.user?.email}</span>
+                                </div>
+                                <div className="info-item">
+                                    <Phone size={14} />
+                                    <span>{agent.user?.phone}</span>
+                                </div>
+                                <div className="info-item">
+                                    <MapPin size={14} />
+                                    <span>{agent.user?.city || 'N/A'}</span>
+                                </div>
+                                <div className="info-item">
+                                    <Users size={14} />
+                                    <span>Level {agent.level || 1} • {agent.parentAgent?.agentCode || 'Direct'}</span>
+                                </div>
+                            </div>
+
+                            <div className="card-footer-modern">
+                                <button className="btn btn-primary btn-block" onClick={() => handleApproveClick(agent)}>
+                                    Review Details <ArrowRight size={18} />
                                 </button>
                             </div>
                         </div>
@@ -240,125 +228,113 @@ const AgentApprovals = () => {
             )}
 
             {showModal && (
-                <div className="modal-overlay" onClick={closeModal}>
-                    <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Review Agent: {selectedAgent?.user?.fullName}</h2>
-                            <button className="close-btn" onClick={closeModal}>×</button>
+                <div className="modal-overlay-modern" onClick={closeModal}>
+                    <div className="modal-content-modern" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header-modern">
+                            <div className="modal-header-title">
+                                <h2>Application Review</h2>
+                                <span>{selectedAgent?.user?.fullName}</span>
+                            </div>
+                            <button className="modal-close-btn" onClick={closeModal}><X size={24} /></button>
                         </div>
 
-                        <div className="modal-body">
-                            <div className="review-grid">
-                                <div className="review-section">
-                                    <h3>Information</h3>
-                                    <p><strong>Agent Code:</strong> {selectedAgent?.agentCode || 'N/A'}</p>
-                                    <p><strong>Email:</strong> {selectedAgent?.user?.email}</p>
-                                    <p><strong>Phone:</strong> {selectedAgent?.user?.phone}</p>
-                                    <p><strong>Address:</strong> {selectedAgent?.user?.address || 'N/A'}</p>
-                                    <p><strong>Bank Details:</strong> {selectedAgent?.bankName} - {selectedAgent?.accountNumber} ({selectedAgent?.ifscCode})</p>
-                                </div>
-
-                                <div className="review-section">
-                                    <h3>KYC Documents</h3>
-                                    <div className="document-previews-grid">
-                                        {selectedAgent?.panPhoto ? (
-                                            <div className="doc-preview-item">
-                                                <span className="doc-label">PAN Card ({selectedAgent.panNumber})</span>
-                                                <div className="img-container">
-                                                    <img
-                                                        src={normalizeFileUrl(selectedAgent.panPhoto)}
-                                                        alt="PAN Card"
-                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.panPhoto), '_blank')}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : <p className="text-muted">No PAN photo uploaded</p>}
-
-                                        {selectedAgent?.aadharPhotoFront ? (
-                                            <div className="doc-preview-item">
-                                                <span className="doc-label">Aadhaar Front ({selectedAgent.aadharNumber})</span>
-                                                <div className="img-container">
-                                                    <img
-                                                        src={normalizeFileUrl(selectedAgent.aadharPhotoFront)}
-                                                        alt="Aadhaar Front"
-                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoFront), '_blank')}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : <p className="text-muted">No Aadhaar front uploaded</p>}
-
-                                        {selectedAgent?.aadharPhotoBack ? (
-                                            <div className="doc-preview-item">
-                                                <span className="doc-label">Aadhaar Back</span>
-                                                <div className="img-container">
-                                                    <img
-                                                        src={normalizeFileUrl(selectedAgent.aadharPhotoBack)}
-                                                        alt="Aadhaar Back"
-                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoBack), '_blank')}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : null}
-
-                                        {selectedAgent?.bankProofPhoto ? (
-                                            <div className="doc-preview-item">
-                                                <span className="doc-label">Bank Proof</span>
-                                                <div className="img-container">
-                                                    <img
-                                                        src={normalizeFileUrl(selectedAgent.bankProofPhoto)}
-                                                        alt="Bank Proof"
-                                                        onClick={() => window.open(normalizeFileUrl(selectedAgent.bankProofPhoto), '_blank')}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : <p className="text-muted">No bank proof uploaded</p>}
+                        <div className="modal-body-scrollable">
+                            <div className="review-sections-grid">
+                                <section className="review-section-modern">
+                                    <div className="section-title-modern">
+                                        <User size={18} />
+                                        <h3>Identity & Contact</h3>
                                     </div>
-                                </div>
+                                    <div className="info-list-modern">
+                                        <div className="info-pair"><span>Full Name</span><strong>{selectedAgent?.user?.fullName}</strong></div>
+                                        <div className="info-pair"><span>Phone</span><strong>{selectedAgent?.user?.phone}</strong></div>
+                                        <div className="info-pair"><span>Address</span><strong>{selectedAgent?.user?.address || 'N/A'}</strong></div>
+                                        <div className="info-pair"><span>PAN Number</span><strong>{selectedAgent?.panNumber}</strong></div>
+                                        <div className="info-pair"><span>Aadhaar</span><strong>{selectedAgent?.aadharNumber}</strong></div>
+                                    </div>
+                                </section>
+
+                                <section className="review-section-modern">
+                                    <div className="section-title-modern">
+                                        <Building size={18} />
+                                        <h3>Banking Information</h3>
+                                    </div>
+                                    <div className="info-list-modern">
+                                        <div className="info-pair"><span>Bank Name</span><strong>{selectedAgent?.bankName}</strong></div>
+                                        <div className="info-pair"><span>Account No</span><strong>{selectedAgent?.accountNumber}</strong></div>
+                                        <div className="info-pair"><span>IFSC Code</span><strong>{selectedAgent?.ifscCode}</strong></div>
+                                    </div>
+                                </section>
+
+                                <section className="review-section-modern full-width">
+                                    <div className="section-title-modern">
+                                        <FileText size={18} />
+                                        <h3>Document Evidence</h3>
+                                    </div>
+                                    <div className="doc-evidence-grid">
+                                        {selectedAgent?.panPhoto && (
+                                            <div className="evidence-card" onClick={() => window.open(normalizeFileUrl(selectedAgent.panPhoto), '_blank')}>
+                                                <div className="evidence-preview"><img src={normalizeFileUrl(selectedAgent.panPhoto)} alt="PAN" /></div>
+                                                <div className="evidence-label">PAN Card <ExternalLink size={12} /></div>
+                                            </div>
+                                        )}
+                                        {selectedAgent?.aadharPhotoFront && (
+                                            <div className="evidence-card" onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoFront), '_blank')}>
+                                                <div className="evidence-preview"><img src={normalizeFileUrl(selectedAgent.aadharPhotoFront)} alt="Aadhaar F" /></div>
+                                                <div className="evidence-label">Aadhaar Front <ExternalLink size={12} /></div>
+                                            </div>
+                                        )}
+                                        {selectedAgent?.aadharPhotoBack && (
+                                            <div className="evidence-card" onClick={() => window.open(normalizeFileUrl(selectedAgent.aadharPhotoBack), '_blank')}>
+                                                <div className="evidence-preview"><img src={normalizeFileUrl(selectedAgent.aadharPhotoBack)} alt="Aadhaar B" /></div>
+                                                <div className="evidence-label">Aadhaar Back <ExternalLink size={12} /></div>
+                                            </div>
+                                        )}
+                                        {selectedAgent?.bankProofPhoto && (
+                                            <div className="evidence-card" onClick={() => window.open(normalizeFileUrl(selectedAgent.bankProofPhoto), '_blank')}>
+                                                <div className="evidence-preview"><img src={normalizeFileUrl(selectedAgent.bankProofPhoto)} alt="Bank" /></div>
+                                                <div className="evidence-label">Bank Passbook <ExternalLink size={12} /></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
                             </div>
 
-                            <hr />
-
-                            <div className="action-selection">
-                                <label>Decision:</label>
-                                <div className="btn-group">
+                            <div className="decision-wrapper">
+                                <h3>Final Decision</h3>
+                                <div className="decision-buttons">
                                     <button
-                                        className={`btn ${['approve', 'approve_kyc'].includes(modalType) ? 'btn-success' : 'btn-outline-success'}`}
+                                        className={`decision-btn approve ${['approve', 'approve_kyc'].includes(modalType) ? 'active' : ''}`}
                                         onClick={() => setModalType(selectedAgent?.kycStatus === 'pending' ? 'approve_kyc' : 'approve')}
-                                    >{selectedAgent?.kycStatus === 'pending' ? 'Approve KYC' : 'Approve Agent'}</button>
+                                    >
+                                        <ShieldCheck size={20} />
+                                        <span>Verify & Approve</span>
+                                    </button>
                                     <button
-                                        className={`btn ${['reject', 'reject_kyc'].includes(modalType) ? 'btn-danger' : 'btn-outline-danger'}`}
+                                        className={`decision-btn reject ${['reject', 'reject_kyc'].includes(modalType) ? 'active' : ''}`}
                                         onClick={() => setModalType(selectedAgent?.kycStatus === 'pending' ? 'reject_kyc' : 'reject')}
-                                    >{selectedAgent?.kycStatus === 'pending' ? 'Reject KYC' : 'Reject Application'}</button>
+                                    >
+                                        <AlertCircle size={20} />
+                                        <span>Issue Rejection</span>
+                                    </button>
                                 </div>
-                            </div>
 
-                            {['approve', 'approve_kyc'].includes(modalType) ? (
-                                <div className="form-group mt-3">
-                                    <p>{modalType === 'approve_kyc' ? 'Are you sure you want to verify this agent\'s KYC? Their status will be updated.' : 'Are you sure you want to approve this agent? They will become active immediately.'}</p>
-                                    <label>Admin Notes (Optional):</label>
-                                    <textarea
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Add any notes..."
-                                        rows="2"
-                                    />
-                                </div>
-                            ) : ['reject', 'reject_kyc'].includes(modalType) ? (
-                                <div className="form-group mt-3">
-                                    <label>Rejection Reason *:</label>
-                                    <textarea
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                        placeholder="Provide reason for rejection..."
-                                        rows="2"
-                                        required
-                                    />
-                                </div>
-                            ) : null}
+                                {['approve', 'approve_kyc'].includes(modalType) ? (
+                                    <div className="decision-notes animate-slide-up">
+                                        <label>Approval Notes (Optional)</label>
+                                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Enter any specific notes for this agent..." rows="3" />
+                                    </div>
+                                ) : ['reject', 'reject_kyc'].includes(modalType) ? (
+                                    <div className="decision-notes animate-slide-up">
+                                        <label>Rejection Reason (Required)</label>
+                                        <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why the application/KYC was rejected..." rows="3" required />
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
 
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+                        <div className="modal-footer-modern">
+                            <button className="btn btn-secondary" onClick={closeModal}>Close Review</button>
                             {modalType && (
                                 <button
                                     className={`btn ${['approve', 'approve_kyc'].includes(modalType) ? 'btn-success' : 'btn-danger'}`}
@@ -369,7 +345,7 @@ const AgentApprovals = () => {
                                         else if (modalType === 'reject_kyc') handleConfirmKYCReject();
                                     }}
                                 >
-                                    {['approve', 'approve_kyc'].includes(modalType) ? 'Confirm Approval' : 'Confirm Rejection'}
+                                    Confirm {['approve', 'approve_kyc'].includes(modalType) ? 'Approval' : 'Rejection'}
                                 </button>
                             )}
                         </div>

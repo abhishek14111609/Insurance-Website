@@ -4,6 +4,22 @@ import { policyAPI, adminAPI } from '../services/api.service';
 import { CardSkeleton, SectionLoader } from '../components/Loader';
 import './Dashboard.css';
 
+import {
+    Clock,
+    Users,
+    UserCircle,
+    IndianRupee,
+    ChevronRight,
+    AlertCircle,
+    ClipboardCheck,
+    Wallet,
+    Stethoscope,
+    Settings,
+    ArrowUpRight,
+    TrendingUp,
+    Mail
+} from 'lucide-react';
+
 const Dashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({
@@ -17,11 +33,11 @@ const Dashboard = () => {
         pendingWithdrawals: 0,
         totalWithdrawals: 0,
         totalCustomers: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
+        pendingClaims: 0,
+        totalClaims: 0
     });
 
-    // We can fetch recent pending items separately if the dashboard stats endpoint
-    // doesn't return list data, which is typical.
     const [pendingPolicies, setPendingPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -35,7 +51,6 @@ const Dashboard = () => {
             setLoading(true);
             setError(null);
 
-            // 1. Get Dashboard Stats
             const statsResponse = await adminAPI.getDashboardStats();
             if (statsResponse.success) {
                 const s = statsResponse.data.stats;
@@ -55,7 +70,6 @@ const Dashboard = () => {
                 });
             }
 
-            // 2. Get Pending Policies for the list
             const policyResponse = await policyAPI.getPending();
             if (policyResponse.success) {
                 setPendingPolicies(policyResponse.data.policies?.slice(0, 5) || []);
@@ -72,24 +86,39 @@ const Dashboard = () => {
     if (error) return (
         <div className="admin-dashboard error-state-container">
             <div className="error-card">
-                <span className="error-icon">🔌</span>
+                <AlertCircle size={64} className="error-icon" />
                 <h2>Connection Error</h2>
                 <p>{error}</p>
-                <button onClick={loadData} className="btn btn-primary">Try Again</button>
-                <Link to="/database-setup" className="btn btn-secondary" style={{ marginTop: '1rem' }}>Setup Database</Link>
+                <div className="error-actions">
+                    <button onClick={loadData} className="btn btn-primary">Try Again</button>
+                    <Link to="/database-setup" className="btn btn-secondary">Setup Database</Link>
+                </div>
             </div>
         </div>
     );
 
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(val || 0);
+    };
+
     return (
         <div className="admin-dashboard">
-            <div className="dashboard-header">
-                <h1>Admin Dashboard</h1>
-                <p>Welcome back! Here's what's happening today.</p>
+            <div className="dashboard-header-modern">
+                <div className="header-text">
+                    <h1>Overview</h1>
+                    <p>Real-time statistics and updates</p>
+                </div>
+                <div className="header-date">
+                    <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="stats-grid">
+            <div className="stats-grid-modern">
                 {loading ? (
                     <>
                         <CardSkeleton count={1} />
@@ -99,167 +128,169 @@ const Dashboard = () => {
                     </>
                 ) : (
                     <>
-                        <div className="stat-card primary">
-                            <div className="stat-icon">📋</div>
-                            <div className="stat-content">
-                                <h3>{stats.pendingPolicies}</h3>
-                                <p>Pending Policies</p>
+                        <div className="stat-card-modern primary">
+                            <div className="icon-wrapper">
+                                <Clock size={28} />
+                            </div>
+                            <div className="stat-info">
+                                <span className="label">Pending Policies</span>
+                                <h2 className="value">{stats.pendingPolicies}</h2>
+                                <span className="trend positive"><TrendingUp size={12} /> Needs review</span>
                             </div>
                         </div>
 
-                        <div className="stat-card success">
-                            <div className="stat-icon">👥</div>
-                            <div className="stat-content">
-                                <h3>{stats.activeAgents}</h3>
-                                <p>Active Agents</p>
+                        <div className="stat-card-modern success">
+                            <div className="icon-wrapper">
+                                <Users size={28} />
+                            </div>
+                            <div className="stat-info">
+                                <span className="label">Active Agents</span>
+                                <h2 className="value">{stats.activeAgents}</h2>
+                                <span className="trend">Growth focus</span>
                             </div>
                         </div>
 
-                        <div className="stat-card info">
-                            <div className="stat-icon">👤</div>
-                            <div className="stat-content">
-                                <h3>{stats.totalCustomers}</h3>
-                                <p>Total Customers</p>
+                        <div className="stat-card-modern info">
+                            <div className="icon-wrapper">
+                                <UserCircle size={28} />
+                            </div>
+                            <div className="stat-info">
+                                <span className="label">Total Customers</span>
+                                <h2 className="value">{stats.totalCustomers}</h2>
+                                <span className="trend">Lifetime users</span>
                             </div>
                         </div>
 
-                        <div className="stat-card warning">
-                            <div className="stat-icon">💰</div>
-                            <div className="stat-content">
-                                <h3>₹{stats.totalRevenue?.toLocaleString() || '0'}</h3>
-                                <p>Total Revenue</p>
+                        <div className="stat-card-modern accent">
+                            <div className="icon-wrapper">
+                                <IndianRupee size={28} />
+                            </div>
+                            <div className="stat-info">
+                                <span className="label">Total Revenue</span>
+                                <h2 className="value">{formatCurrency(stats.totalRevenue)}</h2>
+                                <span className="trend positive"><ArrowUpRight size={12} /> Premium collected</span>
                             </div>
                         </div>
                     </>
                 )}
             </div>
 
-
-
-            {/* Pending Approvals Section */}
-            <div className="approvals-section">
-                <h2>⚠️ Pending Approvals</h2>
-
-                <div className="approvals-grid">
-                    {/* Pending Policies */}
-                    <div className="approval-card">
-                        <div className="approval-header">
-                            <h3>📋 Policy Approvals</h3>
-                            <span className="count-badge">{pendingPolicies.length}</span>
-                        </div>
-                        <div className="approval-list">
-                            {pendingPolicies.length > 0 ? (
-                                pendingPolicies.map(policy => {
-                                    const policyId = policy._id || policy.id;
-                                    return (
-                                        <div key={policyId} className="approval-item">
-                                            <div className="item-info">
-                                                <strong>{policy.policyNumber}</strong>
-                                                <span>{policy.customer?.fullName || policy.ownerName}</span>
-                                            </div>
-                                            <span className="item-amount">₹{parseInt(policy.coverageAmount || 0).toLocaleString()}</span>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="empty-state">No pending policies</p>
-                            )}
-                        </div>
-                        <Link to="/policy-approvals" className="view-all-btn">
-                            View All →
-                        </Link>
+            {/* Main Dashboard Section */}
+            <div className="dashboard-main-grid">
+                {/* Left Side: Pending Items */}
+                <div className="pending-approvals-card">
+                    <div className="section-header">
+                        <h2><Clock size={20} /> Action Center</h2>
+                        <span className="subtitle">Items requiring immediate attention</span>
                     </div>
 
-                    {/* Pending Agents */}
-                    <div className="approval-card">
-                        <div className="approval-header">
-                            <h3>👥 Agent Approvals</h3>
-                            <span className="count-badge">{stats.pendingAgents}</span>
-                        </div>
-                        <div className="approval-list">
-                            <div className="stat-summary">
-                                {stats.pendingAgents > 0 ? (
-                                    <p className="text-warning">{stats.pendingAgents} agents waiting for verification</p>
-                                ) : (
-                                    <p className="empty-state">No pending agents</p>
-                                )}
+                    <div className="approvals-mini-grid">
+                        <div className="approval-card-mini">
+                            <div className="card-top">
+                                <ClipboardCheck className="icon" size={18} />
+                                <span className="count">{stats.pendingPolicies}</span>
                             </div>
+                            <span className="label">Policy Appr.</span>
+                            <Link to="/policy-approvals" className="mini-link">Handle <ChevronRight size={12} /></Link>
                         </div>
-                        <Link to="/agent-approvals" className="view-all-btn">
-                            View All →
-                        </Link>
+
+                        <div className="approval-card-mini">
+                            <div className="card-top">
+                                <Users className="icon" size={18} />
+                                <span className="count">{stats.pendingAgents}</span>
+                            </div>
+                            <span className="label">Agent Verif.</span>
+                            <Link to="/agent-approvals" className="mini-link">Review <ChevronRight size={12} /></Link>
+                        </div>
+
+                        <div className="approval-card-mini">
+                            <div className="card-top">
+                                <Wallet className="icon" size={18} />
+                                <span className="count">{stats.pendingWithdrawals}</span>
+                            </div>
+                            <span className="label">Withdrawals</span>
+                            <Link to="/withdrawal-approvals" className="mini-link">Process <ChevronRight size={12} /></Link>
+                        </div>
+
+                        <div className="approval-card-mini">
+                            <div className="card-top">
+                                <Stethoscope className="icon" size={18} />
+                                <span className="count">{stats.pendingClaims}</span>
+                            </div>
+                            <span className="label">Claim Appr.</span>
+                            <Link to="/claim-approvals" className="mini-link">Update <ChevronRight size={12} /></Link>
+                        </div>
                     </div>
 
-                    {/* Pending Withdrawals */}
-                    <div className="approval-card">
-                        <div className="approval-header">
-                            <h3>💳 Withdrawal Requests</h3>
-                            <span className="count-badge">{stats.pendingWithdrawals}</span>
-                        </div>
-                        <div className="approval-list">
-                            {stats.pendingWithdrawals > 0 ? (
-                                <p className="text-warning" style={{ padding: '1rem' }}>{stats.pendingWithdrawals} requests pending processing</p>
+                    {/* Recent Pending Policies List */}
+                    <div className="recent-list-container">
+                        <h3>Recent Pending Policies</h3>
+                        <div className="recent-list">
+                            {pendingPolicies.length > 0 ? (
+                                pendingPolicies.map(policy => (
+                                    <div key={policy._id || policy.id} className="recent-item">
+                                        <div className="item-avatar">
+                                            {policy.cattleType === 'cow' ? '🐄' : '🐃'}
+                                        </div>
+                                        <div className="item-details">
+                                            <strong>{policy.policyNumber}</strong>
+                                            <span>{policy.customer?.fullName || policy.ownerName}</span>
+                                        </div>
+                                        <div className="item-meta">
+                                            <strong>{formatCurrency(policy.premium)}</strong>
+                                            <span>Premium</span>
+                                        </div>
+                                        <Link to="/policy-approvals" className="item-btn">Review</Link>
+                                    </div>
+                                ))
                             ) : (
-                                <p className="empty-state">No pending withdrawals</p>
+                                <div className="empty-list">No pending policies to show</div>
                             )}
                         </div>
-                        <Link to="/withdrawal-approvals" className="view-all-btn">
-                            View All →
-                        </Link>
-                    </div>
-
-                    {/* Pending Claims */}
-                    <div className="approval-card">
-                        <div className="approval-header">
-                            <h3>🩺 Claim Approvals</h3>
-                            <span className="count-badge">{stats.pendingClaims}</span>
-                        </div>
-                        <div className="approval-list">
-                            {stats.pendingClaims > 0 ? (
-                                <p className="text-warning" style={{ padding: '1rem' }}>{stats.pendingClaims} claims waiting for review</p>
-                            ) : (
-                                <p className="empty-state">No pending claims</p>
-                            )}
-                        </div>
-                        <Link to="/claim-approvals" className="view-all-btn">
-                            View All →
-                        </Link>
                     </div>
                 </div>
-            </div>
 
-            {/* Quick Actions */}
-            <div className="quick-actions">
-                <h2>⚡ Quick Actions</h2>
-                <div className="actions-grid">
-                    <Link to="/policy-approvals" className="action-btn primary">
-                        <span className="action-icon">📋</span>
-                        <span>Approve Policies</span>
-                        {stats.pendingPolicies > 0 && <span className="action-badge">{stats.pendingPolicies}</span>}
-                    </Link>
+                {/* Right Side: Quick Actions & Settings */}
+                <div className="dashboard-sidebar">
+                    <div className="quick-actions-card">
+                        <h3>Quick Navigation</h3>
+                        <div className="actions-list">
+                            <Link to="/policy-plans/add" className="action-item">
+                                <div className="action-icon-box"><ClipboardCheck size={18} /></div>
+                                <span>Create Policy Plan</span>
+                            </Link>
+                            <Link to="/commission-settings" className="action-item">
+                                <div className="action-icon-box"><Settings size={18} /></div>
+                                <span>Adjust Matrix</span>
+                            </Link>
+                            <Link to="/transactions" className="action-item">
+                                <div className="action-icon-box"><ArrowUpRight size={18} /></div>
+                                <span>Financial Logs</span>
+                            </Link>
+                            <Link to="/inquiries" className="action-item">
+                                <div className="action-icon-box"><Mail size={18} /></div>
+                                <span>Customer Chat</span>
+                            </Link>
+                        </div>
+                    </div>
 
-                    <Link to="/agent-approvals" className="action-btn success">
-                        <span className="action-icon">👥</span>
-                        <span>Approve Agents</span>
-                        {stats.pendingAgents > 0 && <span className="action-badge">{stats.pendingAgents}</span>}
-                    </Link>
-
-                    <Link to="/withdrawal-approvals" className="action-btn warning">
-                        <span className="action-icon">💳</span>
-                        <span>Process Withdrawals</span>
-                        {stats.pendingWithdrawals > 0 && <span className="action-badge">{stats.pendingWithdrawals}</span>}
-                    </Link>
-
-                    <Link to="/claim-approvals" className="action-btn danger">
-                        <span className="action-icon">🩺</span>
-                        <span>Process Claims</span>
-                        {stats.pendingClaims > 0 && <span className="action-badge">{stats.pendingClaims}</span>}
-                    </Link>
-
-                    <Link to="/commission-settings" className="action-btn info">
-                        <span className="action-icon">⚙️</span>
-                        <span>Commission Settings</span>
-                    </Link>
+                    <div className="summary-card">
+                        <h3>Total Breakdown</h3>
+                        <div className="breakdown-list">
+                            <div className="breakdown-item">
+                                <span>Total Submissions</span>
+                                <strong>{stats.totalPolicies}</strong>
+                            </div>
+                            <div className="breakdown-item">
+                                <span>Fulfilled Policies</span>
+                                <strong>{stats.approvedPolicies}</strong>
+                            </div>
+                            <div className="breakdown-item">
+                                <span>Settled Payouts</span>
+                                <strong>{stats.totalWithdrawals > 0 ? stats.totalWithdrawals : '0'}</strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div >

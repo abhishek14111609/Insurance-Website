@@ -40,9 +40,32 @@ import ClaimHistory from './pages/ClaimHistory';
 
 import './App.css';
 
+import {
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  UserCircle,
+  Mail,
+  ClipboardList,
+  CheckSquare,
+  History,
+  Stethoscope,
+  HeartPulse,
+  Settings2,
+  ScrollText,
+  CircleDollarSign,
+  Wallet,
+  ArrowLeftRight,
+  LogOut,
+  ShieldCheck,
+  ChevronRight,
+  Database,
+  Search
+} from 'lucide-react';
+
 const AdminLayout = ({ children }) => {
-  const { logout } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Added state for sidebar
+  const { logout, user } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -50,33 +73,40 @@ const AdminLayout = ({ children }) => {
     }
   };
 
-  // Added functions for sidebar toggle
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => setIsSidebarOpen(false);
 
   return (
     <div className="admin-container">
-      {/* Mobile Hamburger Toggle */}
-      <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
-        <span className={`hamburger ${isSidebarOpen ? 'open' : ''}`}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      </button>
+      {/* Mobile Header */}
+      <header className="mobile-header">
+        <button className="sidebar-toggle" onClick={toggleSidebar}>
+          <span className={`hamburger ${isSidebarOpen ? 'open' : ''}`}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+        <div className="mobile-brand">
+          <ShieldCheck size={24} color="var(--primary)" />
+          <span>Admin Panel</span>
+        </div>
+      </header>
 
       {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && <div className="sidebar-overlay" onClick={closeSidebar}></div>}
 
       {/* Sidebar */}
       <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <h2>🛡️ Pashudhan Suraksha</h2>
-        <div className="subtitle">Admin Panel</div>
+        <div className="sidebar-brand">
+          <div className="brand-icon">
+            <ShieldCheck size={32} />
+          </div>
+          <div className="brand-text">
+            <h2>Pashudhan</h2>
+            <span>Suraksha Admin</span>
+          </div>
+        </div>
 
         <nav className="admin-nav">
           <NavLink
@@ -85,151 +115,131 @@ const AdminLayout = ({ children }) => {
             onClick={closeSidebar}
             end
           >
-            <span className="icon">📊</span>
-            Dashboard
+            <LayoutDashboard size={20} className="icon" />
+            <span>Dashboard</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <div className="nav-section">Agent Management</div>
+          <div className="nav-section">Agent & Users</div>
 
-          <NavLink
-            to="/agents"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">👥</span>
-            All Agents
-          </NavLink>
-          {/* 
-          <NavLink
-            to="/agents/add"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">➕</span>
-            Add Agent
-          </NavLink> */}
-
-          <NavLink
-            to="/agent-approvals"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">✅</span>
-            Agent Approvals
+          <NavLink to="/agents" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Users size={20} className="icon" />
+            <span>All Agents</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/customers"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">👤</span>
-            All Customers
+          <NavLink to="/agent-approvals" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <UserCheck size={20} className="icon" />
+            <span>Agent Approvals</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/inquiries"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">📨</span>
-            Inquiries
+          <NavLink to="/customers" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <UserCircle size={20} className="icon" />
+            <span>All Customers</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <div className="nav-section">Policy Management</div>
-
-          <NavLink
-            to="/policy-plans"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">📋</span>
-            Policy Plans
+          <NavLink to="/inquiries" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Mail size={20} className="icon" />
+            <span>Inquiries</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/policy-approvals"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">✅</span>
-            Policy Approvals
+          <div className="nav-section">Policy & Claims</div>
+
+          <NavLink to="/policy-plans" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <ClipboardList size={20} className="icon" />
+            <span>Policy Plans</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/policy-history"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">📚</span>
-            Policy History
+          <NavLink to="/policy-approvals" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <CheckSquare size={20} className="icon" />
+            <span>Policy Approvals</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/claim-approvals"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">🩺</span>
-            Claim Approvals
+          <NavLink to="/policy-history" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <History size={20} className="icon" />
+            <span>Policy History</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/claim-history"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">🏥</span>
-            Claim History
+          <NavLink to="/claim-approvals" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Stethoscope size={20} className="icon" />
+            <span>Claim Approvals</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <div className="nav-section">Financial</div>
-
-          <NavLink
-            to="/commission-settings"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">⚙️</span>
-            Commission Settings
+          <NavLink to="/claim-history" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <HeartPulse size={20} className="icon" />
+            <span>Claim History</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/commission-history"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">📜</span>
-            Commission History
+          <div className="nav-section">Financials</div>
+
+          <NavLink to="/commission-settings" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Settings2 size={20} className="icon" />
+            <span>Commission Matrix</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/commission-approvals"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">💰</span>
-            Commission Approvals
+          <NavLink to="/commission-approvals" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <CircleDollarSign size={20} className="icon" />
+            <span>Commissions</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/withdrawal-approvals"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">💳</span>
-            Withdrawals
+          <NavLink to="/withdrawal-approvals" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Wallet size={20} className="icon" />
+            <span>Withdrawals</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <NavLink
-            to="/transactions"
-            className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'}
-          >
-            <span className="icon">💸</span>
-            Transactions
+          <NavLink to="/transactions" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <ArrowLeftRight size={20} className="icon" />
+            <span>Transactions</span>
+            <ChevronRight size={14} className="arrow" />
           </NavLink>
 
-          <div className="nav-section">Account</div>
+          <div className="nav-section">System</div>
 
-          <button
-            onClick={handleLogout}
-            className="admin-nav-item logout-btn"
-          >
-            <span className="icon">🚪</span>
-            Logout
+          <NavLink to="/database-setup" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Database size={20} className="icon" />
+            <span>Database Setup</span>
+            <ChevronRight size={14} className="arrow" />
+          </NavLink>
+
+          <button onClick={handleLogout} className="admin-nav-item logout-nav-btn">
+            <LogOut size={20} className="icon" />
+            <span>Logout</span>
           </button>
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main className="admin-main">
-        {children}
+        <header className="main-header">
+          <div className="header-search">
+            <Search size={18} className="search-icon" />
+            <input type="text" placeholder="Search anything..." />
+          </div>
+          <div className="header-actions">
+            <div className="user-profile">
+              <div className="user-info">
+                <span className="user-name">{user?.fullName || 'Super Admin'}</span>
+                <span className="user-role">Administrator</span>
+              </div>
+              <div className="user-avatar">
+                {user?.fullName?.charAt(0) || 'A'}
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="content-container">
+          {children}
+        </div>
       </main>
     </div>
   );

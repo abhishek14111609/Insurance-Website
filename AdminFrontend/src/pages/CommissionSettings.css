@@ -1,25 +1,23 @@
-/* Modern Commission Settings Page - Redesigned */
+/* Premium Commission Settings Styling */
 
 .commission-settings-page {
-    padding: 0;
-    max-width: 900px;
-    margin: 0 auto;
+    animation: fadeIn 0.5s ease-out;
 }
 
 .settings-card {
     background: white;
-    border-radius: 1.5rem;
-    padding: 2.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-premium);
 }
 
 .settings-info {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    padding: 1.75rem;
-    border-radius: 1rem;
-    margin-bottom: 2rem;
-    border: 2px solid #93c5fd;
+    background: #f8fafc;
+    padding: 24px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    border: 1px solid #f1f5f9;
 }
 
 .settings-info h3 {
@@ -43,21 +41,17 @@
 }
 
 .setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.75rem;
-    margin-bottom: 1.25rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 1rem;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
+    background: #fff;
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid #f1f5f9;
+    margin-bottom: 16px;
+    transition: all 0.3s;
 }
 
 .setting-item:hover {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border-color: #6366f1;
-    transform: translateX(4px);
+    border-color: var(--brand-primary);
+    transform: translateX(8px);
 }
 
 .setting-label h4 {
@@ -80,20 +74,18 @@
 }
 
 .setting-input input {
-    width: 120px;
-    padding: 1rem;
-    border: 2px solid #cbd5e1;
-    border-radius: 0.75rem;
+    width: 140px;
+    height: 56px;
+    border-radius: 14px;
+    background: #f1f5f9;
+    border: 2px solid transparent;
     font-size: 1.5rem;
-    font-weight: 700;
-    text-align: center;
-    transition: all 0.2s ease;
+    font-weight: 800;
 }
 
 .setting-input input:focus {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: white;
+    border-color: var(--brand-primary);
 }
 
 .setting-input span {
@@ -133,15 +125,11 @@
 }
 
 .preview-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.5rem;
     background: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    border-radius: 18px;
+    padding: 24px;
+    border: 1px solid #f1f5f9;
+    box-shadow: var(--shadow-sm);
 }
 
 .preview-item:hover {
@@ -156,12 +144,11 @@
 }
 
 .preview-item strong {
-    font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    font-size: 2.2rem;
+    background: var(--brand-primary-gradient);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Responsive */

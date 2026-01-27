@@ -4,6 +4,19 @@ import { adminAPI } from '../../services/api.service';
 import toast from 'react-hot-toast';
 import './AllAgents.css';
 
+import {
+    Search,
+    Filter,
+    UserPlus,
+    Eye,
+    Ban,
+    Users,
+    CheckCircle,
+    Clock,
+    ShieldAlert,
+    ChevronDown
+} from 'lucide-react';
+
 const AllAgents = () => {
     const [agents, setAgents] = useState([]);
     const [filteredAgents, setFilteredAgents] = useState([]);
@@ -55,7 +68,6 @@ const AllAgents = () => {
     const filterAgents = () => {
         let filtered = [...agents];
 
-        // Search filter
         if (searchTerm) {
             const lowerSearch = searchTerm.toLowerCase();
             filtered = filtered.filter(agent =>
@@ -68,13 +80,11 @@ const AllAgents = () => {
             );
         }
 
-        // Status filter
         if (statusFilter !== 'all') {
             const filterVal = statusFilter.toLowerCase();
             filtered = filtered.filter(agent => (agent.status || 'pending').toLowerCase() === filterVal);
         }
 
-        // Level filter
         if (levelFilter !== 'all') {
             filtered = filtered.filter(agent => agent.level === parseInt(levelFilter));
         }
@@ -84,9 +94,7 @@ const AllAgents = () => {
 
     const handleReject = async (agentId, agentName) => {
         const reason = window.prompt(`Are you sure you want to block/reject agent: ${agentName}?\nPlease provide a reason:`);
-
-        if (reason === null) return; // User cancelled
-
+        if (reason === null) return;
         if (!reason.trim()) {
             toast.error('A reason is required to block an agent.');
             return;
@@ -110,17 +118,12 @@ const AllAgents = () => {
         const s = (status || '').toLowerCase();
         switch (s) {
             case 'approved':
-            case 'active':
-                return 'badge-success';
-            case 'pending':
-                return 'badge-warning';
-            case 'inactive':
-                return 'badge-secondary';
+            case 'active': return 'badge-success';
+            case 'pending': return 'badge-warning';
+            case 'inactive': return 'badge-secondary';
             case 'rejected':
-            case 'blocked':
-                return 'badge-error';
-            default:
-                return 'badge-secondary';
+            case 'blocked': return 'badge-error';
+            default: return 'badge-secondary';
         }
     };
 
@@ -137,7 +140,7 @@ const AllAgents = () => {
         kycPending: agents.filter((a) => (a.kycStatus || '').toLowerCase() === 'pending').length
     };
 
-    if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Agents...</div>;
+    if (loading) return <div className="loading-container"><div className="loader"></div></div>;
 
     if (error) return (
         <div className="error-state">
@@ -148,164 +151,176 @@ const AllAgents = () => {
 
     return (
         <div className="all-agents-page">
-            <div className="page-header">
-                <div>
-                    <h1>👥 Agent Management</h1>
-                    <p>Manage all agents and their hierarchy</p>
+            <div className="page-header-modern">
+                <div className="header-info">
+                    <h1>Agent Network</h1>
+                    <p>Manage your ecosystem of field agents and sub-agents</p>
                 </div>
-
-                {/* // Disabled Adding Agents manually as Admin for now, relying on public registration + approval */}
                 <Link to="/agents/add" className="btn btn-primary">
-                    ➕ Add New Agent
+                    <UserPlus size={20} /> Add New Agent
                 </Link>
-
             </div>
 
-            {/* Filters */}
-            <div className="filters-section">
-                <div className="search-box">
+            {/* Modern Stats Grid */}
+            <div className="agents-stats-grid">
+                <div className="agent-stat-card">
+                    <div className="icon-box info"><Users size={20} /></div>
+                    <div className="stat-data">
+                        <h3>{statusCounts.total}</h3>
+                        <span>Total Network</span>
+                    </div>
+                </div>
+                <div className="agent-stat-card">
+                    <div className="icon-box success"><CheckCircle size={20} /></div>
+                    <div className="stat-data">
+                        <h3>{statusCounts.active}</h3>
+                        <span>Fully Active</span>
+                    </div>
+                </div>
+                <div className="agent-stat-card">
+                    <div className="icon-box warning"><Clock size={20} /></div>
+                    <div className="stat-data">
+                        <h3>{statusCounts.pending}</h3>
+                        <span>Onboarding</span>
+                    </div>
+                </div>
+                <div className="agent-stat-card">
+                    <div className="icon-box danger"><ShieldAlert size={20} /></div>
+                    <div className="stat-data">
+                        <h3>{statusCounts.kycPending}</h3>
+                        <span>KYC Tasks</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters Section */}
+            <div className="modern-filters">
+                <div className="search-input-wrapper">
+                    <Search className="search-icon" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by name, code, or email..."
+                        placeholder="Search agents by name, code, phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                <div className="filter-group">
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                        <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="rejected">Rejected/Blocked</option>
-                    </select>
+                <div className="filter-actions">
+                    <div className="custom-select">
+                        <Filter size={16} className="filter-icon" />
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="rejected">Rejected/Blocked</option>
+                        </select>
+                        <ChevronDown size={14} className="chevron" />
+                    </div>
 
-                    <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
-                        <option value="all">All Levels</option>
-                        <option value="1">Level 1</option>
-                        <option value="2">Level 2</option>
-                        <option value="3">Level 3</option>
-                        <option value="4">Level 4</option>
-                        <option value="5">Level 5</option>
-                    </select>
+                    <div className="custom-select">
+                        <Filter size={16} className="filter-icon" />
+                        <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
+                            <option value="all">All Levels</option>
+                            {[1, 2, 3, 4, 5].map(l => <option key={l} value={l}>Level {l}</option>)}
+                        </select>
+                        <ChevronDown size={14} className="chevron" />
+                    </div>
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="stats-row">
-                <div className="stat-box">
-                    <span className="stat-label">Total Agents</span>
-                    <span className="stat-value">{statusCounts.total}</span>
-                </div>
-                <div className="stat-box">
-                    <span className="stat-label">Active</span>
-                    <span className="stat-value">{statusCounts.active}</span>
-                </div>
-                <div className="stat-box">
-                    <span className="stat-label">Pending</span>
-                    <span className="stat-value">{statusCounts.pending}</span>
-                </div>
-                <div className="stat-box">
-                    <span className="stat-label">KYC Pending</span>
-                    <span className="stat-value">{statusCounts.kycPending}</span>
-                </div>
-                <div className="stat-box">
-                    <span className="stat-label">Filtered Results</span>
-                    <span className="stat-value">{filteredAgents.length}</span>
-                </div>
-            </div>
-
-            {/* Agents Table */}
-            <div className="table-container">
-                <table className="agents-table">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Parent</th>
-                            <th>Level</th>
-                            <th>Status</th>
-                            <th>KYC</th>
-                            <th>Policies</th>
-                            <th>Premium</th>
-                            <th>Earnings</th>
-                            <th>Pending Comm.</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredAgents.length === 0 ? (
+            {/* Table Area */}
+            <div className="table-card-modern">
+                <div className="table-responsive">
+                    <table className="modern-table">
+                        <thead>
                             <tr>
-                                <td colSpan="9" className="empty-state">
-                                    No agents found
-                                </td>
+                                <th>Agent Profile</th>
+                                <th>Contact Info</th>
+                                <th>Network</th>
+                                <th>Status</th>
+                                <th>Performance</th>
+                                <th className="text-right">Earnings</th>
+                                <th className="text-center">Actions</th>
                             </tr>
-                        ) : (
-                            filteredAgents.map(agent => {
-                                const agentId = agent._id || agent.id;
-                                const policyStats = agent.policyStats || {};
-                                const commissionStats = agent.commissionStats || {};
-                                return (
-                                    <tr key={agentId || agent.agentCode || agent.user?.email || Math.random()}>
-                                        <td>
-                                            <strong>{agent.agentCode || agent.code || 'N/A'}</strong>
-                                        </td>
-                                        <td>{agent.user?.fullName}</td>
-                                        <td>{agent.user?.email}</td>
-                                        <td>{agent.user?.phone}</td>
-                                        <td>{agent.parentAgent?.agentCode || '—'}</td>
-                                        <td>
-                                            <span className="level-badge">L{agent.level || 1}</span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${getStatusBadgeClass(agent.status)}`}>
-                                                {(agent.status || 'pending').toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={`badge kyc-${agent.kycStatus || 'not_submitted'}`}>
-                                                {(agent.kycStatus || 'not_submitted').replace('_', ' ').toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {policyStats.approvedPolicies || 0} / {policyStats.totalPolicies || 0}
-                                        </td>
-                                        <td>{formatCurrency(policyStats.totalPremium)}</td>
-                                        <td>{formatCurrency(agent.totalEarnings)}</td>
-                                        <td>{formatCurrency(commissionStats.pendingCommissions)}</td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                {agentId && (
-                                                    <Link
-                                                        to={`/agents/details/${agentId}`}
-                                                        className="btn-icon"
-                                                        title="View Details"
-                                                    >
-                                                        👁️
+                        </thead>
+                        <tbody>
+                            {filteredAgents.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" className="empty-table">
+                                        <div className="empty-content">
+                                            <Users size={48} />
+                                            <p>No agents match your criteria</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredAgents.map(agent => {
+                                    const agentId = agent._id || agent.id;
+                                    const policyStats = agent.policyStats || {};
+                                    return (
+                                        <tr key={agentId}>
+                                            <td>
+                                                <div className="agent-profile-cell">
+                                                    <div className="agent-initials">
+                                                        {agent.user?.fullName?.charAt(0) || 'A'}
+                                                    </div>
+                                                    <div className="agent-meta">
+                                                        <strong>{agent.user?.fullName}</strong>
+                                                        <span>{agent.agentCode || 'NO-CODE'}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="contact-cell">
+                                                    <span>{agent.user?.email}</span>
+                                                    <small>{agent.user?.phone}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="network-cell">
+                                                    <span className="level-badge">L{agent.level || 1}</span>
+                                                    <small>Parent: {agent.parentAgent?.agentCode || 'Direct'}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="status-cell">
+                                                    <span className={`badge ${getStatusBadgeClass(agent.status)}`}>
+                                                        {agent.status}
+                                                    </span>
+                                                    <span className={`kyc-dot ${agent.kycStatus === 'verified' ? 'verified' : 'pending'}`} title={`KYC: ${agent.kycStatus}`}></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="perf-cell">
+                                                    <span>{policyStats.approvedPolicies || 0} Policies</span>
+                                                    <small>{formatCurrency(policyStats.totalPremium)} Rev.</small>
+                                                </div>
+                                            </td>
+                                            <td className="text-right">
+                                                <div className="earnings-cell">
+                                                    <strong>{formatCurrency(agent.totalEarnings)}</strong>
+                                                </div>
+                                            </td>
+                                            <td className="text-center">
+                                                <div className="action-btns-modern">
+                                                    <Link to={`/agents/details/${agentId}`} className="action-btn-mini info" title="View Details">
+                                                        <Eye size={18} />
                                                     </Link>
-                                                )}
-                                                {/* Removed Edit/Delete, kept Block if needed */}
-                                                {(agent.status || '').toLowerCase() !== 'rejected' && (agent.status || '').toLowerCase() !== 'blocked' && (
-                                                    <button
-                                                        onClick={() => handleReject(agentId, agent.user?.fullName || 'Agent')}
-                                                        className="btn-icon btn-danger"
-                                                        title="Block Agent"
-                                                        disabled={!agentId}
-                                                    >
-                                                        🚫
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
+                                                    {(agent.status !== 'rejected' && agent.status !== 'blocked') && (
+                                                        <button onClick={() => handleReject(agentId, agent.user?.fullName)} className="action-btn-mini danger" title="Block Agent">
+                                                            <Ban size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

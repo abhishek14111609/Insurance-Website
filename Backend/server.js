@@ -118,6 +118,16 @@ app.get('/', (req, res) => {
     });
 });
 
+// API Base Route
+app.get('/api', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Pashudhan Suraksha Insurance API Base Endpoint',
+        version: '2.0.0',
+        env: process.env.NODE_ENV || 'development'
+    });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/policies', policyRoutes);
