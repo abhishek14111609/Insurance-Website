@@ -47,6 +47,9 @@
     border: 1px solid #f1f5f9;
     margin-bottom: 16px;
     transition: all 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .setting-item:hover {
@@ -74,13 +77,15 @@
 }
 
 .setting-input input {
-    width: 140px;
+    width: 100%;
+    max-width: 120px;
     height: 56px;
     border-radius: 14px;
     background: #f1f5f9;
     border: 2px solid transparent;
     font-size: 1.5rem;
     font-weight: 800;
+    text-align: center;
 }
 
 .setting-input input:focus {

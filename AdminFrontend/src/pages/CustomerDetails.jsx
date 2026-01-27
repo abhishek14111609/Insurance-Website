@@ -86,7 +86,7 @@ const CustomerDetails = () => {
             <div className="activity-sections">
                 <div className="detail-card">
                     <h3>Policies ({customer.policies?.length || 0})</h3>
-                    {customer.policies?.length === 0 ? (
+                    {!customer.policies || customer.policies.length === 0 ? (
                         <p className="empty-state">No policies found.</p>
                     ) : (
                         <div className="table-container">
@@ -121,7 +121,7 @@ const CustomerDetails = () => {
 
                 <div className="detail-card">
                     <h3>Claims ({customer.claims?.length || 0})</h3>
-                    {customer.claims?.length === 0 ? (
+                    {!customer.claims || customer.claims.length === 0 ? (
                         <p className="empty-state">No claims found.</p>
                     ) : (
                         <div className="table-container">

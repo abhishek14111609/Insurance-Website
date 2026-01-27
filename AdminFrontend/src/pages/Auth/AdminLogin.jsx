@@ -123,15 +123,7 @@ const AdminLogin = () => {
                     </button>
                 </form>
 
-                <div className="login-footer">
-                    {import.meta.env.DEV && (
-                        <p className="demo-credentials">
-                            <strong>Demo Credentials:</strong><br />
-                            Email: admin@insurance.com (or type "admin")<br />
-                            Password: admin123
-                        </p>
-                    )}
-                </div>
+
             </div>
         </div>
     );

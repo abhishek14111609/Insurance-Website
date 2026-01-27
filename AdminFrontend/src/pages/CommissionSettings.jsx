@@ -101,9 +101,11 @@ const CommissionSettings = () => {
 
     return (
         <div className="commission-settings-page">
-            <div className="page-header">
-                <h1>⚙️ Commission Settings</h1>
-                <p>Configure the upline commission percentages for up to 5 parents (seller fixed commission is handled by backend).</p>
+            <div className="page-header-modern">
+                <div className="header-info">
+                    <h1>⚙️ Commission Settings</h1>
+                    <p>Configure the upline commission percentages for up to 5 parents.</p>
+                </div>
             </div>
 
             <div className="settings-card">
@@ -129,9 +131,9 @@ const CommissionSettings = () => {
                                     type="tel"
                                     value={row.percentage}
                                     onChange={(e) => handleChange(idx, e.target.value)}
-                                   
+
                                     max="100"
-                                
+
                                 />
                                 <span>%</span>
                             </div>
