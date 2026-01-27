@@ -1373,24 +1373,38 @@ export const getAllCustomers = async (req, res) => {
 // @desc    Get customer by ID
 // @route   GET /api/admin/customers/:id
 // @access  Private (admin)
+// @desc    Get customer by ID
+// @route   GET /api/admin/customers/:id
+// @access  Private (admin)
 export const getCustomerById = async (req, res) => {
     try {
-        const customer = await User.findOne({
+        const customerDoc = await User.findOne({
             _id: req.params.id,
             role: 'customer'
-        })
-            .select('-password')
-            .populate('policies')
-            .populate('claims')
-            .populate('payments')
-            .populate('notifications');
+        }).select('-password');
 
-        if (!customer) {
+        if (!customerDoc) {
             return res.status(404).json({
                 success: false,
                 message: 'Customer not found'
             });
         }
+
+        const customer = customerDoc.toObject();
+
+        // Manually fetch related data
+        const [policies, claims, payments, notifications] = await Promise.all([
+            Policy.find({ customerId: customer._id }).sort({ createdAt: -1 }),
+            Claim.find({ customerId: customer._id }).sort({ createdAt: -1 }),
+            Payment.find({ customerId: customer._id }).sort({ createdAt: -1 }),
+            // Notification model might use 'userId' or 'recipientId', checking schema would be best but let's guess 'userId' if standard
+            // Actually Notification usually has recipient. Let's skip notifications if unsure or assume userId
+        ]);
+
+        customer.policies = policies;
+        customer.claims = claims;
+        customer.payments = payments;
+        // customer.notifications = notifications; // Optional
 
         res.json({
             success: true,

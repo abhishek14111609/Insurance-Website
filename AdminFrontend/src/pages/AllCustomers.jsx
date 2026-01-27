@@ -116,7 +116,9 @@ const AllCustomers = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <Link to={`/customers/${customer._id}`} className="btn-view" title="View Details">👁️</Link>
+                                        <Link to={`/customers/${customer._id}`} className="btn-view-details">
+                                            👁️ View Details
+                                        </Link>
                                     </td>
                                 </tr>
                             ))
