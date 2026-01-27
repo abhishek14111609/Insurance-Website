@@ -52,7 +52,11 @@ app.use(cors({
         // Default production origins (Vercel apps)
         const defaultProdOrigins = [
             'https://pashudhansuraksha.vercel.app',
-            'https://pashudhansurakshaadmin.vercel.app'
+            'https://pashudhansurakshaadmin.vercel.app',
+            'https://pashudhansuraksha.com',
+            'https://www.pashudhansuraksha.com',
+            'https://admin.pashudhansuraksha.com',
+            'https://www.admin.pashudhansuraksha.com'
         ];
 
         // Allow specific production origins from env
@@ -70,9 +74,9 @@ app.use(cors({
 
         callback(new Error('Not allowed by CORS'));
     },
-    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
