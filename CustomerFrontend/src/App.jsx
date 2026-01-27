@@ -13,6 +13,7 @@ import ContactUs from './pages/ContactUs';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyOtp from './pages/VerifyOtp';
 import VerifyEmail from './pages/VerifyEmail';
 import CustomerProfile from './pages/CustomerProfile';
 import Notifications from './pages/Notifications';
@@ -128,6 +129,7 @@ function App() {
             }
           />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
 
           {/* Agent Public Routes */}
           <Route path="/become-agent" element={<AgentLanding />} />

@@ -9,9 +9,11 @@
 .profile-container {
     max-width: 1200px;
     margin: 0 auto;
+    margin: 0 auto;
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 280px minmax(0, 1fr);
     gap: 2rem;
+    align-items: start;
 }
 
 /* Sidebar */
@@ -119,6 +121,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
     margin-bottom: 2rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid #e2e8f0;

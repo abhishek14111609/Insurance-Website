@@ -137,42 +137,53 @@ const CustomerProfile = () => {
     return (
         <div className="customer-profile-page">
             <div className="profile-container">
-                <div className="profile-header">
-                    <h1>My Account</h1>
-                    <p>Manage your profile and view your policies</p>
-                </div>
-
-                {message.text && (
-                    <div className={`alert alert-${message.type}`}>
-                        {message.text}
+                {/* Left Sidebar */}
+                <div className="profile-sidebar">
+                    <div className="user-brief">
+                        <div className="avatar-circle">
+                            {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <h3>{user.fullName}</h3>
+                        <p>{user.email}</p>
                     </div>
-                )}
-
-                <div className="profile-tabs">
-                    <button
-                        className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        Profile Information
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('security')}
-                    >
-                        Security
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'policies' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('policies')}
-                    >
-                        My Policies
-                    </button>
+                    <div className="profile-nav">
+                        <button
+                            className={activeTab === 'profile' ? 'active' : ''}
+                            onClick={() => setActiveTab('profile')}
+                        >
+                            <span className="icon">👤</span> Profile Information
+                        </button>
+                        <button
+                            className={activeTab === 'security' ? 'active' : ''}
+                            onClick={() => setActiveTab('security')}
+                        >
+                            <span className="icon">🔒</span> Security
+                        </button>
+                        <button
+                            className={activeTab === 'policies' ? 'active' : ''}
+                            onClick={() => setActiveTab('policies')}
+                        >
+                            <span className="icon">📄</span> My Policies
+                        </button>
+                    </div>
+                    <div className="profile-nav" style={{ marginTop: 'auto', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
+                        <button className="logout-btn" onClick={handleLogout}>
+                            <span className="icon">🚪</span> Logout
+                        </button>
+                    </div>
                 </div>
 
-                <div className="tab-content">
+                {/* Right Content Area */}
+                <div className="profile-content">
+                    {message.text && (
+                        <div className={`alert alert-${message.type}`} style={{ marginBottom: '20px' }}>
+                            {message.text}
+                        </div>
+                    )}
+
                     {activeTab === 'profile' && (
                         <div className="profile-section">
-                            <div className="section-header">
+                            <div className="content-header">
                                 <h2>Profile Information</h2>
                                 {!isEditing ? (
                                     <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
@@ -204,6 +215,7 @@ const CustomerProfile = () => {
                                             type="email"
                                             value={profileData.email}
                                             disabled
+                                            className="disabled-input"
                                         />
                                     </div>
 
@@ -261,9 +273,14 @@ const CustomerProfile = () => {
                                 </div>
 
                                 {isEditing && (
-                                    <button type="submit" className="btn btn-primary" disabled={loading}>
-                                        {loading ? 'Saving...' : 'Save Changes'}
-                                    </button>
+                                    <div className="form-actions">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                                            {loading ? 'Saving...' : 'Save Changes'}
+                                        </button>
+                                    </div>
                                 )}
                             </form>
                         </div>
@@ -271,89 +288,99 @@ const CustomerProfile = () => {
 
                     {activeTab === 'security' && (
                         <div className="security-section">
-                            <h2>Change Password</h2>
-                            <form onSubmit={handlePasswordChange}>
-                                <div className="form-group">
-                                    <label>Current Password</label>
-                                    <input
-                                        type="password"
-                                        value={passwordData.currentPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>New Password</label>
-                                    <input
-                                        type="password"
-                                        value={passwordData.newPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        required
-                                        minLength="6"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        value={passwordData.confirmPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
-                                <button type="submit" className="btn btn-primary" disabled={loading}>
-                                    {loading ? 'Changing...' : 'Change Password'}
-                                </button>
-                            </form>
-
-                            <div className="logout-section">
-                                <h3>Logout</h3>
-                                <p>Sign out of your account</p>
-                                <button className="btn btn-danger" onClick={handleLogout}>
-                                    Logout
-                                </button>
+                            <div className="content-header">
+                                <h2>Security Settings</h2>
                             </div>
+                            <h3>Change Password</h3>
+                            <form onSubmit={handlePasswordChange}>
+                                <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                    <div className="form-group">
+                                        <label>Current Password</label>
+                                        <input
+                                            type="password"
+                                            value={passwordData.currentPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>New Password</label>
+                                        <input
+                                            type="password"
+                                            value={passwordData.newPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                            required
+                                            minLength="6"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Confirm New Password</label>
+                                        <input
+                                            type="password"
+                                            value={passwordData.confirmPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-actions">
+                                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                                        {loading ? 'Changing...' : 'Change Password'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     )}
 
                     {activeTab === 'policies' && (
                         <div className="policies-section">
-                            <h2>My Policies</h2>
+                            <div className="content-header">
+                                <h2>My Policies</h2>
+                                <button className="btn btn-primary" onClick={() => navigate('/animal-policy-form')}>
+                                    + New Policy
+                                </button>
+                            </div>
+
                             {policiesLoading ? (
                                 <div className="loading">Loading policies...</div>
                             ) : policies.length === 0 ? (
-                                <div className="no-policies">
-                                    <p>You don't have any policies yet.</p>
-                                    <button className="btn btn-primary" onClick={() => navigate('/animal-policy-form')}>
+                                <div className="empty-state">
+                                    <h3>No Policies Found</h3>
+                                    <p>You don't have any policies active at the moment.</p>
+                                    <button className="btn btn-outline-primary mt-3" onClick={() => navigate('/animal-policy-form')}>
                                         Buy Your First Policy
                                     </button>
                                 </div>
                             ) : (
-                                <div className="policies-grid">
+                                <div className="policy-grid">
                                     {policies.map((policy) => (
                                         <div key={policy.id} className="policy-card">
                                             <div className="policy-header">
-                                                <h3>{policy.policyNumber}</h3>
+                                                <div className="policy-type">
+                                                    🐮 {policy.cattleType || 'Cattle'}
+                                                </div>
                                                 <span className={`status-badge status-${policy.status.toLowerCase()}`}>
                                                     {policy.status}
                                                 </span>
                                             </div>
-                                            <div className="policy-details">
-                                                <p><strong>Cattle Type:</strong> {policy.cattleType}</p>
+                                            <div className="policy-body">
+                                                <p><strong>Policy No:</strong> {policy.policyNumber}</p>
                                                 <p><strong>Tag ID:</strong> {policy.tagId}</p>
                                                 <p><strong>Coverage:</strong> ₹{policy.coverageAmount?.toLocaleString()}</p>
                                                 <p><strong>Premium:</strong> ₹{policy.premium?.toLocaleString()}</p>
-                                                <p><strong>Duration:</strong> {policy.duration}</p>
+                                                <p><strong>Expiry:</strong> {new Date(policy.endDate).toLocaleDateString()}</p>
                                             </div>
-                                            <button
-                                                className="btn btn-sm btn-primary"
-                                                onClick={() => navigate(`/policy/${policy.id}`)}
-                                            >
-                                                View Details
-                                            </button>
+                                            <div className="policy-footer">
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary w-100"
+                                                    onClick={() => navigate(`/policy/${policy.id}`)}
+                                                >
+                                                    View Details
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

@@ -77,8 +77,8 @@ const AgentLanding = () => {
             });
 
             if (response.success) {
-                setRegisteredAgentCode(response.data.agentCode);
-                setSubmitted(true);
+                // Redirect to OTP verification
+                navigate('/verify-otp', { state: { email: registrationData.email } });
             }
         } catch (err) {
             console.error('Registration error:', err);
@@ -117,6 +117,10 @@ const AgentLanding = () => {
                 }
             }
         } catch (err) {
+            if (err.isUnverified) {
+                navigate('/verify-otp', { state: { email: loginCredentials.email } });
+                return;
+            }
             setLoginError(err.message || 'Invalid credentials or server error');
         } finally {
             setLoading(false);

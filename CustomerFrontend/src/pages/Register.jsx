@@ -112,8 +112,8 @@ const Register = () => {
                 role: 'customer'
             });
 
-            toast.success('Registration successful! Please verify your email, then log in. / નોંધણી સફળ! કૃપા કરીને તમારો ઇમેઇલ ચકાસો, પછી લોગ ઇન કરો.', { duration: 6000 });
-            navigate('/login');
+            toast.success('Account created! Please verify your email / ખાતું બનાવ્યું! કૃપા કરીને તમારો ઈમેલ ચકાસો', { duration: 4000 });
+            navigate('/verify-otp', { state: { email: formData.email } });
         } catch (error) {
             setErrors({ email: error.message || 'Registration failed. Please try again. / નોંધણી નિષ્ફળ. કૃપા કરીને ફરી પ્રયાસ કરો.' });
             setIsSubmitting(false);

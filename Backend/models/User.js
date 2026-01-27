@@ -53,7 +53,15 @@ const userSchema = new mongoose.Schema(
             default: false
         },
         verificationToken: {
+            type: String, // Keeping for backward compatibility or reset links
+            default: null
+        },
+        otpCode: {
             type: String,
+            default: null
+        },
+        otpExpires: {
+            type: Date,
             default: null
         },
         resetPasswordToken: {

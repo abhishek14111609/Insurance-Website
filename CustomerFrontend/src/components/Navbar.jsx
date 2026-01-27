@@ -39,33 +39,33 @@ const Navbar = () => {
                 </Link>
 
                 <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
-                    <Link to="/" className="navbar-link" onClick={closeMenu}>Home</Link>
-                    <Link to="/policies" className="navbar-link" onClick={closeMenu}>Policies</Link>
+                    <Link to="/" className={`navbar-link ${location.pathname === '/' ? 'active' : ''}`} onClick={closeMenu}>Home</Link>
+                    <Link to="/policies" className={`navbar-link ${location.pathname === '/policies' ? 'active' : ''}`} onClick={closeMenu}>Policies</Link>
 
                     {user ? (
                         <>
                             {isAgent ? (
-                                <Link to="/agent/dashboard" className="navbar-link portal-link" onClick={closeMenu}>
+                                <Link to="/agent/dashboard" className={`navbar-link portal-link ${location.pathname.startsWith('/agent') ? 'active' : ''}`} onClick={closeMenu}>
                                     💼 Agent Portal
                                 </Link>
                             ) : (
                                 <>
-                                    <Link to="/my-policies" className="navbar-link" onClick={closeMenu}>
+                                    <Link to="/my-policies" className={`navbar-link ${location.pathname === '/my-policies' ? 'active' : ''}`} onClick={closeMenu}>
                                         My Policies
                                     </Link>
-                                    <Link to="/claims" className="navbar-link" onClick={closeMenu}>
+                                    <Link to="/claims" className={`navbar-link ${location.pathname === '/claims' ? 'active' : ''}`} onClick={closeMenu}>
                                         Claims
                                     </Link>
-                                    <Link to="/renewals" className="navbar-link" onClick={closeMenu}>
+                                    <Link to="/renewals" className={`navbar-link ${location.pathname === '/renewals' ? 'active' : ''}`} onClick={closeMenu}>
                                         Renewals
                                     </Link>
                                 </>
                             )}
 
-                            <Link to="/about-us" className="navbar-link" onClick={closeMenu}>
+                            <Link to="/about-us" className={`navbar-link ${location.pathname === '/about-us' ? 'active' : ''}`} onClick={closeMenu}>
                                 About Us
                             </Link>
-                            <Link to="/contact-us" className="navbar-link" onClick={closeMenu}>
+                            <Link to="/contact-us" className={`navbar-link ${location.pathname === '/contact-us' ? 'active' : ''}`} onClick={closeMenu}>
                                 Contact Us
                             </Link>
 
@@ -101,11 +101,11 @@ const Navbar = () => {
                         </>
                     ) : (
                         <>
-                            <Link to="/about-us" className="navbar-link" onClick={closeMenu}>About Us</Link>
-                            <Link to="/contact-us" className="navbar-link" onClick={closeMenu}>Contact Us</Link>
-                            <Link to="/become-partner" className="navbar-link" onClick={closeMenu}>Become Partner</Link>
-                            <Link to="/login" className="navbar-link" onClick={closeMenu}>Login</Link>
-                            <Link to="/register" className="navbar-btn" onClick={closeMenu}>
+                            <Link to="/about-us" className={`navbar-link ${location.pathname === '/about-us' ? 'active' : ''}`} onClick={closeMenu}>About Us</Link>
+                            <Link to="/contact-us" className={`navbar-link ${location.pathname === '/contact-us' ? 'active' : ''}`} onClick={closeMenu}>Contact Us</Link>
+                            <Link to="/become-partner" className={`navbar-link ${location.pathname === '/become-partner' ? 'active' : ''}`} onClick={closeMenu}>Become Partner</Link>
+                            <Link to="/login" className={`navbar-link ${location.pathname === '/login' ? 'active' : ''}`} onClick={closeMenu}>Login</Link>
+                            <Link to="/register" className={`navbar-btn ${location.pathname === '/register' ? 'active' : ''}`} onClick={closeMenu}>
                                 Sign Up
                             </Link>
                         </>

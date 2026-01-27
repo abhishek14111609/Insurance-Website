@@ -946,7 +946,8 @@ export const createAgent = async (req, res) => {
         }
 
         // Create User
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours for admin created
 
         const user = await User.create([{
             fullName,
@@ -960,7 +961,8 @@ export const createAgent = async (req, res) => {
             role: 'agent',
             status: status === 'active' ? 'active' : 'inactive',
             emailVerified: false,
-            verificationToken: hashToken(verificationToken)
+            otpCode: otp,
+            otpExpires: otpExpires
         }], { session });
 
         // Calculate level if parentId exists
@@ -997,9 +999,21 @@ export const createAgent = async (req, res) => {
         await session.commitTransaction();
         await session.endSession();
 
-        // Send verification email (non-blocking)
-        sendVerificationEmail(user[0], verificationToken).catch((err) => {
-            console.error('Send agent verification email failed:', err);
+        // Send OTP email (non-blocking)
+        sendEmail({
+            to: email,
+            subject: 'Welcome to Pashudhan Suraksha - Verify your account',
+            html: `
+                <h1>Welcome, ${fullName}!</h1>
+                <p>Your agent account has been created.</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Password:</strong> ${password}</p>
+                <p>Please login and use the following code to verify your account:</p>
+                <h2>${otp}</h2>
+                <p>This code will expire in 24 hours.</p>
+            `
+        }).catch((err) => {
+            console.error('Send agent OTP email failed:', err);
         });
 
         res.status(201).json({

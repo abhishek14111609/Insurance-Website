@@ -83,6 +83,11 @@ const Login = () => {
             const from = location.state?.from || '/dashboard';
             navigate(from);
         } catch (error) {
+            if (error.isUnverified) {
+                toast.error('Verification required / ચકાસણી જરૂરી છે');
+                navigate('/verify-otp', { state: { email: formData.email } });
+                return;
+            }
             setError(error.message || 'Login failed. Please check your credentials / લૉગિન નિષ્ફળ. કૃપા કરીને તમારા ઓળખપત્રો તપાસો.');
             setIsSubmitting(false);
         }

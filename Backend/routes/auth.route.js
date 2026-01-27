@@ -10,7 +10,7 @@ import {
     resetPassword,
     verifyAgentCode,
     logout,
-    verifyEmail,
+    verifyEmailOTP,
     resendVerification,
     refreshSession
 } from '../controllers/auth.controller.js';
@@ -26,7 +26,7 @@ router.post('/login', login);
 router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
-router.get('/verify-email/:token', verifyEmail);
+router.post('/verify-otp', verifyEmailOTP);
 router.post('/resend-verification', resendVerification);
 router.post('/refresh', refreshSession);
 

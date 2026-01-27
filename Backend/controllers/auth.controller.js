@@ -34,16 +34,21 @@ const clearUserRefreshTokens = async (userId) => {
     await RefreshToken.deleteMany({ userId });
 };
 
-const sendVerificationEmail = async (user, token) => {
-    const verifyUrl = `${process.env.FRONTEND_URL || ''}/verify-email?token=${token}`;
+// Generate numeric OTP
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const sendOtpEmail = async (user, otp) => {
     await sendEmail({
         to: user.email,
-        subject: 'Verify your email - Pashudhan Suraksha',
+        subject: 'Your Verification Code - Pashudhan Suraksha',
         html: `
             <h1>Verify your email</h1>
-            <p>Hi ${user.fullName}, please verify your email to activate your account.</p>
-            <a href="${verifyUrl}" clicktracking=off>Verify Email</a>
-            <p>If you did not create an account, you can ignore this email.</p>
+            <p>Hi ${user.fullName},</p>
+            <p>Your verification code is: <strong style="font-size: 24px; letter-spacing: 2px;">${otp}</strong></p>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you did not request this, please ignore this email.</p>
         `
     });
 };
@@ -81,7 +86,8 @@ export const register = async (req, res) => {
 
         // SECURITY: Force role to be customer for public registration
         const targetRole = 'customer';
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         // Create user
         const user = await User.create({
@@ -95,8 +101,9 @@ export const register = async (req, res) => {
             pincode,
             role: targetRole,
             status: 'active',
-            emailVerified: targetRole === 'admin' || !isProd ? true : false,
-            verificationToken: targetRole === 'admin' || !isProd ? null : hashToken(verificationToken)
+            emailVerified: targetRole === 'admin' ? true : false, // Admin auto-verified
+            otpCode: targetRole === 'admin' ? null : otp,
+            otpExpires: targetRole === 'admin' ? null : otpExpires
         });
 
         // Generate tokens
@@ -108,21 +115,17 @@ export const register = async (req, res) => {
         // Set unified cookies
         res.cookie('token', token, cookieOptions);
         res.cookie('refresh_token', refreshToken, refreshCookieOptions);
-        // Keep admin-specific cookie to isolate admin sessions from agent/customer tokens
-        if (targetRole === 'admin') {
-            res.cookie('admin_token', token, cookieOptions);
-        }
 
-        if (targetRole !== 'admin' && isProd) {
-            // Send verification email (non-blocking best-effort)
-            sendVerificationEmail(user, verificationToken).catch((err) => {
-                console.error('Send verification email failed:', err);
+        if (targetRole !== 'admin') {
+            // Send OTP email
+            sendOtpEmail(user, otp).catch((err) => {
+                console.error('Send OTP email failed:', err);
             });
         }
 
         res.status(201).json({
             success: true,
-            message: 'User registered successfully. Please verify your email to activate your account.',
+            message: 'User registered successfully. Please verify your email with the OTP sent.',
             data: {
                 user: user.toJSON()
                 // Token NOT included in response body - only in HTTP-only cookie
@@ -130,7 +133,6 @@ export const register = async (req, res) => {
             }
         });
     } catch (error) {
-        // ... (existing error handling)
         console.error('Register error:', error);
         res.status(500).json({
             success: false,
@@ -160,8 +162,8 @@ export const registerAgent = async (req, res) => {
             });
         }
 
-        // Create user
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         const [user] = await User.create([{
             email,
@@ -174,8 +176,9 @@ export const registerAgent = async (req, res) => {
             pincode: pincode || '',
             role: 'agent',
             status: 'active',
-            emailVerified: !isProd,
-            verificationToken: !isProd ? null : hashToken(verificationToken)
+            emailVerified: false,
+            otpCode: otp,
+            otpExpires: otpExpires
         }], { session });
 
         // Generate unique agent code (AG + 4 digits)
@@ -209,16 +212,14 @@ export const registerAgent = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        // Send verification email (non-blocking) - Only in PROD
-        if (isProd) {
-            sendVerificationEmail(user, verificationToken).catch((err) => {
-                console.error('Send verification email failed:', err);
-            });
-        }
+        // Send OTP email
+        sendOtpEmail(user, otp).catch((err) => {
+            console.error('Send OTP email failed:', err);
+        });
 
         res.status(201).json({
             success: true,
-            message: 'Agent registered successfully. Please verify your email. Pending admin approval.',
+            message: 'Agent registered successfully. Please verify your email with the OTP sent.',
             data: {
                 user: user.toJSON(),
                 agentCode: agent.agentCode
@@ -277,10 +278,14 @@ export const login = async (req, res) => {
             });
         }
 
-        if (user.role !== 'admin' && !user.emailVerified && isProd) {
+        if (user.role !== 'admin' && !user.emailVerified) {
+            // If unverified, we want to prompt them to enter OTP. 
+            // We can check if their OTP is expired and send a new one automatically or just ask them to request one.
+            // For simplicity, we just tell them to verify.
             return res.status(403).json({
                 success: false,
-                message: 'Please verify your email before logging in. A verification link has been sent to your email.'
+                message: 'Please verify your email.',
+                isUnverified: true // Frontend can use this to redirect to verify page
             });
         }
 
@@ -568,31 +573,48 @@ export const resetPassword = async (req, res) => {
     }
 };
 
-// @desc    Verify email with token
-// @route   GET /api/auth/verify-email/:token
+// @desc    Verify email with OTP
+// @route   POST /api/auth/verify-otp
 // @access  Public
-export const verifyEmail = async (req, res) => {
+export const verifyEmailOTP = async (req, res) => {
     try {
-        const { token } = req.params;
-        const hashed = hashToken(token);
-        const user = await User.findOne({ verificationToken: hashed });
+        const { email, otp } = req.body;
+
+        const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid verification token' });
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.emailVerified) {
+            return res.json({ success: true, message: 'Email already verified' });
+        }
+
+        if (!user.otpCode || !user.otpExpires) {
+            return res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' });
+        }
+
+        if (user.otpCode !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        if (user.otpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: 'OTP expired. Please request a new one.' });
         }
 
         user.emailVerified = true;
-        user.verificationToken = null;
+        user.otpCode = null;
+        user.otpExpires = null;
         await user.save();
 
         res.json({ success: true, message: 'Email verified successfully' });
     } catch (error) {
-        console.error('Verify email error:', error);
-        res.status(500).json({ success: false, message: 'Error verifying email', error: error.message });
+        console.error('Verify OTP error:', error);
+        res.status(500).json({ success: false, message: 'Error verifying OTP', error: error.message });
     }
 };
 
-// @desc    Resend verification email
+// @desc    Resend verification OTP
 // @route   POST /api/auth/resend-verification
 // @access  Public
 export const resendVerification = async (req, res) => {
@@ -601,23 +623,27 @@ export const resendVerification = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.json({ success: true, message: 'If the account exists, a verification email has been sent' });
+            // Security: Don't reveal if user exists
+            return res.json({ success: true, message: 'If the account exists, a new OTP has been sent' });
         }
 
         if (user.emailVerified) {
             return res.json({ success: true, message: 'Email already verified' });
         }
 
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        user.verificationToken = hashToken(verificationToken);
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        user.otpCode = otp;
+        user.otpExpires = otpExpires;
         await user.save();
 
-        await sendVerificationEmail(user, verificationToken);
+        await sendOtpEmail(user, otp);
 
-        res.json({ success: true, message: 'Verification email sent' });
+        res.json({ success: true, message: 'New OTP sent to your email' });
     } catch (error) {
         console.error('Resend verification error:', error);
-        res.status(500).json({ success: false, message: 'Error sending verification email', error: error.message });
+        res.status(500).json({ success: false, message: 'Error sending OTP', error: error.message });
     }
 };
 

@@ -55,7 +55,11 @@ axiosInstance.interceptors.response.use(
         }
 
         const message = error.response?.data?.message || error.message || 'API request failed';
-        throw new Error(message);
+        const apiError = new Error(message);
+        if (error.response?.data?.isUnverified) {
+            apiError.isUnverified = true;
+        }
+        throw apiError;
     }
 );
 
@@ -102,9 +106,14 @@ export const authAPI = {
         return axiosInstance.post(`/auth/reset-password/${token}`, { newPassword });
     },
 
-    // Verify email with token
+    // Verify email with token (legacy)
     verifyEmail: async (token) => {
         return axiosInstance.get(`/auth/verify-email/${token}`);
+    },
+
+    // Verify email with OTP
+    verifyEmailOTP: async (email, otp) => {
+        return axiosInstance.post('/auth/verify-otp', { email, otp });
     },
 
     // Resend verification email
