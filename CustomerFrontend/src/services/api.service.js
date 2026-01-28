@@ -106,11 +106,6 @@ export const authAPI = {
         return axiosInstance.post(`/auth/reset-password/${token}`, { newPassword });
     },
 
-    // Verify email with token (legacy)
-    verifyEmail: async (token) => {
-        return axiosInstance.get(`/auth/verify-email/${token}`);
-    },
-
     // Verify email with OTP
     verifyEmailOTP: async (email, otp) => {
         return axiosInstance.post('/auth/verify-otp', { email, otp });

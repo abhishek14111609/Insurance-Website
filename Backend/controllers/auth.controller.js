@@ -591,7 +591,6 @@ export const resetPassword = async (req, res) => {
     }
 };
 
-// @desc    Verify email with OTP
 // @route   POST /api/auth/verify-otp
 // @access  Public
 export const verifyEmailOTP = async (req, res) => {

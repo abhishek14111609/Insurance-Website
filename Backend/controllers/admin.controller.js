@@ -18,20 +18,6 @@ import { seedDatabase } from '../utils/seed.js';
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-const sendVerificationEmail = async (user, token) => {
-    const verifyUrl = `${process.env.FRONTEND_URL || ''}/verify-email?token=${token}`;
-    await sendEmail({
-        to: user.email,
-        subject: 'Verify your email - Pashudhan Suraksha',
-        html: `
-            <h1>Verify your email</h1>
-            <p>Hi ${user.fullName}, please verify your email to activate your agent account.</p>
-            <a href="${verifyUrl}" clicktracking=off>Verify Email</a>
-            <p>If you did not request this, you can ignore this email.</p>
-        `
-    });
-};
-
 const ensureDirectory = (dirPath) => {
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
