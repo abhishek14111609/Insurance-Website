@@ -40,13 +40,17 @@ const generateOTP = () => {
 };
 
 const sendOtpEmail = async (user, otp) => {
+    // Log OTP for debugging purposes
+    console.log(`Sending OTP to ${user.email}: ${otp}`);
+
     await sendEmail({
         to: user.email,
         subject: 'Your Verification Code - Pashudhan Suraksha',
+        text: `Hi ${user.fullName},\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
         html: `
             <h1>Verify your email</h1>
             <p>Hi ${user.fullName},</p>
-            <p>Your verification code is: <strong style="font-size: 24px; letter-spacing: 2px;">${otp}</strong></p>
+            <p>Your verification code is: <strong style="font-size: 24px; letter-spacing: 2px; color: #333333;">${otp}</strong></p>
             <p>This code will expire in 10 minutes.</p>
             <p>If you did not request this, please ignore this email.</p>
         `
