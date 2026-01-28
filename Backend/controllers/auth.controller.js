@@ -41,18 +41,31 @@ const generateOTP = () => {
 
 const sendOtpEmail = async (user, otp) => {
     // Log OTP for debugging purposes
-    console.log(`Sending OTP to ${user.email}: ${otp}`);
+    console.log(`Sending OTP to ${user.email} (Name: ${user.fullName}): ${otp}`);
+
+    if (!otp) {
+        console.error('CRITICAL ERROR: OTP is missing in sendOtpEmail');
+        return; // Prevent sending broken email
+    }
 
     await sendEmail({
         to: user.email,
-        subject: 'Your Verification Code - Pashudhan Suraksha',
-        text: `Hi ${user.fullName},\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+        subject: `${otp} is your verification code - Pashudhan Suraksha`,
+        text: `Your verification code is: ${otp}\n\nUse this code to verify your email address. It expires in 10 minutes.`,
         html: `
-            <h1>Verify your email</h1>
-            <p>Hi ${user.fullName},</p>
-            <p>Your verification code is: <strong style="font-size: 24px; letter-spacing: 2px; color: #333333;">${otp}</strong></p>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you did not request this, please ignore this email.</p>
+            <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
+                <h2 style="color: #333333; text-align: center; margin-bottom: 20px;">Verification Code</h2>
+                <p style="font-size: 16px; color: #555555; text-align: center;">Hello ${user.fullName},</p>
+                <p style="font-size: 16px; color: #555555; text-align: center;">Please use the following One Time Password (OTP) to verify your email address:</p>
+                
+                <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 30px 0; text-align: center;">
+                    <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2d3748; font-family: monospace;">${otp}</span>
+                </div>
+                
+                <p style="font-size: 14px; color: #777777; text-align: center;">This code will expire in 10 minutes.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #999999; text-align: center;">If you did not request this code, please ignore this email.</p>
+            </div>
         `
     });
 };
