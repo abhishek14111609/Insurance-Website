@@ -90,6 +90,7 @@ const generateAgentCodeV2 = async () => {
 // @access  Public
 export const register = async (req, res) => {
     try {
+        console.log('Register endpoint called. Body:', req.body);
         const { email, password, fullName, phone, address, city, state, pincode } = req.body;
 
         // Check if user already exists

@@ -115,8 +115,10 @@ const AnimalInsurance = () => {
 
                                     <div className="plan-pricing">
                                         <div className="coverage-amount">
-                                            <span className="label">Coverage</span>
-                                            <span className="amount">{formatCurrency(plan.coverageAmount)}</span>
+                                            <span> 
+                                                <h1>wkhdeefe</h1>
+                                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quod.</p>
+                                            </span>
                                         </div>
                                         <div className="premium-amount">
                                             <span className="label">Total Premium</span>
