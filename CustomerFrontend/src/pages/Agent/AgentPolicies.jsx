@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { agentAPI, policyAPI } from '../../services/api.service';
 import toast from 'react-hot-toast';
 import './AgentPolicies.css';
