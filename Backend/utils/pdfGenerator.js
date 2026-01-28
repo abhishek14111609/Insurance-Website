@@ -22,17 +22,20 @@ const drawSectionHeader = (doc, text, y) => {
 };
 
 const drawField = (doc, label, value, x, y, width = 200, isCurrency = false) => {
-    const labelWidth = 90;
+    const labelWidth = 100;
     const valueStartX = x + labelWidth;
-    const valueWidth = width - labelWidth;
+    const valueWidth = width - labelWidth - 10; // Add padding
 
-    doc.fillColor('#616161').font('Helvetica').fontSize(9).text(label, x, y);
+    doc.fillColor('#616161').font('Helvetica').fontSize(9).text(label, x, y, { width: labelWidth - 5 });
+
+    // Ensure value is a string
+    const displayValue = String(value || 'N/A');
 
     // Calculate height of the value text to handle wrapping
-    const textOptions = { width: valueWidth, align: 'left' };
-    const valueHeight = doc.heightOfString(value, textOptions);
+    const textOptions = { width: valueWidth, align: 'left', lineGap: 2 };
+    const valueHeight = doc.heightOfString(displayValue, textOptions);
 
-    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(9).text(value, valueStartX, y, textOptions);
+    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(9).text(displayValue, valueStartX, y, textOptions);
 
     return Math.max(valueHeight, 14); // Return text height or minimum line height
 };
@@ -100,14 +103,17 @@ export const generatePolicyPdf = async (policy) => {
     currentY = drawSectionHeader(doc, 'INSURED DETAILS', currentY);
 
     const customerName = policy.ownerName || policy.customerId?.fullName || 'Customer';
-    h1 = drawField(doc, 'Name:', customerName, leftColX, currentY, colWidth);
-    h2 = drawField(doc, 'Contact:', policy.ownerPhone || 'N/A', rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 8;
+    // Full width for name to prevent overflow
+    h1 = drawField(doc, 'Name:', customerName, leftColX, currentY, 505);
+    currentY += h1 + 8;
+
+    // Contact on separate row
+    h1 = drawField(doc, 'Contact:', policy.ownerPhone || 'N/A', leftColX, currentY, colWidth);
+    currentY += h1 + 8;
 
     const address = `${policy.ownerAddress || ''}, ${policy.ownerCity || ''}, ${policy.ownerState || ''} - ${policy.ownerPincode || ''}`;
-    // Give address full width if needed, or keeping column structure
-    // Let's allow address to span if it's long, but stick to column for now to be consistent with layout
-    h1 = drawField(doc, 'Address:', address, leftColX, currentY, 450); // Wider for address
+    // Full width for address to handle long addresses properly
+    h1 = drawField(doc, 'Address:', address, leftColX, currentY, 505);
     currentY += h1 + 15;
 
 
@@ -142,7 +148,7 @@ export const generatePolicyPdf = async (policy) => {
     }
 
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Important Terms & Conditions / મહત્વપૂર્ણ નિયમો અને શરતો:', 50, currentY);
-    currentY += 15;
+    currentY += 18;
 
     doc.font('Helvetica').fontSize(8).fillColor('#424242');
 
@@ -152,15 +158,15 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(term, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(term, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     currentY += 10;
 
     // Gujarati Terms
     doc.font('Helvetica-Bold').fontSize(9).fillColor('#1b5e20').text('ગુજરાતીમાં નિયમો:', 50, currentY);
-    currentY += 12;
+    currentY += 14;
 
     doc.font('Helvetica').fontSize(8).fillColor('#424242');
     TERMS_AND_CONDITIONS.gujarati.forEach((term, index) => {
@@ -168,8 +174,8 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(term, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(term, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     currentY += 15;
@@ -181,7 +187,7 @@ export const generatePolicyPdf = async (policy) => {
     }
 
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Claim Procedures / દાવાની પ્રક્રિયા:', 50, currentY);
-    currentY += 12;
+    currentY += 14;
 
     doc.font('Helvetica').fontSize(8).fillColor('#424242');
     CLAIM_PROCEDURES.english.forEach((proc, index) => {
@@ -189,8 +195,8 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(`• ${proc}`, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(`• ${proc}`, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     currentY += 10;
@@ -199,8 +205,8 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(`• ${proc}`, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(`• ${proc}`, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     currentY += 15;
@@ -212,7 +218,7 @@ export const generatePolicyPdf = async (policy) => {
     }
 
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Exclusions / બાકાતો:', 50, currentY);
-    currentY += 12;
+    currentY += 14;
 
     doc.font('Helvetica').fontSize(8).fillColor('#424242');
     EXCLUSIONS.english.forEach((excl, index) => {
@@ -220,8 +226,8 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(`✗ ${excl}`, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(`✗ ${excl}`, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     currentY += 10;
@@ -230,8 +236,8 @@ export const generatePolicyPdf = async (policy) => {
             doc.addPage();
             currentY = 40;
         }
-        doc.text(`✗ ${excl}`, 50, currentY, { width: 500 });
-        currentY += 12;
+        doc.text(`✗ ${excl}`, 50, currentY, { width: 500, lineGap: 1 });
+        currentY += 14;
     });
 
     // Signature Block

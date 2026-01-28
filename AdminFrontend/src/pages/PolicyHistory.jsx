@@ -88,6 +88,25 @@ const PolicyHistory = () => {
         setSelectedPolicy(null);
     };
 
+    const handleDownloadPDF = async (policy) => {
+        try {
+            if (policy.status?.toLowerCase() !== 'approved') {
+                toast.error('PDF is only available for approved policies');
+                return;
+            }
+
+            // Construct the PDF URL from policy number
+            const pdfUrl = `${BASE_URL}/uploads/policy_docs/Policy-${policy.policyNumber}.pdf`;
+
+            // Open in new tab for download
+            window.open(pdfUrl, '_blank');
+            toast.success('Opening PDF...');
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            toast.error('Failed to download PDF');
+        }
+    };
+
     const getStatusBadgeClass = (status) => {
         switch (status?.toLowerCase()) {
             case 'approved': return 'badge-success';
@@ -180,13 +199,24 @@ const PolicyHistory = () => {
                                     </td>
                                     <td>{new Date(policy.createdAt).toLocaleDateString()}</td>
                                     <td>
-                                        <button
-                                            className="btn-view-details"
-                                            onClick={() => handleViewDetails(policy)}
-                                            title="View Details"
-                                        >
-                                            👁️ View
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                            <button
+                                                className="btn-view-details"
+                                                onClick={() => handleViewDetails(policy)}
+                                                title="View Details"
+                                            >
+                                                👁️ View
+                                            </button>
+                                            {policy.status?.toLowerCase() === 'approved' && (
+                                                <button
+                                                    className="btn-download"
+                                                    onClick={() => handleDownloadPDF(policy)}
+                                                    title="Download PDF"
+                                                >
+                                                    📥 PDF
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -307,6 +337,14 @@ const PolicyHistory = () => {
                             </div>
                         </div>
                         <div className="modal-footer">
+                            {selectedPolicy.status?.toLowerCase() === 'approved' && (
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => handleDownloadPDF(selectedPolicy)}
+                                >
+                                    📥 Download Policy PDF
+                                </button>
+                            )}
                             <button className="btn btn-secondary" onClick={closeModal}>Close Details</button>
                         </div>
                     </div>
