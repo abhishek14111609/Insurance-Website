@@ -15,9 +15,9 @@ const PhotoUpload = ({ side, label, value, onChange, required }) => {
             return;
         }
 
-        // Validate file size (1MB = 1048576 bytes)
-        if (file.size > 1048576) {
-            setError('File size must be less than 1MB. Please compress the image.');
+        // Validate file size (5MB = 5242880 bytes)
+        if (file.size > 5242880) {
+            setError('File size must be less than 5MB. Please compress the image.');
             return;
         }
 
@@ -58,7 +58,7 @@ const PhotoUpload = ({ side, label, value, onChange, required }) => {
                         <div className="photo-placeholder">
                             <span className="upload-icon">📷</span>
                             <span>Click to upload</span>
-                            <span className="upload-hint">Max 1MB • JPG, PNG</span>
+                            <span className="upload-hint">Max 5MB • JPG, PNG</span>
                         </div>
                     )}
                 </label>

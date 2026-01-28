@@ -170,6 +170,25 @@
     color: var(--primary-dark);
 }
 
+/* Link Button Style */
+.link-button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+    display: inline;
+}
+
+.link-button:hover {
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+
+
 @media (max-width: 768px) {
     .renewal-form-page {
         padding: 100px 15px 40px;

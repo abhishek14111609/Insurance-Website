@@ -5,6 +5,7 @@ import { policyAPI, paymentAPI } from '../services/api.service';
 import toast from 'react-hot-toast';
 import PhotoUpload from '../components/PhotoUpload';
 import AgentCodeInput from '../components/AgentCodeInput';
+import TermsModal from '../components/TermsModal';
 import { formatCurrency } from '../constants/policyPlans';
 import './AnimalPolicyForm.css';
 
@@ -18,6 +19,12 @@ const AnimalPolicyForm = () => {
             navigate('/agent/dashboard');
         }
     }, [isAgent, navigate]);
+
+    // Modal state
+    const [modalState, setModalState] = useState({
+        isOpen: false,
+        type: 'terms' // 'terms' or 'privacy'
+    });
     const { selectedPlanId, planData } = location.state || {};
     const selectedPlan = planData;
 
@@ -373,7 +380,7 @@ const AnimalPolicyForm = () => {
                     {/* 4 Photos Section */}
                     <div className="photo-upload-section">
                         <h3>Cattle Photos (Required) / પશુ ના ફોટા (જરૂરી)</h3>
-                        <p className="section-hint">Upload clear photos from all 4 sides. Maximum 1MB per photo. / ચારેય બાજુથી સ્પષ્ટ ફોટા અપલોડ કરો. ફોટો દીઠ મહત્તમ 1MB.</p>
+                        <p className="section-hint">Upload clear photos from all 4 sides. Maximum 5MB per photo. / ચારેય બાજુથી સ્પષ્ટ ફોટા અપલોડ કરો. ફોટો દીઠ મહત્તમ 5MB.</p>
 
                         <div className="photos-grid">
                             <PhotoUpload
@@ -525,7 +532,7 @@ const AnimalPolicyForm = () => {
                                 required
                             />
                             <label htmlFor="agreeTerms">
-                                I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a> / હું નિયમો અને શરતો અને ગોપનીયતા નીતિ સાથે સંમત છું
+                                I agree to the <button type="button" className="link-button" onClick={() => setModalState({ isOpen: true, type: 'terms' })}>Terms & Conditions</button> and <button type="button" className="link-button" onClick={() => setModalState({ isOpen: true, type: 'privacy' })}>Privacy Policy</button> / હું નિયમો અને શરતો અને ગોપનીયતા નીતિ સાથે સંમત છું
                             </label>
                         </div>
                     </div>
@@ -561,6 +568,13 @@ const AnimalPolicyForm = () => {
                     </div>
                 </form>
             </div>
+
+            {/* Terms & Privacy Modal */}
+            <TermsModal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ ...modalState, isOpen: false })}
+                type={modalState.type}
+            />
         </div>
     );
 };

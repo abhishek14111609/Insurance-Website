@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { policyAPI, BASE_URL } from '../services/api.service';
 import toast from 'react-hot-toast';
+import { TERMS_AND_CONDITIONS, CLAIM_PROCEDURES, EXCLUSIONS } from '../constants/termsAndConditions';
 import './PolicyDetails.css';
 
 const PolicyDetails = () => {
@@ -288,15 +289,49 @@ const PolicyDetails = () => {
 
                     {/* Terms & Conditions */}
                     <div className="terms-section">
-                        <h4>Important Terms & Conditions</h4>
-                        <ul>
-                            <li>This policy is valid for 12 months from the start date.</li>
-                            <li>Claims must be reported within 24 hours of incident.</li>
-                            <li>Post-mortem report is mandatory for death claims.</li>
-                            <li>The insured animal must be healthy at the time of policy issuance.</li>
-                            <li>Premium is non-refundable once the policy is active.</li>
-                            <li>Renewal must be done before expiry to avoid lapse.</li>
-                        </ul>
+                        <h4>Important Terms & Conditions / મહત્વપૂર્ણ નિયમો અને શરતો</h4>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <h5 style={{ color: '#16a34a', marginBottom: '10px', fontSize: '14px' }}>English Terms:</h5>
+                            <ul>
+                                {TERMS_AND_CONDITIONS.english.map((term, index) => (
+                                    <li key={`en-${index}`}>{term}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <h5 style={{ color: '#16a34a', marginBottom: '10px', fontSize: '14px' }}>ગુજરાતીમાં નિયમો:</h5>
+                            <ul>
+                                {TERMS_AND_CONDITIONS.gujarati.map((term, index) => (
+                                    <li key={`gu-${index}`}>{term}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <h5 style={{ color: '#16a34a', marginBottom: '10px', fontSize: '14px' }}>Claim Procedures / દાવાની પ્રક્રિયા:</h5>
+                            <ul>
+                                {CLAIM_PROCEDURES.english.map((proc, index) => (
+                                    <li key={`claim-en-${index}`}>{proc}</li>
+                                ))}
+                                {CLAIM_PROCEDURES.gujarati.map((proc, index) => (
+                                    <li key={`claim-gu-${index}`}>{proc}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h5 style={{ color: '#dc2626', marginBottom: '10px', fontSize: '14px' }}>Exclusions / બાકાતો:</h5>
+                            <ul>
+                                {EXCLUSIONS.english.map((excl, index) => (
+                                    <li key={`excl-en-${index}`} style={{ color: '#dc2626' }}>✗ {excl}</li>
+                                ))}
+                                {EXCLUSIONS.gujarati.map((excl, index) => (
+                                    <li key={`excl-gu-${index}`} style={{ color: '#dc2626' }}>✗ {excl}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
 
                     {/* Footer */}

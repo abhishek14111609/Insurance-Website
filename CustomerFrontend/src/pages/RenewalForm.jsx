@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../constants/policyPlans';
 import toast from 'react-hot-toast';
+import TermsModal from '../components/TermsModal';
 import './RenewalForm.css';
 
 const RenewalForm = () => {
@@ -15,6 +16,12 @@ const RenewalForm = () => {
         renewalDuration: '1',
         paymentMethod: 'card',
         agreeTerms: false
+    });
+
+    // Modal state
+    const [modalState, setModalState] = useState({
+        isOpen: false,
+        type: 'terms'
     });
 
     useEffect(() => {
@@ -171,7 +178,7 @@ const RenewalForm = () => {
                                     required
                                 />
                                 <label htmlFor="agreeTerms">
-                                    I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and confirm that the cattle is in good health / હું નિયમો અને શરતો સાથે સંમત છું અને પુષ્ટિ કરું છું કે પશુની તબિયત સારી છે
+                                    I agree to the <button type="button" className="link-button" onClick={() => setModalState({ isOpen: true, type: 'terms' })}>Terms & Conditions</button> and confirm that the cattle is in good health / હું નિયમો અને શરતો સાથે સંમત છું અને પુષ્ટિ કરું છું કે પશુની તબિયત સારી છે
                                 </label>
                             </div>
                         </div>
@@ -207,6 +214,13 @@ const RenewalForm = () => {
                         </div>
                     </form>
                 </div>
+
+                {/* Terms Modal */}
+                <TermsModal
+                    isOpen={modalState.isOpen}
+                    onClose={() => setModalState({ ...modalState, isOpen: false })}
+                    type={modalState.type}
+                />
             </div>
         </div>
     );

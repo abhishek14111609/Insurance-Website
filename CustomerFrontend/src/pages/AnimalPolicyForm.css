@@ -100,6 +100,24 @@
     text-decoration: underline;
 }
 
+.checkbox-group .link-button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+    display: inline;
+}
+
+.checkbox-group .link-button:hover {
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+
+
 /* Secure Badge */
 .secure-badge {
     text-align: center;

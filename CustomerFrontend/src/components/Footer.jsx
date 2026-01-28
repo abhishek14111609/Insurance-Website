@@ -51,9 +51,9 @@ const Footer = () => {
                 <div className="footer-legal">
                     <p style={{ color: "white" }}>&copy; 2026 Pashudhan Suraksha. All rights reserved.</p>
                     <div className="footer-links">
-                        <a href="#" style={{ color: "white" }}>Privacy Policy</a>
+                        <Link to="/privacy" style={{ color: "white" }}>Privacy Policy</Link>
                         <span>|</span>
-                        <a href="#" style={{ color: "white" }}>Terms & Conditions</a>
+                        <Link to="/terms" style={{ color: "white" }}>Terms & Conditions</Link>
                     </div>
                 </div>
             </div>
