@@ -151,6 +151,16 @@ export const policyAPI = {
     // Update policy after payment
     updatePayment: async (policyId, paymentData) => {
         return axiosInstance.patch(`/policies/${policyId}/payment-complete`, paymentData);
+    },
+
+    // Download policy document
+    downloadDocument: async (policyId) => {
+        return axiosInstance.get(`/policies/${policyId}/download`, {
+            responseType: 'blob', // Important for binary files
+            headers: {
+                'Accept': 'application/pdf'
+            }
+        });
     }
 };
 

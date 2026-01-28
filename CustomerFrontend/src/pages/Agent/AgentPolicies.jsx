@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { agentAPI } from '../../services/api.service';
+import { agentAPI, policyAPI } from '../../services/api.service';
+import toast from 'react-hot-toast';
 import './AgentPolicies.css';
 
 const AgentPolicies = () => {
@@ -32,6 +33,34 @@ const AgentPolicies = () => {
             console.error('Error fetching policies:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDownload = async (policy) => {
+        try {
+            // Loading toast could be added here
+            const blob = await policyAPI.downloadDocument(policy.id);
+
+            // Check if response is actually JSON error (edge case where blob is returned but contains error json)
+            if (blob.type === 'application/json') {
+                const text = await blob.text();
+                const json = JSON.parse(text);
+                throw new Error(json.message || 'Download failed');
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Policy-${policy.policyNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success('Document downloaded successfully');
+        } catch (error) {
+            console.error("Download error:", error);
+            toast.error(error.message || 'Failed to download document');
         }
     };
 
@@ -153,6 +182,17 @@ const AgentPolicies = () => {
                                     >
                                         View Details
                                     </button>
+                                    {policy.status === 'APPROVED' && (
+                                        <button
+                                            className="btn btn-sm btn-primary"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownload(policy);
+                                            }}
+                                        >
+                                            📄 Download PDF
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

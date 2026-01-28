@@ -769,6 +769,8 @@ export const getAllAgents = async (req, res) => {
             const allAgents = await baseQuery;
             const lowerSearch = search.toLowerCase();
             const filtered = allAgents.filter((agent) => {
+                if (!agent.userId) return false; // Filter orphans
+
                 const user = agent.userId || {};
                 const parent = agent.parentAgentId || {};
                 return (
@@ -783,8 +785,14 @@ export const getAllAgents = async (req, res) => {
             totalCount = filtered.length;
             agents = filtered.slice((numericPage - 1) * numericLimit, numericPage * numericLimit);
         } else {
-            totalCount = await Agent.countDocuments(where);
-            agents = await baseQuery.skip((numericPage - 1) * numericLimit).limit(numericLimit);
+            // Fetch ALL agents first to filter orphans, then paginate manually. 
+            // This is safer than skipping in DB which might skip valid records if we just hide orphans.
+            // Ideally we should use aggregation $lookup + $match, but for now this fixes the "disgusting" UI.
+            const allAgents = await baseQuery;
+            const validAgents = allAgents.filter(a => a.userId); // Only agents with valid user
+
+            totalCount = validAgents.length;
+            agents = validAgents.slice((numericPage - 1) * numericLimit, numericPage * numericLimit);
         }
 
         const agentIds = agents.map((a) => a._id);
@@ -1046,14 +1054,11 @@ export const approveAgent = async (req, res) => {
         await agent.save();
 
         // If user not verified, generate token and send verification email
+        // Auto-verify email upon admin approval
         if (!agent.userId.emailVerified) {
-            const verificationToken = crypto.randomBytes(32).toString('hex');
-            agent.userId.verificationToken = hashToken(verificationToken);
+            agent.userId.emailVerified = true;
+            agent.userId.verificationToken = null;
             await agent.userId.save();
-
-            sendVerificationEmail(agent.userId, verificationToken).catch((err) => {
-                console.error('Send agent verification email on approval failed:', err);
-            });
         }
 
         // Send notification

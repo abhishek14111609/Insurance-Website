@@ -5,7 +5,8 @@ import {
     getPolicyById,
     updatePolicyPayment,
     getPendingPolicies,
-    uploadPolicyPhotos
+    uploadPolicyPhotos,
+    downloadPolicyDocument
 } from '../controllers/policy.controller.js';
 import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import { uploadPolicyPhotos as uploadPolicyPhotosMiddleware } from '../middleware/upload.middleware.js';
@@ -22,6 +23,7 @@ router.post('/upload-photos', authenticate, authorize('customer', 'agent'), uplo
 router.post('/', authenticate, authorize('customer', 'agent'), createPolicy);
 router.get('/', authenticate, getPolicies);
 router.get('/:id', authenticate, getPolicyById);
+router.get('/:id/download', authenticate, downloadPolicyDocument);
 router.patch('/:id/payment-complete', authenticate, updatePolicyPayment);
 
 // Admin routes - only pending policies list (approval/rejection handled in admin routes)

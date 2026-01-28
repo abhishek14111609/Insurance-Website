@@ -1,4 +1,7 @@
 import { Policy, User, Agent, Payment, Commission } from '../models/index.js';
+import { generatePolicyPdf } from '../utils/pdfGenerator.js';
+import fs from 'fs';
+import path from 'path';
 
 // @desc    Create new policy
 // @route   POST /api/policies
@@ -275,11 +278,64 @@ export const getPendingPolicies = async (req, res) => {
     }
 };
 
+// @desc    Download policy document (Regenerates if missing)
+// @route   GET /api/policies/:id/download
+// @access  Private
+export const downloadPolicyDocument = async (req, res) => {
+    try {
+        const policy = await Policy.findById(req.params.id);
+
+        if (!policy) {
+            return res.status(404).json({ success: false, message: 'Policy not found' });
+        }
+
+        const isOwner = policy.customerId.toString() === req.user._id.toString();
+
+        if (!isOwner) {
+            const agent = await Agent.findOne({ userId: req.user._id });
+            if (!agent || (policy.agentId && policy.agentId.toString() !== agent._id.toString())) {
+                if (req.user.role !== 'admin') {
+                    return res.status(403).json({ success: false, message: 'Not authorized to view this policy' });
+                }
+            }
+        }
+
+        if (policy.status !== 'APPROVED') {
+            return res.status(400).json({ success: false, message: 'Policy is not approved yet' });
+        }
+
+        let pdfPath = null;
+        if (policy.documentUrl) {
+            pdfPath = path.join(process.cwd(), policy.documentUrl);
+        }
+
+        if (!pdfPath || !fs.existsSync(pdfPath)) {
+            console.log(`[Download] PDF missing for policy ${policy.policyNumber}, regenerating...`);
+            pdfPath = await generatePolicyPdf(policy);
+
+            const relativePath = 'uploads/policy_docs/' + path.basename(pdfPath);
+            policy.documentUrl = relativePath;
+            await policy.save();
+        }
+
+        res.download(pdfPath, `Policy-${policy.policyNumber}.pdf`);
+
+    } catch (error) {
+        console.error('Download policy PDF error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error downloading policy document',
+            error: error.message
+        });
+    }
+};
+
 export default {
     createPolicy,
     getPolicies,
     getPolicyById,
     updatePolicyPayment,
     getPendingPolicies,
-    uploadPolicyPhotos
+    uploadPolicyPhotos,
+    downloadPolicyDocument
 };
