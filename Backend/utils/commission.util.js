@@ -230,20 +230,32 @@ export const initializeCommissionSettings = async () => {
         const defaultSettings = [
             {
                 level: 1,
-                percentage: 10.00,
-                description: 'Direct agent commission - 10% of premium',
+                percentage: 5.00,
+                description: 'Level 1 - Direct parent agent commission - 5% of premium',
                 isActive: true
             },
             {
                 level: 2,
-                percentage: 5.00,
-                description: 'Parent agent commission - 5% of premium',
+                percentage: 3.00,
+                description: 'Level 2 - Grandparent agent commission - 3% of premium',
                 isActive: true
             },
             {
                 level: 3,
                 percentage: 2.00,
-                description: 'Grand parent agent commission - 2% of premium',
+                description: 'Level 3 - Great-grandparent agent commission - 2% of premium',
+                isActive: true
+            },
+            {
+                level: 4,
+                percentage: 2.00,
+                description: 'Level 4 - 4th generation agent commission - 2% of premium',
+                isActive: true
+            },
+            {
+                level: 5,
+                percentage: 1.00,
+                description: 'Level 5 - 5th generation agent commission - 1% of premium',
                 isActive: true
             }
         ];

@@ -104,12 +104,12 @@ const AgentTeam = () => {
                         onClick={() => {
                             navigator.clipboard.writeText(user?.agentCode || '');
                             toast.success('Referral code copied!');
-                        }}          
+                        }}
                     >
                         Copy
                     </button>
                 </div>
-                <p style={{"color": 'white'}}>Share this code with new agents to build your team</p>
+                <p style={{ "color": 'white' }}>Share this code with new agents to build your team</p>
 
                 <div className="referral-link-section" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
                     <h4 style={{ fontSize: '0.9rem', color: 'white', marginBottom: '0.5rem' }}>OR Share Referral Link</h4>
@@ -166,6 +166,18 @@ const AgentTeam = () => {
                     onClick={() => setFilter('3')}
                 >
                     Level 3 ({teamMembers.filter(m => m.relativeLevel === 3).length})
+                </button>
+                <button
+                    className={filter === '4' ? 'active' : ''}
+                    onClick={() => setFilter('4')}
+                >
+                    Level 4 ({teamMembers.filter(m => m.relativeLevel === 4).length})
+                </button>
+                <button
+                    className={filter === '5' ? 'active' : ''}
+                    onClick={() => setFilter('5')}
+                >
+                    Level 5 ({teamMembers.filter(m => m.relativeLevel === 5).length})
                 </button>
             </div>
 
