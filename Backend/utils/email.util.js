@@ -77,6 +77,11 @@ export const sendInquiryReply = async (inquiry, replyMessage) => {
             <br />
             <p>Best regards,</p>
             <p><strong>Support Team</strong><br />Pashudhan Suraksha</p>
+            <p style="margin-top: 10px; font-size: 12px; color: #64748b;">
+                Customer Care: 79903 39567 | Claims: 83479 46718<br/>
+                Email: pashudhansuraksha2026@gmail.com<br/>
+                Address: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Vijapur, Gujarat - 384570
+            </p>
         </div>
     `;
 

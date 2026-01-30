@@ -41,8 +41,15 @@ const Footer = () => {
                     <div className="footer-column">
                         <h4>Support</h4>
                         <ul>
-                            <li><a href="tel:1800-123-4567" style={{ color: "white" }}>📞 1800-123-4567</a></li>
-                            <li><a href="mailto:support@securelife.com" style={{ color: "white" }}>✉️ support@securelife.com</a></li>
+                            <li><a href="tel:7990339567" style={{ color: "white" }}>📞 79903 39567</a></li>
+                            <li><a href="tel:8347946718" style={{ color: "white" }}>📞 83479 46718 (Claims)</a></li>
+                            <li><a href="mailto:pashudhansuraksha2026@gmail.com" style={{ color: "white" }}>✉️ pashudhansuraksha2026@gmail.com</a></li>
+                            <li>
+                                <p style={{ color: "white", display: 'flex', alignItems: 'flex-start', gap: '5px', margin: 0 }}>
+                                    <span>📍</span>
+                                    <span>Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Vijapur, Gujarat - 384570</span>
+                                </p>
+                            </li>
                             <li>🕐 24/7 Farmer Support</li>
                         </ul>
                     </div>

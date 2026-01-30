@@ -161,21 +161,14 @@ const ContactUs = () => {
                                     <p>Response within 24 hours</p>
                                 </div>
 
-                                {/* <div className="info-card">
+                                <div className="info-card">
                                     <div className="info-icon">📍</div>
                                     <h3>Visit Us</h3>
-                                    <p>Pashudhan Suraksha House</p>
-                                    <p>Sector 44, Gurugram</p>
-                                    <p>Haryana - 122001</p>
+                                    <p>Shop No-10, Second Floor,</p>
+                                    <p>Suvidhi Solitaire, TB Road,</p>
+                                    <p>Opp. APMC Market, Vijapur,</p>
+                                    <p>Mahesana, Gujarat - 384570</p>
                                 </div>
-
-                                <div className="info-card">
-                                    <div className="info-icon">💬</div>
-                                    <h3>Live Chat</h3>
-                                    <p>Chat with our experts</p>
-                                    <p>Available 24/7</p>
-                                    <button className="btn btn-secondary">Start Chat</button>
-                                </div> */}
                             </div>
                         </div>
                     </div>
@@ -226,7 +219,7 @@ const ContactUs = () => {
                         </div>
                         <div className="faq-item">
                             <h3>How do I file a claim?</h3>
-                            <p>You can file a claim through our mobile app, website, or by calling our claims helpline at 1800-123-7890. Our team will guide you through the process.</p>
+                            <p>You can file a claim through our mobile app, website, or by calling our claims helpline at 83479 46718. Our team will guide you through the process.</p>
                         </div>
                         <div className="faq-item">
                             <h3>What documents are required for claims?</h3>

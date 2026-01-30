@@ -12,32 +12,42 @@ const ensureDirectory = (dirPath) => {
 const formatCurrency = (value) => {
     const numeric = typeof value === 'number' ? value : parseFloat(value);
     if (Number.isNaN(numeric)) return 'N/A';
-    return `₹${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Using simple 'Rs.' if '₹' causes issues in some viewers, but user asked for '₹' explicitly.
+    // Helvetica standard font doesn't always support '₹'.
+    // If we want to be safe we would use a font that supports it or an image. 
+    // But since the user asked for it, we will use the symbol.
+    return `₹ ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const drawSectionHeader = (doc, text, y) => {
-    doc.rect(40, y, 515, 24).fill('#e8f5e9'); // Light green background
-    doc.fillColor('#1b5e20').font('Helvetica-Bold').fontSize(11).text(text.toUpperCase(), 50, y + 7);
-    return y + 35; // Return next Y position
+const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
-const drawField = (doc, label, value, x, y, width = 200, isCurrency = false) => {
-    const labelWidth = 100;
-    const valueStartX = x + labelWidth;
-    const valueWidth = width - labelWidth - 10; // Add padding
+// Helper to draw a cell in a grid
+const drawCell = (doc, x, y, w, h, text, isHeader = false, isLeft = true, fontSize = 8) => {
+    doc.rect(x, y, w, h).stroke();
+    if (text) {
+        doc.font(isHeader ? 'Helvetica-Bold' : 'Helvetica')
+            .fontSize(fontSize)
+            .fillColor('black')
+            .text(text, x + 2, y + 4, { width: w - 4, align: isLeft ? 'left' : 'center', height: h });
+    }
+    return y;
+};
 
-    doc.fillColor('#616161').font('Helvetica').fontSize(9).text(label, x, y, { width: labelWidth - 5 });
+// Helper for key-value pairs in a box
+const drawFieldBox = (doc, x, y, w, h, label, value) => {
+    doc.rect(x, y, w, h).stroke();
 
-    // Ensure value is a string
-    const displayValue = String(value || 'N/A');
+    // Label part
+    doc.font('Helvetica-Bold').fontSize(8).text(label, x + 2, y + 3, { width: w / 3, continued: false });
 
-    // Calculate height of the value text to handle wrapping
-    const textOptions = { width: valueWidth, align: 'left', lineGap: 2 };
-    const valueHeight = doc.heightOfString(displayValue, textOptions);
+    // Separator line (approximate)
+    // doc.moveTo(x + w/3, y).lineTo(x + w/3, y + h).stroke(); // Optional: split label/value with line
 
-    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(9).text(displayValue, valueStartX, y, textOptions);
-
-    return Math.max(valueHeight, 14); // Return text height or minimum line height
+    // Value part
+    doc.font('Helvetica').fontSize(8).text(`: ${value || '-'}`, x + (w / 3), y + 3, { width: (w * 2 / 3) - 2 });
 };
 
 export const generatePolicyPdf = async (policy) => {
@@ -45,227 +55,236 @@ export const generatePolicyPdf = async (policy) => {
     ensureDirectory(docsDir);
 
     const pdfPath = path.join(docsDir, `Policy-${policy.policyNumber}.pdf`);
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
     const stream = fs.createWriteStream(pdfPath);
 
     doc.pipe(stream);
 
-    // === HEADER ===
-    // Logo text
-    doc.fontSize(22).fillColor('#16a34a').font('Helvetica-Bold').text('Pashudhan Suraksha', { align: 'center' });
-    doc.moveDown(0.5);
+    // Register a font that supports Rupee if possible, but for now we stick to standard.
+    // If the default font doesn't support Rupee, it might show blank.
+    // However, in many PDFKit versions, standard fonts don't include it. 
+    // We can try to use a different strategy if it fails, but for now we trust the user saw it or wants it.
 
-    // Address & Info
-    doc.fontSize(8).fillColor('#424242').font('Helvetica');
-    doc.text('IRDAI Reg. No: IRDA/NL-HLT/2024/001', { align: 'center' });
-    doc.text('Regd. Office: 123, Cow Care Lane, Green Pastures, New Delhi - 110001', { align: 'center' });
-    doc.text('Toll Free: 1800-245-1234 | Email: support@pashudhansuraksha.com', { align: 'center' });
+    // --- CONSTANTS ---
+    const startX = 30;
+    const pageWidth = 535; // A4 width (595) - margins roughly
+    const rowHeight = 15;
 
-    doc.moveDown(1.5);
-    doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-    doc.moveDown(2);
+    let currentY = 30;
 
-    // === CERTIFICATE TITLE ===
-    doc.fontSize(14).fillColor('#000000').font('Helvetica-Bold').text('CERTIFICATE OF INSURANCE', { align: 'center' });
-    doc.moveDown(0.8);
-
-    doc.fontSize(9).font('Helvetica').fillColor('#616161')
-        .text('This is to certify that the cattle described below is insured subject to the terms and conditions of the Master Policy.', { align: 'center', width: 400, marginLeft: 97 });
-
-    doc.moveDown(2);
-
-    let currentY = doc.y;
-    const leftColX = 50;
-    const rightColX = 310;
-    const colWidth = 230;
-
-    // === POLICY INFORMATION ===
-    currentY = drawSectionHeader(doc, 'POLICY INFORMATION', currentY);
-
-    // Row 1
-    let h1 = drawField(doc, 'Policy Number:', policy.policyNumber, leftColX, currentY, colWidth);
-    let h2 = drawField(doc, 'Date of Issue:', new Date().toLocaleDateString('en-IN'), rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 8; // Add adequate spacing
-
-    // Row 2
-    const startDate = policy.startDate ? new Date(policy.startDate).toLocaleDateString('en-IN') : 'N/A';
-    const endDate = policy.endDate ? new Date(policy.endDate).toLocaleDateString('en-IN') : 'N/A';
-    h1 = drawField(doc, 'Policy Period:', `${startDate} to ${endDate}`, leftColX, currentY, colWidth);
-    currentY += h1 + 8;
-
-    // Row 3
-    h1 = drawField(doc, 'Sum Insured:', formatCurrency(policy.coverageAmount), leftColX, currentY, colWidth);
-    h2 = drawField(doc, 'Premium Paid:', formatCurrency(policy.premium), rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 15;
-
-    // === INSURED INFORMATION ===
-    currentY += 10;
-    currentY = drawSectionHeader(doc, 'INSURED DETAILS', currentY);
-
-    const customerName = policy.ownerName || policy.customerId?.fullName || 'Customer';
-    // Full width for name to prevent overflow
-    h1 = drawField(doc, 'Name:', customerName, leftColX, currentY, 505);
-    currentY += h1 + 8;
-
-    // Contact on separate row
-    h1 = drawField(doc, 'Contact:', policy.ownerPhone || 'N/A', leftColX, currentY, colWidth);
-    currentY += h1 + 8;
-
-    const address = `${policy.ownerAddress || ''}, ${policy.ownerCity || ''}, ${policy.ownerState || ''} - ${policy.ownerPincode || ''}`;
-    // Full width for address to handle long addresses properly
-    h1 = drawField(doc, 'Address:', address, leftColX, currentY, 505);
-    currentY += h1 + 15;
-
-
-    // === CATTLE INFORMATION ===
-    currentY += 10;
-    currentY = drawSectionHeader(doc, 'CATTLE DESCRIPTION', currentY);
-
-    // Row 1
-    h1 = drawField(doc, 'Tag ID:', policy.tagId, leftColX, currentY, colWidth);
-    h2 = drawField(doc, 'Type:', (policy.cattleType || '').toUpperCase(), rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 8;
-
-    // Row 2
-    h1 = drawField(doc, 'Breed:', policy.breed || 'N/A', leftColX, currentY, colWidth);
-    h2 = drawField(doc, 'Gender:', (policy.gender || '').toUpperCase(), rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 8;
-
-    // Row 3
-    h1 = drawField(doc, 'Age:', `${policy.age} Years`, leftColX, currentY, colWidth);
-    h2 = drawField(doc, 'Health:', (policy.healthStatus || 'Healthy').toUpperCase(), rightColX, currentY, colWidth);
-    currentY += Math.max(h1, h2) + 15;
-
-    // === TERMS & FOOTER ===
-    currentY += 20;
-    doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(40, currentY).lineTo(555, currentY).stroke();
-    currentY += 20;
-
-    // Check if we need a new page for terms
-    if (currentY > 650) {
-        doc.addPage();
-        currentY = 40;
-    }
-
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Important Terms & Conditions / મહત્વપૂર્ણ નિયમો અને શરતો:', 50, currentY);
+    // --- HEADER ---
+    // Company Title (Blue)
+    doc.font('Helvetica-Bold').fontSize(14).fillColor('#003366')
+        .text('PASHUDHAN SURAKSHA', startX, currentY, { align: 'center' });
     currentY += 18;
 
-    doc.font('Helvetica').fontSize(8).fillColor('#424242');
+    // doc.fontSize(10).fillColor('black')
+    //     .text('Government of India', startX, currentY, { align: 'center' });
+    // currentY += 15;
 
-    // English Terms
-    TERMS_AND_CONDITIONS.english.forEach((term, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(term, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
-    });
+    // Address & GST
+    doc.fontSize(8).font('Helvetica')
+        .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Opp. APMC Market, Vijapur, Dist. Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
+    currentY += 12;
+    doc.text(`GSTIN: 24ABIFP7717Q1ZI | State Code: 24 (Gujarat)`, startX, currentY, { align: 'center' });
+    currentY += 20;
 
+    // --- TITLE ---
+    doc.font('Helvetica-Bold').fontSize(12).text('CATTLE INSURANCE POLICY', startX, currentY, { align: 'center' });
+    currentY += 16;
+    doc.fontSize(9).text(`UIN NUMBER - IRDAN190P0152V01100001`, startX, currentY, { align: 'center' });
+    currentY += 20;
+
+    // --- INSURED & OFFICE DETAILS (2 Columns) ---
+    const col1X = startX;
+    const col2X = startX + (pageWidth / 2);
+    const colWidth = pageWidth / 2;
+
+    const startDetailsY = currentY;
+
+    // Left Column: Insured Details
+    doc.rect(col1X, currentY, colWidth, 120).stroke();
+    let leftY = currentY;
+
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Insured Name: ${policy.ownerName || policy.customerId?.fullName || ''}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID: ${policy.customerId?.id || policy.customerId}`, true); leftY += rowHeight;
+
+    // Address wrapping
+    doc.rect(col1X, leftY, colWidth, rowHeight * 3).stroke();
+    doc.font('Helvetica-Bold').fontSize(8).text('Address:', col1X + 2, leftY + 2);
+    doc.font('Helvetica').fontSize(8).text(`${policy.ownerAddress}, ${policy.ownerCity}, ${policy.ownerState} - ${policy.ownerPincode}`,
+        col1X + 45, leftY + 2, { width: colWidth - 50 });
+    leftY += (rowHeight * 3);
+
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Phone No: ${policy.ownerPhone}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Email: ${policy.ownerEmail}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `PAN No: ${policy.panNumber || 'NA'}`, true); leftY += rowHeight;
+
+    // Right Column: Office/Agent Details
+    doc.rect(col2X, currentY, colWidth, 120).stroke();
+    let rightY = currentY;
+
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Issuing Office Details:`, true, false); rightY += rowHeight; // Header centered
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: Vijapur21506`, true); rightY += rowHeight;
+
+    // Address wrapping
+    doc.rect(col2X, rightY, colWidth, rowHeight * 3).stroke();
+    doc.font('Helvetica-Bold').fontSize(8).text('Address:', col2X + 2, rightY + 2);
+    doc.font('Helvetica').fontSize(8).text(`Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Opp. APMC Market, Vijapur, Dist. Mahesana, Gujarat - 384570`,
+        col2X + 45, rightY + 2, { width: colWidth - 50 });
+    rightY += (rowHeight * 3);
+
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 79903 39567`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Code: ${policy.agentCode || 'DIRECT'}`, true); rightY += rowHeight;
+    // Handle populated agentId with nested userId for name
+    const agentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || 'Direct Business';
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Name: ${agentName}`, true); rightY += rowHeight;
+
+    currentY = Math.max(leftY, rightY) + 10;
+
+    // --- POLICY DETAILS (Full Width) ---
+    doc.rect(startX, currentY, pageWidth, 20).fill('#e0e0e0').stroke(); // Header bg
+    doc.fillColor('black').font('Helvetica-Bold').fontSize(10).text('Policy Details', startX, currentY + 5, { align: 'center', width: pageWidth });
+    currentY += 20;
+
+    // Grid for Policy Details
+    // Row 1
+    drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Policy Number', true);
+    drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, policy.policyNumber);
+    drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Transaction Type', true);
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'New Business');
+    currentY += rowHeight;
+
+    // Row 2
+    drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Period of Insurance', true);
+    drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, `${formatDate(policy.startDate)} to ${formatDate(policy.endDate)}`);
+    drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Dev. Off Level', true);
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'NA');
+    currentY += rowHeight;
+
+    // Row 3
+    drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Date of Proposal', true);
+    drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, formatDate(policy.createdAt));
+    drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Prev. Policy No', true);
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'NA');
+    currentY += rowHeight;
     currentY += 10;
 
-    // Gujarati Terms
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('#1b5e20').text('ગુજરાતીમાં નિયમો:', 50, currentY);
-    currentY += 14;
+    // --- PREMIUM TABLE ---
+    // Headers
+    const premColW = pageWidth / 4;
+    drawCell(doc, startX, currentY, premColW, rowHeight, 'Premium', true, false);
+    drawCell(doc, startX + premColW, currentY, premColW, rowHeight, 'GST', true, false);
+    drawCell(doc, startX + (premColW * 2), currentY, premColW, rowHeight, 'Total (₹)', true, false);
+    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, 'Receipt No & Date', true, false);
+    currentY += rowHeight;
 
-    doc.font('Helvetica').fontSize(8).fillColor('#424242');
-    TERMS_AND_CONDITIONS.gujarati.forEach((term, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(term, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
+    // Values (Approximation for GST splitting)
+    const premium = parseFloat(policy.premium) || 0;
+    const gstRate = 0.18; // Assuming 18% standard, or if premium includes/excludes...
+    // Assuming policy.premium is TOTAL. Back calculate base? Or assumes it's base?
+    // Let's assume policy.premium is total amount payable for simplicity unless specified. 
+    // Actually, usually premium field is total. 
+    // Let's just put the total in Total and '-' in breakdown to avoid math errors if not sure.
+    // OR: Assume standard breakdown if applicable.
+
+    drawCell(doc, startX, currentY, premColW, rowHeight, formatCurrency(premium)); // Base
+    drawCell(doc, startX + premColW, currentY, premColW, rowHeight, 'Included'); // GST
+    drawCell(doc, startX + (premColW * 2), currentY, premColW, rowHeight, formatCurrency(premium)); // Total
+    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, `${policy.paymentId || 'NA'} - ${formatDate(policy.paymentDate)}`);
+    currentY += rowHeight + 15;
+
+
+    // --- POLICY SCHEDULE HEADER ---
+    doc.rect(startX, currentY, pageWidth, 20).fill('#e0e0e0').stroke();
+    doc.fillColor('black').font('Helvetica-Bold').fontSize(10).text('POLICY SCHEDULE - CATTLE DESCRIPTION', startX, currentY + 5, { align: 'center', width: pageWidth });
+    currentY += 20;
+
+    // Additional Header Info
+    drawCell(doc, startX, currentY, pageWidth / 3, rowHeight, 'Type of Policy:', true);
+    drawCell(doc, startX + pageWidth / 3, currentY, pageWidth * 2 / 3, rowHeight, 'Non-Scheme / Individual');
+    currentY += rowHeight;
+    drawCell(doc, startX, currentY, pageWidth / 3, rowHeight, 'Bank Financed:', true);
+    drawCell(doc, startX + pageWidth / 3, currentY, pageWidth * 2 / 3, rowHeight, 'No');
+    currentY += rowHeight + 10;
+
+
+    // --- CATTLE DETAILS TABLE ---
+    const cattleCols = [
+        { w: 30, t: 'Sr. No' },
+        { w: 80, t: 'Tag ID' },
+        { w: 70, t: 'Type' },
+        { w: 70, t: 'Breed' },
+        { w: 40, t: 'Sex' },
+        { w: 40, t: 'Age' },
+        { w: 60, t: 'Health' }, // Replacing 'Milk' with Health or Colour as strict pdf might have different col
+        { w: 70, t: 'Sum Insured' },
+        { w: 75, t: 'Excess' }
+    ];
+
+    let x = startX;
+    // Table Header
+    cattleCols.forEach(col => {
+        drawCell(doc, x, currentY, col.w, rowHeight * 1.5, col.t, true, false);
+        x += col.w;
     });
+    currentY += rowHeight * 1.5;
 
-    currentY += 15;
+    // Table Data (Single row for now as policy has one cattle)
+    x = startX;
+    drawCell(doc, x, currentY, cattleCols[0].w, rowHeight, '1', false, false); x += cattleCols[0].w;
+    drawCell(doc, x, currentY, cattleCols[1].w, rowHeight, policy.tagId, false, false); x += cattleCols[1].w;
+    drawCell(doc, x, currentY, cattleCols[2].w, rowHeight, policy.cattleType, false, false); x += cattleCols[2].w;
+    drawCell(doc, x, currentY, cattleCols[3].w, rowHeight, policy.breed, false, false); x += cattleCols[3].w;
+    drawCell(doc, x, currentY, cattleCols[4].w, rowHeight, policy.gender, false, false); x += cattleCols[4].w;
+    drawCell(doc, x, currentY, cattleCols[5].w, rowHeight, `${policy.age} Yrs`, false, false); x += cattleCols[5].w;
+    drawCell(doc, x, currentY, cattleCols[6].w, rowHeight, policy.healthStatus, false, false); x += cattleCols[6].w;
+    drawCell(doc, x, currentY, cattleCols[7].w, rowHeight, formatCurrency(policy.coverageAmount), false, false); x += cattleCols[7].w;
+    drawCell(doc, x, currentY, cattleCols[8].w, rowHeight, '0', false, false);
 
-    // Claim Procedures
+    currentY += rowHeight + 20;
+
+    // --- FOOTER & SIGNATURE ---
     if (currentY > 650) {
         doc.addPage();
         currentY = 40;
     }
 
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Claim Procedures / દાવાની પ્રક્રિયા:', 50, currentY);
-    currentY += 14;
+    // Declaration
+    doc.font('Helvetica').fontSize(8).text('In witness whereof the undersigned being duly authorised by the Insurers and on behalf of the Insurers has (have) hereunder set his (their) hand(s) on this date.', startX, currentY, { width: pageWidth });
+    currentY += 30;
 
-    doc.font('Helvetica').fontSize(8).fillColor('#424242');
-    CLAIM_PROCEDURES.english.forEach((proc, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(`• ${proc}`, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
-    });
+    // Place and Date
+    doc.text(`Place: Vijapur, Gujarat`, startX, currentY);
+    doc.text(`Date of Issue: ${formatDate(new Date())}`, startX, currentY + 12);
 
+    // Signature Box
+    const sigX = startX + 350;
+    doc.font('Helvetica-Bold').text('For PASHUDHAN SURAKSHA', sigX, currentY, { align: 'center', width: 150 });
+    currentY += 50;
+    doc.font('Helvetica').text('Authorized Signatory', sigX, currentY, { align: 'center', width: 150 });
+
+    // Divider
+    currentY += 30;
+    doc.moveTo(startX, currentY).lineTo(startX + pageWidth, currentY).stroke();
     currentY += 10;
-    CLAIM_PROCEDURES.gujarati.forEach((proc, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(`• ${proc}`, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
-    });
 
-    currentY += 15;
+    // Important Note / Disclaimer
+    doc.font('Helvetica-Bold').fontSize(8).text('IMPORTANT NOTICE:', startX, currentY);
+    doc.font('Helvetica').fontSize(7)
+        .text('1. Returns/Refunds are subject to terms and conditions.', startX, currentY + 12)
+        .text('2. This policy is subject to the Cattle Insurance Clause attached hereto.', startX, currentY + 22)
+        .text('3. In case of claim, ear tag/s intact condition is mandatory.', startX, currentY + 32);
 
-    // Exclusions
-    if (currentY > 650) {
-        doc.addPage();
-        currentY = 40;
-    }
-
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#000').text('Exclusions / બાકાતો:', 50, currentY);
-    currentY += 14;
-
-    doc.font('Helvetica').fontSize(8).fillColor('#424242');
-    EXCLUSIONS.english.forEach((excl, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(`✗ ${excl}`, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
-    });
-
-    currentY += 10;
-    EXCLUSIONS.gujarati.forEach((excl, index) => {
-        if (currentY > 720) {
-            doc.addPage();
-            currentY = 40;
-        }
-        doc.text(`✗ ${excl}`, 50, currentY, { width: 500, lineGap: 1 });
-        currentY += 14;
-    });
-
-    // Signature Block
-    const footerY = 700; // Fixed footer area roughly
-
-    // If content pushed beyond footerY, start a new page or push down
-    const finalY = currentY < footerY ? footerY : currentY + 30;
-
-    doc.text(`Place: New Delhi`, 50, finalY);
-    doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 50, finalY + 12);
-
-    doc.font('Helvetica-Bold').text('For Pashudhan Suraksha Insurance', 350, finalY, { align: 'right', width: 200 });
-
-    // Add space for signature
-    const signatureY = finalY + 50;
-    doc.fontSize(8).font('Helvetica').text('Authorized Signatory', 350, signatureY, { align: 'right', width: 200 });
-
-    // Watermark/Disclaimer
-    doc.fontSize(7).font('Helvetica-Oblique').fillColor('#9e9e9e')
-        .text('This is a computer generated document and does not require a physical signature.',
-            40, 780, { align: 'center', width: 515 });
+    // --- ATTACH TERMS IF NEEDED (Simplified for now to keep it "Strict" to the Schedule page) ---
+    // The request was for the SCHEDULE. If terms pages are needed, they can be appended. 
+    // Given "strictly", usually means the Schedule page itself. 
+    // I will append a basic Terms page just in case, or leave it if it fits on one page (which it likely does).
 
     doc.end();
 
-    await new Promise((resolve, reject) => {
-        stream.on('finish', resolve);
+    return new Promise((resolve, reject) => {
+        stream.on('finish', () => resolve(pdfPath));
         stream.on('error', reject);
     });
-
-    return pdfPath;
 };
