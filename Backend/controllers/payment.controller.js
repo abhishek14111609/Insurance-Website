@@ -191,6 +191,9 @@ export const verifyPayment = async (req, res) => {
         payment.razorpayPaymentId = razorpay_payment_id;
         payment.razorpaySignature = razorpay_signature;
         payment.status = 'success';
+        if (req.body.paymentMethod) {
+            payment.paymentMethod = req.body.paymentMethod;
+        }
         payment.paidAt = new Date();
         await payment.save();
 
@@ -341,18 +344,29 @@ export const handleWebhook = async (req, res) => {
 
 // Helper function for payment captured event
 async function handlePaymentCaptured(paymentEntity) {
-    const payment = await Payment.findOne({ razorpayPaymentId: paymentEntity.id });
+    // Note: Using order_id from entity might be tricky, usually extracted from entity.order_id
 
-    if (payment && payment.status !== 'success') {
-        payment.status = 'success';
-        payment.paidAt = new Date();
-        await payment.save();
+    // Improved logic:
+    const paymentRecord = await Payment.findOne({
+        $or: [
+            { razorpayOrderId: paymentEntity.order_id },
+            { razorpayPaymentId: paymentEntity.id }
+        ]
+    });
 
-        const policy = await Policy.findById(payment.policyId);
+    if (paymentRecord && paymentRecord.status !== 'success') {
+        paymentRecord.status = 'success';
+        if (paymentEntity.id) paymentRecord.razorpayPaymentId = paymentEntity.id;
+        if (paymentEntity.method) paymentRecord.paymentMethod = paymentEntity.method;
+        paymentRecord.paidAt = new Date();
+        await paymentRecord.save();
+
+
+        const policy = await Policy.findById(paymentRecord.policyId);
 
         // Send Notification
         try {
-            await notifyPaymentSuccess(payment, policy);
+            await notifyPaymentSuccess(paymentRecord, policy);
         } catch (notifyError) {
             console.error('[Webhook] Notification failed (non-blocking):', notifyError);
         }

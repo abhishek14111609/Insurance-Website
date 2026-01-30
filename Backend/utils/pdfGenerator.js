@@ -78,9 +78,9 @@ export const generatePolicyPdf = async (policy) => {
         .text('PASHUDHAN SURAKSHA', startX, currentY, { align: 'center' });
     currentY += 18;
 
-    // doc.fontSize(10).fillColor('black')
-    //     .text('Government of India', startX, currentY, { align: 'center' });
-    // currentY += 15;
+    doc.fontSize(10).fillColor('black')
+        .text('Government of India', startX, currentY, { align: 'center' });
+    currentY += 15;
 
     // Address & GST
     doc.fontSize(8).font('Helvetica')
@@ -107,7 +107,7 @@ export const generatePolicyPdf = async (policy) => {
     let leftY = currentY;
 
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `Insured Name: ${policy.ownerName || policy.customerId?.fullName || ''}`, true); leftY += rowHeight;
-    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID: ${policy.customerId?.id || policy.customerId}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID: ${policy.customerId?.id || 'CUST-001'}`, true); leftY += rowHeight;
 
     // Address wrapping
     doc.rect(col1X, leftY, colWidth, rowHeight * 3).stroke();
@@ -125,16 +125,16 @@ export const generatePolicyPdf = async (policy) => {
     let rightY = currentY;
 
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Issuing Office Details:`, true, false); rightY += rowHeight; // Header centered
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: Vijapur21506`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: PUSH-HO-001`, true); rightY += rowHeight;
 
     // Address wrapping
     doc.rect(col2X, rightY, colWidth, rowHeight * 3).stroke();
     doc.font('Helvetica-Bold').fontSize(8).text('Address:', col2X + 2, rightY + 2);
-    doc.font('Helvetica').fontSize(8).text(`Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Opp. APMC Market, Vijapur, Dist. Mahesana, Gujarat - 384570`,
+    doc.font('Helvetica').fontSize(8).text(`Pashudhan Suraksha HQ, Vijapur, Gujarat`,
         col2X + 45, rightY + 2, { width: colWidth - 50 });
     rightY += (rowHeight * 3);
 
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 79903 39567`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 1800-123-4567`, true); rightY += rowHeight;
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Code: ${policy.agentCode || 'DIRECT'}`, true); rightY += rowHeight;
     // Handle populated agentId with nested userId for name
     const agentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || 'Direct Business';
@@ -151,8 +151,8 @@ export const generatePolicyPdf = async (policy) => {
     // Row 1
     drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Policy Number', true);
     drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, policy.policyNumber);
-    drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Transaction Type', true);
-    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'New Business');
+    drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Business Source', true);
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'Direct / Agent');
     currentY += rowHeight;
 
     // Row 2

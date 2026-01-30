@@ -13,33 +13,42 @@ export const toNumber = (value, defaultValue = 0) => {
     if (value === null || value === undefined) {
         return defaultValue;
     }
-    
+
     // If it's already a number, return it
     if (typeof value === 'number') {
         return value;
     }
-    
+
     // If it's a string representation of a number
     if (typeof value === 'string') {
         const parsed = parseFloat(value);
         return isNaN(parsed) ? defaultValue : parsed;
     }
-    
+
     // If it's an object with a toString method (like Decimal128)
     if (typeof value === 'object' && value !== null) {
-        // Handle Decimal128 objects
+        // Handle MongoDB Decimal128 in JSON ({ $numberDecimal: "..." })
+        if (value.$numberDecimal) {
+            return parseFloat(value.$numberDecimal) || defaultValue;
+        }
+
+        // Handle Decimal128 objects (Standard BSON)
         if (value.toString && typeof value.toString === 'function') {
             const stringValue = value.toString();
+            // If toString returns [object Object], fail gracefully or try parsing if possible
+            if (stringValue === '[object Object]') {
+                return defaultValue;
+            }
             const parsed = parseFloat(stringValue);
             return isNaN(parsed) ? defaultValue : parsed;
         }
-        
-        // Handle objects with value property (some MongoDB drivers)
+
+        // Handle objects with value property
         if (value.value !== undefined) {
             return toNumber(value.value, defaultValue);
         }
     }
-    
+
     // Try to convert any other type
     const parsed = parseFloat(value);
     return isNaN(parsed) ? defaultValue : parsed;
@@ -53,11 +62,11 @@ export const toNumber = (value, defaultValue = 0) => {
  */
 export const formatCurrency = (value, defaultText = 'N/A') => {
     const number = toNumber(value, null);
-    
+
     if (number === null || isNaN(number)) {
         return defaultText;
     }
-    
+
     return `₹${number.toLocaleString('en-IN')}`;
 };
 
@@ -69,11 +78,11 @@ export const formatCurrency = (value, defaultText = 'N/A') => {
  */
 export const formatNumber = (value, defaultText = 'N/A') => {
     const number = toNumber(value, null);
-    
+
     if (number === null || isNaN(number)) {
         return defaultText;
     }
-    
+
     return number.toLocaleString('en-IN');
 };
 

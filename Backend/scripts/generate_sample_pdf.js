@@ -1,16 +1,16 @@
 
 import mongoose from 'mongoose';
 import { generatePolicyPdf } from '../utils/pdfGenerator.js';
-import Policy from '../models/Policy.js';
-import User from '../models/User.js';
 import path from 'path';
 
-// Mock Data if no DB connection or just forcing a sample
+// Mock Data exactly matching the fields needed to reproduce the user's sample PDF
 const mockPolicy = {
     policyNumber: 'POL-SAMPLE-123456789',
     customerId: {
         id: 'CUST-001',
-        fullName: 'Rameshbhai Patel'
+        fullName: 'Rameshbhai Patel',
+        email: 'ramesh@example.com',
+        phone: '9876543210'
     },
     ownerName: 'Rameshbhai Patel',
     ownerAddress: '123, Village Road, Near Temple',
@@ -22,16 +22,19 @@ const mockPolicy = {
     panNumber: 'ABCDE1234F',
 
     agentCode: 'AG-007',
-    agentId: { fullName: 'Suresh Agent' },
+    agentId: {
+        fullName: 'Suresh Agent',
+        userId: { fullName: 'Suresh Agent' }
+    },
 
-    startDate: new Date(),
-    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-    createdAt: new Date(),
+    startDate: new Date('2026-01-29'),
+    endDate: new Date('2027-01-29'),
+    createdAt: new Date('2026-01-29'),
     paymentId: 'PAY-123456',
-    paymentDate: new Date(),
+    paymentDate: new Date('2026-01-29'),
 
     premium: 54000,
-    coverageAmount: 50000,
+    coverageAmount: 54000, // Matching total ('1) column value in image
 
     tagId: '100327930607',
     cattleType: 'Buffalo',
@@ -43,9 +46,9 @@ const mockPolicy = {
 
 const run = async () => {
     try {
-        console.log('Generating Sample PDF...');
+        console.log('Generating Official Sample PDF...');
         const filePath = await generatePolicyPdf(mockPolicy);
-        console.log(`Sample PDF Generated Successfully: ${filePath}`);
+        console.log(`Official Sample PDF Generated Successfully: ${filePath}`);
     } catch (error) {
         console.error('Error generating PDF:', error);
     }
