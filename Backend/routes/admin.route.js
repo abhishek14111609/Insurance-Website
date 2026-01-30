@@ -9,6 +9,8 @@ import {
     getAllAgents,
     approveAgent,
     rejectAgent,
+    bulkApproveAgents,
+    bulkRejectAgents,
     getAgentById,
     getAllCustomers,
     getCustomerById,
@@ -50,6 +52,8 @@ router.patch('/policies/:id/reject', rejectPolicy);
 router.get('/agents', getAllAgents);
 router.get('/agents/:id', getAgentById); // Added route
 router.post('/agents', createAgent);
+router.post('/agents/bulk-approve', bulkApproveAgents); // Batch endpoint
+router.post('/agents/bulk-reject', bulkRejectAgents); // Batch endpoint
 router.patch('/agents/:id/approve', approveAgent);
 router.patch('/agents/:id/reject', rejectAgent);
 router.patch('/agents/:id/verify-kyc', verifyAgentKYC);

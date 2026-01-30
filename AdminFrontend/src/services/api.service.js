@@ -3,9 +3,7 @@ import axios from 'axios';
 // API Configuration with safer defaults for deployed builds
 const DEFAULT_PROD_API = 'https://backend.pashudhansuraksha.com/api';
 const isBrowser = typeof window !== 'undefined';
-const isLocalhost = isBrowser && /(localhost|127\.0\.0\.1)/.test(window.location.hostname);
-const API_BASE_URL = import.meta.env.VITE_API_URL
-    || (isLocalhost ? 'http://localhost:5000/api' : DEFAULT_PROD_API);
+const API_BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_PROD_API;
 // Helper to get raw base url for static files
 export const BASE_URL = API_BASE_URL.replace('/api', '');
 
@@ -167,6 +165,15 @@ export const adminAPI = {
         return axiosInstance.patch(`/admin/agents/${agentId}/reset-password`);
     },
 
+    // Bulk operations
+    bulkApproveAgents: async (agentIds, adminNotes = '') => {
+        return axiosInstance.post('/admin/agents/bulk-approve', { agentIds, adminNotes });
+    },
+
+    bulkRejectAgents: async (agentIds, rejectionReason) => {
+        return axiosInstance.post('/admin/agents/bulk-reject', { agentIds, rejectionReason });
+    },
+
     // Policy Management
     getAllPolicies: async () => {
         return axiosInstance.get('/admin/policies');
@@ -220,6 +227,24 @@ export const adminAPI = {
 
     setupDatabase: async (force = false) => {
         return axiosInstance.post('/admin/setup-db', { force });
+    },
+
+    // Audit Logs
+    getAuditLogs: async (filters) => {
+        return axiosInstance.get('/admin/audit-logs', { params: filters });
+    },
+
+    getAuditLogStats: async (filters) => {
+        return axiosInstance.get('/admin/audit-logs/stats', { params: filters });
+    },
+
+    exportAuditLogs: async (filters) => {
+        const response = await axios.get(`${API_BASE_URL}/admin/audit-logs/export`, {
+            params: filters,
+            withCredentials: true,
+            responseType: 'blob'
+        });
+        return response.data;
     }
 };
 
@@ -276,11 +301,36 @@ export const contactAPI = {
     }
 };
 
+// Audit Logs API
+export const auditLogAPI = {
+    getLogs: async (filters) => {
+        return axiosInstance.get('/admin/audit-logs', { params: filters });
+    },
+
+    getStats: async (filters) => {
+        return axiosInstance.get('/admin/audit-logs/stats', { params: filters });
+    },
+
+    getEntityLogs: async (entityType, entityId, params) => {
+        return axiosInstance.get(`/admin/audit-logs/entity/${entityType}/${entityId}`, { params });
+    },
+
+    export: async (filters) => {
+        const response = await axios.get(`${API_BASE_URL}/admin/audit-logs/export`, {
+            params: filters,
+            withCredentials: true,
+            responseType: 'blob'
+        });
+        return response.data;
+    }
+};
+
 export default {
     auth: authAPI,
     policy: policyAPI,
     admin: adminAPI,
     policyPlan: policyPlanAPI,
     claim: claimAPI,
-    contact: contactAPI
+    contact: contactAPI,
+    auditLog: auditLogAPI
 };

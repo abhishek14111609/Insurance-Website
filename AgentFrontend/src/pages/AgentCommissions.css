@@ -1,0 +1,150 @@
+/* AgentCommissions.css */
+.agent-commissions {
+    padding: 2rem 0;
+    min-height: calc(100vh - 70px);
+    background-color: var(--background-secondary);
+}
+
+.commissions-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.commissions-header h1 {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.commissions-header p {
+    color: var(--text-secondary);
+}
+
+/* Stats Cards */
+.commission-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.commission-stats-grid .stat-card {
+    text-align: center;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.commission-stats-grid .stat-card h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.commission-stats-grid .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Commissions List */
+.commissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.commission-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.commission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.commission-header h3 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.commission-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.commission-details {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-item span {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.detail-item strong {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.detail-item strong.amount {
+    color: #059669;
+    font-size: 1.25rem;
+}
+
+.policy-info {
+    display: flex;
+    gap: 2rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.status-paid {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .commission-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .commission-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .policy-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

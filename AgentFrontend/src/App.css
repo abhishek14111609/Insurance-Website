@@ -1,0 +1,11 @@
+/* App specific styles can go here if needed */
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    /* padding-top handled by specific page layouts or header spacing */
+}

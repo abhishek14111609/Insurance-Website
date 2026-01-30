@@ -20,6 +20,7 @@ import claimRoutes from './routes/claim.route.js';
 import notificationRoutes from './routes/notification.route.js';
 import policyPlanRoutes from './routes/policyPlan.route.js';
 import contactRoutes from './routes/contact.route.js';
+import auditLogRoutes from './routes/auditLogs.js';
 
 // Utilities
 import { initializeCommissionSettings } from './utils/commission.util.js';
@@ -44,10 +45,7 @@ app.use(cors({
         // allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
-        // Allow any localhost origin (handles different ports for dev)
-        if (origin.match(/^http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/)) {
-            return callback(null, true);
-        }
+
 
         // Default production origins (Vercel apps)
         const defaultProdOrigins = [
@@ -67,10 +65,7 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // In development, allow all localhost origins
-        if (process.env.NODE_ENV === 'development') {
-            return callback(null, true);
-        }
+
 
         callback(new Error('Not allowed by CORS'));
     },
@@ -142,6 +137,9 @@ app.use('/api/claims', claimRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/plans', policyPlanRoutes);
 app.use('/api/contact', contactRoutes);
+
+// Audit Logs Routes (nested under /api/admin)
+app.use('/api/admin/audit-logs', auditLogRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RouteLoader from './components/RouteLoader';
 import { Toaster } from 'react-hot-toast';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Auth
 import AdminLogin from './pages/Auth/AdminLogin';
@@ -37,6 +38,7 @@ import DatabaseSetup from './pages/DatabaseSetup';
 import PolicyHistory from './pages/PolicyHistory';
 import TransactionHistory from './pages/TransactionHistory';
 import ClaimHistory from './pages/ClaimHistory';
+import AuditLogs from './pages/AuditLogs';
 
 import './App.css';
 
@@ -58,6 +60,7 @@ import {
   ArrowLeftRight,
   LogOut,
   ShieldCheck,
+  Shield,
   ChevronRight,
   Database,
   Search
@@ -206,6 +209,12 @@ const AdminLayout = ({ children }) => {
 
           <div className="nav-section">System</div>
 
+          <NavLink to="/audit-logs" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
+            <Shield size={20} className="icon" />
+            <span>Audit Logs</span>
+            <ChevronRight size={14} className="arrow" />
+          </NavLink>
+
           <NavLink to="/database-setup" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeSidebar}>
             <Database size={20} className="icon" />
             <span>Database Setup</span>
@@ -258,68 +267,71 @@ const App = () => {
   }
 
   return (
-    <Router>
-      <RouteLoader />
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#333',
-            color: '#fff',
-            fontSize: '14px'
-          },
-        }}
-      />
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={isAuthenticated && isAdmin ? <Navigate to="/" replace /> : <AdminLogin />}
+    <ErrorBoundary>
+      <Router>
+        <RouteLoader />
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#333',
+              color: '#fff',
+              fontSize: '14px'
+            },
+          }}
         />
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={isAuthenticated && isAdmin ? <Navigate to="/" replace /> : <AdminLogin />}
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  {/* Agents */}
-                  <Route path="/agents" element={<AllAgents />} />
-                  <Route path="/agents/add" element={<AddAgent />} />
-                  <Route path="/agents/edit/:id" element={<EditAgent />} />
-                  <Route path="/agents/details/:id" element={<AgentDetails />} />
-                  <Route path="/agent-approvals" element={<AgentApprovals />} />
-                  <Route path="/customers" element={<AllCustomers />} />
-                  <Route path="/customers/:id" element={<CustomerDetails />} />
+          {/* Protected Routes */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    {/* Agents */}
+                    <Route path="/agents" element={<AllAgents />} />
+                    <Route path="/agents/add" element={<AddAgent />} />
+                    <Route path="/agents/edit/:id" element={<EditAgent />} />
+                    <Route path="/agents/details/:id" element={<AgentDetails />} />
+                    <Route path="/agent-approvals" element={<AgentApprovals />} />
+                    <Route path="/customers" element={<AllCustomers />} />
+                    <Route path="/customers/:id" element={<CustomerDetails />} />
 
-                  {/* Policies */}
-                  <Route path="/policy-plans" element={<AllPolicyPlans />} />
-                  <Route path="/policy-plans/add" element={<AddPolicyPlan />} />
-                  <Route path="/policy-plans/edit/:id" element={<EditPolicyPlan />} />
-                  <Route path="/policy-approvals" element={<PolicyApprovals />} />
-                  <Route path="/policy-history" element={<PolicyHistory />} />
+                    {/* Policies */}
+                    <Route path="/policy-plans" element={<AllPolicyPlans />} />
+                    <Route path="/policy-plans/add" element={<AddPolicyPlan />} />
+                    <Route path="/policy-plans/edit/:id" element={<EditPolicyPlan />} />
+                    <Route path="/policy-approvals" element={<PolicyApprovals />} />
+                    <Route path="/policy-history" element={<PolicyHistory />} />
 
-                  {/* Financial */}
-                  <Route path="/commission-settings" element={<CommissionSettings />} />
-                  <Route path="/commission-history" element={<CommissionHistory />} />
-                  <Route path="/commission-approvals" element={<CommissionApprovals />} />
-                  <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
-                  <Route path="/transactions" element={<TransactionHistory />} />
-                  <Route path="/claim-approvals" element={<ClaimApprovals />} />
-                  <Route path="/claim-history" element={<ClaimHistory />} />
-                  <Route path="/inquiries" element={<Inquiries />} />
-                  <Route path="/database-setup" element={<DatabaseSetup />} />
-                </Routes>
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+                    {/* Financial */}
+                    <Route path="/commission-settings" element={<CommissionSettings />} />
+                    <Route path="/commission-history" element={<CommissionHistory />} />
+                    <Route path="/commission-approvals" element={<CommissionApprovals />} />
+                    <Route path="/withdrawal-approvals" element={<WithdrawalApprovals />} />
+                    <Route path="/transactions" element={<TransactionHistory />} />
+                    <Route path="/claim-approvals" element={<ClaimApprovals />} />
+                    <Route path="/claim-history" element={<ClaimHistory />} />
+                    <Route path="/inquiries" element={<Inquiries />} />
+                    <Route path="/audit-logs" element={<AuditLogs />} />
+                    <Route path="/database-setup" element={<DatabaseSetup />} />
+                  </Routes>
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

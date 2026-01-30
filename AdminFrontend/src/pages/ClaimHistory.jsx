@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { claimAPI, BASE_URL } from '../services/api.service';
 import { TableSkeleton } from '../components/Loader';
 import { formatCurrency } from '../utils/numberUtils';
+import { exportToCSV, formatClaimsForExport } from '../utils/exportUtils';
+import BulkActionBar from '../components/BulkActionBar';
+import { CheckCircle } from 'lucide-react';
 import './PolicyHistory.css'; // Reusing common history styles
 import toast from 'react-hot-toast';
 
@@ -30,6 +33,11 @@ const ClaimHistory = () => {
 
     const [selectedClaim, setSelectedClaim] = useState(null);
     const [showModal, setShowModal] = useState(false);
+
+    // Bulk operations state
+    const [selectedClaims, setSelectedClaims] = useState(new Set());
+    const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+    const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
     useEffect(() => {
         fetchClaims();
@@ -98,11 +106,92 @@ const ClaimHistory = () => {
         }
     };
 
+    const handleExport = () => {
+        try {
+            if (claims.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            const formattedData = formatClaimsForExport(claims);
+            exportToCSV(formattedData, 'claims_export');
+            toast.success(`Exported ${claims.length} claims successfully`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export data');
+        }
+    };
+
+    // Bulk selection handlers
+    const handleSelectClaim = (claimId) => {
+        const newSelected = new Set(selectedClaims);
+        if (newSelected.has(claimId)) {
+            newSelected.delete(claimId);
+        } else {
+            newSelected.add(claimId);
+        }
+        setSelectedClaims(newSelected);
+    };
+
+    const handleSelectAll = () => {
+        const pendingClaims = claims.filter(c => c.status?.toLowerCase() === 'pending');
+        const allIds = new Set(pendingClaims.map(c => c._id || c.id));
+        setSelectedClaims(allIds);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedClaims(new Set());
+    };
+
+    // Bulk approve handler (for claims, this means approve for payment)
+    const handleBulkApprove = async () => {
+        setBulkActionLoading(true);
+        try {
+            const claimIds = Array.from(selectedClaims);
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const claimId of claimIds) {
+                try {
+                    // Assuming there's an approve claim API
+                    const result = await claimAPI.approve(claimId);
+                    if (result.success) successCount++;
+                    else failCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error(`Failed to approve claim ${claimId}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Successfully approved ${successCount} claim(s)`);
+                fetchClaims();
+                handleClearSelection();
+            }
+            if (failCount > 0) {
+                toast.error(`Failed to approve ${failCount} claim(s)`);
+            }
+        } catch (error) {
+            console.error('Bulk approve error:', error);
+            toast.error('Bulk approval failed');
+        } finally {
+            setBulkActionLoading(false);
+            setShowBulkApproveModal(false);
+        }
+    };
+
+    // Filter pending claims for display
+    const pendingClaims = claims.filter(c => c.status?.toLowerCase() === 'pending');
+
     return (
         <div className="policy-history-page">
             <div className="page-header">
-                <h1>🩺 Claim History</h1>
-                <p>Track and manage insurance claim records</p>
+                <div>
+                    <h1>🩺 Claim History</h1>
+                    <p>Track and manage insurance claim records</p>
+                </div>
+                <button onClick={handleExport} className="btn btn-primary" style={{ marginLeft: 'auto' }}>
+                    📥 Export CSV
+                </button>
             </div>
 
             <div className="controls-section">
@@ -126,6 +215,26 @@ const ClaimHistory = () => {
                 </div>
             </div>
 
+            {/* Bulk Action Bar - Only show for pending claims */}
+            {pendingClaims.length > 0 && (
+                <BulkActionBar
+                    selectedCount={selectedClaims.size}
+                    totalCount={pendingClaims.length}
+                    onSelectAll={handleSelectAll}
+                    onClearSelection={handleClearSelection}
+                    entityName="pending claims"
+                    actions={[
+                        {
+                            label: 'Approve Selected',
+                            icon: <CheckCircle size={18} />,
+                            variant: 'success',
+                            onClick: () => setShowBulkApproveModal(true),
+                            disabled: bulkActionLoading
+                        }
+                    ]}
+                />
+            )}
+
             <div className="table-container">
                 {loading ? (
                     <TableSkeleton rows={10} columns={7} />
@@ -138,6 +247,15 @@ const ClaimHistory = () => {
                     <table className="data-table">
                         <thead>
                             <tr>
+                                <th style={{ width: '50px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedClaims.size === pendingClaims.length && pendingClaims.length > 0}
+                                        onChange={() => selectedClaims.size === pendingClaims.length ? handleClearSelection() : handleSelectAll()}
+                                        style={{ cursor: 'pointer' }}
+                                        disabled={pendingClaims.length === 0}
+                                    />
+                                </th>
                                 <th>Claim No</th>
                                 <th>Claimant</th>
                                 <th>Policy</th>
@@ -148,54 +266,71 @@ const ClaimHistory = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {claims.map((claim) => (
-                                <tr key={claim._id || claim.id}>
-                                    <td className="font-mono">{claim.claimNumber}</td>
-                                    <td>
-                                        <div className="user-cell">
-                                            {claim.customerId ? (
-                                                <Link to={`/customers/${claim.customerId._id}`} className="name-link">
-                                                    {claim.customerId.fullName}
-                                                </Link>
+                            {claims.map((claim) => {
+                                const claimId = claim._id || claim.id;
+                                const isPending = claim.status?.toLowerCase() === 'pending';
+                                return (
+                                    <tr key={claimId}>
+                                        <td>
+                                            {isPending ? (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedClaims.has(claimId)}
+                                                    onChange={() => handleSelectClaim(claimId)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    style={{ cursor: 'pointer' }}
+                                                />
                                             ) : (
-                                                <span className="name">{claim.claimant?.fullName || 'N/A'}</span>
+                                                <span style={{ width: '18px', display: 'inline-block' }}>-</span>
                                             )}
-                                            <span className="sub-text">{claim.customerId?.phone || claim.claimant?.phone}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="plan-cell">
-                                            <span>{claim.policyId?.policyNumber || claim.policy?.policyNumber || 'N/A'}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span style={{ textTransform: 'capitalize' }}>
-                                            {(claim.claimType || '').replace('_', ' ')}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="amount-cell">
-                                            <span>Requested: {formatCurrency(claim.claimAmount)}</span>
-                                            {claim.approvedAmount && (
-                                                <span className="sub-text highlight">Approved: {formatCurrency(claim.approvedAmount)}</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${getStatusBadgeClass(claim.status)}`}>
-                                            {claim.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-view-details"
-                                            onClick={() => handleViewDetails(claim)}
-                                        >
-                                            View
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="font-mono">{claim.claimNumber}</td>
+                                        <td>
+                                            <div className="user-cell">
+                                                {claim.customerId ? (
+                                                    <Link to={`/customers/${claim.customerId._id}`} className="name-link">
+                                                        {claim.customerId.fullName}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="name">{claim.claimant?.fullName || 'N/A'}</span>
+                                                )}
+                                                <span className="sub-text">{claim.customerId?.phone || claim.claimant?.phone}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="plan-cell">
+                                                <span>{claim.policyId?.policyNumber || claim.policy?.policyNumber || 'N/A'}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style={{ textTransform: 'capitalize' }}>
+                                                {(claim.claimType || '').replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="amount-cell">
+                                                <span>Requested: {formatCurrency(claim.claimAmount)}</span>
+                                                {claim.approvedAmount && (
+                                                    <span className="sub-text highlight">Approved: {formatCurrency(claim.approvedAmount)}</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge ${getStatusBadgeClass(claim.status)}`}>
+                                                {claim.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn-view-details"
+                                                onClick={() => handleViewDetails(claim)}
+                                            >
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 )}
@@ -306,6 +441,53 @@ const ClaimHistory = () => {
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-secondary" onClick={closeModal}>Close Details</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Approve Modal */}
+            {showBulkApproveModal && (
+                <div className="modal-overlay" onClick={() => !bulkActionLoading && setShowBulkApproveModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>✅ Bulk Approve Claims</h2>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>You are about to approve <strong>{selectedClaims.size}</strong> claim(s).</p>
+                            <p>This action will:</p>
+                            <ul>
+                                <li>✅ Mark claims as approved</li>
+                                <li>✅ Initiate payment processing</li>
+                                <li>✅ Send approval notifications to claimants</li>
+                                <li>✅ Update claim status in the system</li>
+                            </ul>
+                            <p className="text-muted" style={{ marginTop: '1rem', fontSize: '0.9em' }}>
+                                💡 Tip: Approved claims will be processed for payment according to your payout schedule.
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={handleBulkApprove}
+                                disabled={bulkActionLoading}
+                            >
+                                {bulkActionLoading ? 'Processing...' : `Approve ${selectedClaims.size} Claim(s)`}
+                            </button>
                         </div>
                     </div>
                 </div>

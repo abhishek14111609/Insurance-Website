@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminAPI } from '../services/api.service';
+import { exportToCSV, formatCustomersForExport } from '../utils/exportUtils';
+import toast from 'react-hot-toast';
 import './AllCustomers.css';
 
 const AllCustomers = () => {
@@ -40,6 +42,21 @@ const AllCustomers = () => {
         }
     };
 
+    const handleExport = () => {
+        try {
+            if (filteredCustomers.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            const formattedData = formatCustomersForExport(filteredCustomers);
+            exportToCSV(formattedData, 'customers_export');
+            toast.success(`Exported ${filteredCustomers.length} customers successfully`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export data');
+        }
+    };
+
     if (loading) return <div className="loading-state">Loading customers...</div>;
     if (error) return <div className="error-state">{error}</div>;
 
@@ -50,11 +67,16 @@ const AllCustomers = () => {
                     <h1>👥 Customer Management</h1>
                     <p>View and manage all registered users</p>
                 </div>
-                <div className="header-stats">
-                    <div className="stat-card">
-                        <span className="stat-value">{customers.length}</span>
-                        <span className="stat-label">Total Customers</span>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div className="header-stats">
+                        <div className="stat-card">
+                            <span className="stat-value">{customers.length}</span>
+                            <span className="stat-label">Total Customers</span>
+                        </div>
                     </div>
+                    <button onClick={handleExport} className="btn btn-primary">
+                        📥 Export CSV
+                    </button>
                 </div>
             </div>
 

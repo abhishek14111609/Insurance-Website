@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api.service';
+import { exportToCSV, formatCommissionsForExport } from '../utils/exportUtils';
+import BulkActionBar from '../components/BulkActionBar';
+import { CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './CommissionHistory.css';
 
@@ -12,6 +15,11 @@ const CommissionHistory = () => {
         paid: 0
     });
     const [processingId, setProcessingId] = useState(null);
+
+    // Bulk operations state
+    const [selectedCommissions, setSelectedCommissions] = useState(new Set());
+    const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+    const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
     const normalizeNumber = (value) => {
         if (value === null || value === undefined) return 0;
@@ -81,6 +89,81 @@ const CommissionHistory = () => {
         }
     };
 
+    const handleExport = () => {
+        try {
+            if (commissions.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            const formattedData = formatCommissionsForExport(commissions);
+            exportToCSV(formattedData, 'commissions_export');
+            toast.success(`Exported ${commissions.length} commissions successfully`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export data');
+        }
+    };
+
+    // Bulk selection handlers
+    const handleSelectCommission = (commissionId) => {
+        const newSelected = new Set(selectedCommissions);
+        if (newSelected.has(commissionId)) {
+            newSelected.delete(commissionId);
+        } else {
+            newSelected.add(commissionId);
+        }
+        setSelectedCommissions(newSelected);
+    };
+
+    const handleSelectAll = () => {
+        const pendingCommissions = commissions.filter(c => c.status?.toLowerCase() === 'pending');
+        const allIds = new Set(pendingCommissions.map(c => c._id || c.id));
+        setSelectedCommissions(allIds);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedCommissions(new Set());
+    };
+
+    // Bulk approve handler
+    const handleBulkApprove = async () => {
+        setBulkActionLoading(true);
+        try {
+            const commissionIds = Array.from(selectedCommissions);
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const commissionId of commissionIds) {
+                try {
+                    const result = await adminAPI.approveCommission(commissionId);
+                    if (result.success) successCount++;
+                    else failCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error(`Failed to approve commission ${commissionId}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Successfully approved ${successCount} commission(s)`);
+                loadCommissions();
+                handleClearSelection();
+            }
+            if (failCount > 0) {
+                toast.error(`Failed to approve ${failCount} commission(s)`);
+            }
+        } catch (error) {
+            console.error('Bulk approve error:', error);
+            toast.error('Bulk approval failed');
+        } finally {
+            setBulkActionLoading(false);
+            setShowBulkApproveModal(false);
+        }
+    };
+
+    // Filter pending commissions for display
+    const pendingCommissions = commissions.filter(c => c.status?.toLowerCase() === 'pending');
+
     if (loading) return <div className="loading-state">Loading commission history...</div>;
 
     return (
@@ -90,14 +173,19 @@ const CommissionHistory = () => {
                     <h1>💰 Commission History</h1>
                     <p>Track all earnings and distribution across the agent network</p>
                 </div>
-                {stats.pending > 0 && (
-                    <button
-                        className="go-approvals-btn"
-                        onClick={() => window.location.href = '/commission-approvals'}
-                    >
-                        🚀 Process Pending ({commissions.filter(c => c.status === 'pending').length})
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={handleExport} className="btn btn-secondary">
+                        📥 Export CSV
                     </button>
-                )}
+                    {stats.pending > 0 && (
+                        <button
+                            className="go-approvals-btn"
+                            onClick={() => window.location.href = '/commission-approvals'}
+                        >
+                            🚀 Process Pending ({commissions.filter(c => c.status === 'pending').length})
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="summary-cards">
@@ -115,10 +203,39 @@ const CommissionHistory = () => {
                 </div>
             </div>
 
+            {/* Bulk Action Bar - Only show for pending commissions */}
+            {pendingCommissions.length > 0 && (
+                <BulkActionBar
+                    selectedCount={selectedCommissions.size}
+                    totalCount={pendingCommissions.length}
+                    onSelectAll={handleSelectAll}
+                    onClearSelection={handleClearSelection}
+                    entityName="pending commissions"
+                    actions={[
+                        {
+                            label: 'Approve Selected',
+                            icon: <CheckCircle size={18} />,
+                            variant: 'success',
+                            onClick: () => setShowBulkApproveModal(true),
+                            disabled: bulkActionLoading
+                        }
+                    ]}
+                />
+            )}
+
             <div className="table-container">
                 <table className="commissions-table">
                     <thead>
                         <tr>
+                            <th style={{ width: '50px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCommissions.size === pendingCommissions.length && pendingCommissions.length > 0}
+                                    onChange={() => selectedCommissions.size === pendingCommissions.length ? handleClearSelection() : handleSelectAll()}
+                                    style={{ cursor: 'pointer' }}
+                                    disabled={pendingCommissions.length === 0}
+                                />
+                            </th>
                             <th>ID</th>
                             <th>Agent</th>
                             <th>Policy / Customer</th>
@@ -136,8 +253,22 @@ const CommissionHistory = () => {
                                 const customerName = item.policy?.ownerName || item.policyId?.ownerName || 'N/A';
                                 const amountValue = normalizeNumber(item.amount);
                                 const status = (item.status || '').toLowerCase();
+                                const isPending = status === 'pending';
                                 return (
                                     <tr key={key}>
+                                        <td>
+                                            {isPending ? (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedCommissions.has(key)}
+                                                    onChange={() => handleSelectCommission(key)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    style={{ cursor: 'pointer' }}
+                                                />
+                                            ) : (
+                                                <span style={{ width: '18px', display: 'inline-block' }}>-</span>
+                                            )}
+                                        </td>
                                         <td>#{key}</td>
                                         <td>
                                             <div className="agent-col">
@@ -185,6 +316,53 @@ const CommissionHistory = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Bulk Approve Modal */}
+            {showBulkApproveModal && (
+                <div className="modal-overlay" onClick={() => !bulkActionLoading && setShowBulkApproveModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>✅ Bulk Approve Commissions</h2>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>You are about to approve <strong>{selectedCommissions.size}</strong> commission(s).</p>
+                            <p>This action will:</p>
+                            <ul>
+                                <li>✅ Mark commissions as approved</li>
+                                <li>✅ Update payment status</li>
+                                <li>✅ Notify agents of approval</li>
+                                <li>✅ Make commissions ready for payout</li>
+                            </ul>
+                            <p className="text-muted" style={{ marginTop: '1rem', fontSize: '0.9em' }}>
+                                💡 Tip: Approved commissions can be processed for payment in the next payout cycle.
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={handleBulkApprove}
+                                disabled={bulkActionLoading}
+                            >
+                                {bulkActionLoading ? 'Processing...' : `Approve ${selectedCommissions.size} Commission(s)`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

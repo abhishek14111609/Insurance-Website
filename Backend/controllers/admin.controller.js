@@ -122,9 +122,13 @@ export const getDashboardStats = async (req, res) => {
     try {
         // Get counts
         const totalCustomers = await User.countDocuments({ role: 'customer' });
-        const totalAgents = await Agent.countDocuments();
-        const activeAgents = await Agent.countDocuments({ status: 'active' });
-        const pendingAgents = await Agent.countDocuments({ status: 'pending' });
+
+        // Count only agents with valid userId (exclude orphaned agents)
+        const allAgents = await Agent.find().populate('userId').lean();
+        const validAgents = allAgents.filter(a => a.userId);
+        const totalAgents = validAgents.length;
+        const activeAgents = validAgents.filter(a => a.status === 'active').length;
+        const pendingAgents = validAgents.filter(a => a.status === 'pending').length;
 
         const totalPolicies = await Policy.countDocuments();
         const activePolicies = await Policy.countDocuments({ status: 'APPROVED' });
@@ -969,6 +973,140 @@ export const rejectAgent = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error rejecting agent',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Bulk approve agents
+// @route   POST /api/admin/agents/bulk-approve
+// @access  Private (admin)
+export const bulkApproveAgents = async (req, res) => {
+    try {
+        const { agentIds, adminNotes } = req.body;
+
+        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Agent IDs array is required'
+            });
+        }
+
+        const results = {
+            success: [],
+            failed: []
+        };
+
+        for (const agentId of agentIds) {
+            try {
+                const agent = await Agent.findById(agentId).populate('userId');
+
+                if (!agent) {
+                    results.failed.push({ agentId, reason: 'Agent not found' });
+                    continue;
+                }
+
+                agent.status = 'active';
+                agent.approvedAt = new Date();
+                agent.approvedBy = req.user._id;
+                agent.adminNotes = adminNotes;
+                await agent.save();
+
+                // Auto-verify email
+                if (!agent.userId.emailVerified) {
+                    agent.userId.emailVerified = true;
+                    agent.userId.verificationToken = null;
+                    await agent.userId.save();
+                }
+
+                // Send notification (non-blocking)
+                notifyAgentApproval(agent).catch(err =>
+                    console.error(`Failed to notify agent ${agentId}:`, err)
+                );
+
+                results.success.push(agentId);
+            } catch (error) {
+                results.failed.push({ agentId, reason: error.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Approved ${results.success.length} of ${agentIds.length} agents`,
+            data: results
+        });
+    } catch (error) {
+        console.error('Bulk approve agents error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error in bulk approval',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Bulk reject agents
+// @route   POST /api/admin/agents/bulk-reject
+// @access  Private (admin)
+export const bulkRejectAgents = async (req, res) => {
+    try {
+        const { agentIds, rejectionReason } = req.body;
+
+        if (!agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Agent IDs array is required'
+            });
+        }
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rejection reason is required'
+            });
+        }
+
+        const results = {
+            success: [],
+            failed: []
+        };
+
+        for (const agentId of agentIds) {
+            try {
+                const agent = await Agent.findById(agentId).populate('userId');
+
+                if (!agent) {
+                    results.failed.push({ agentId, reason: 'Agent not found' });
+                    continue;
+                }
+
+                agent.status = 'rejected';
+                agent.rejectedAt = new Date();
+                agent.rejectedBy = req.user._id;
+                agent.rejectionReason = rejectionReason;
+                await agent.save();
+
+                // Send notification (non-blocking)
+                notifyAgentRejection(agent).catch(err =>
+                    console.error(`Failed to notify agent ${agentId}:`, err)
+                );
+
+                results.success.push(agentId);
+            } catch (error) {
+                results.failed.push({ agentId, reason: error.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Rejected ${results.success.length} of ${agentIds.length} agents`,
+            data: results
+        });
+    } catch (error) {
+        console.error('Bulk reject agents error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error in bulk rejection',
             error: error.message
         });
     }

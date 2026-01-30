@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { policyAPI, BASE_URL } from '../services/api.service';
 import { formatCurrency } from '../utils/numberUtils';
+import BulkActionBar from '../components/BulkActionBar';
+import { CheckCircle, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import './PolicyApprovals.css';
 
@@ -28,6 +30,12 @@ const PolicyApprovals = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+
+    // Bulk operations state
+    const [selectedPolicies, setSelectedPolicies] = useState(new Set());
+    const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+    const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
+    const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
     useEffect(() => {
         loadPolicies();
@@ -122,6 +130,98 @@ const PolicyApprovals = () => {
         }
     };
 
+    // Bulk selection handlers
+    const handleSelectPolicy = (policyId) => {
+        const newSelected = new Set(selectedPolicies);
+        if (newSelected.has(policyId)) {
+            newSelected.delete(policyId);
+        } else {
+            newSelected.add(policyId);
+        }
+        setSelectedPolicies(newSelected);
+    };
+
+    const handleSelectAll = () => {
+        const allIds = new Set(filteredPolicies.map(p => p._id || p.id));
+        setSelectedPolicies(allIds);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedPolicies(new Set());
+    };
+
+    // Bulk approve handler
+    const handleBulkApprove = async (adminNotes) => {
+        setBulkActionLoading(true);
+        try {
+            const policyIds = Array.from(selectedPolicies);
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const policyId of policyIds) {
+                try {
+                    const result = await policyAPI.approve(policyId, adminNotes);
+                    if (result.success) successCount++;
+                    else failCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error(`Failed to approve policy ${policyId}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Successfully approved ${successCount} policy/policies`);
+                loadPolicies();
+                handleClearSelection();
+            }
+            if (failCount > 0) {
+                toast.error(`Failed to approve ${failCount} policy/policies`);
+            }
+        } catch (error) {
+            console.error('Bulk approve error:', error);
+            toast.error('Bulk approval failed');
+        } finally {
+            setBulkActionLoading(false);
+            setShowBulkApproveModal(false);
+        }
+    };
+
+    // Bulk reject handler
+    const handleBulkReject = async (reason) => {
+        setBulkActionLoading(true);
+        try {
+            const policyIds = Array.from(selectedPolicies);
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const policyId of policyIds) {
+                try {
+                    const result = await policyAPI.reject(policyId, reason);
+                    if (result.success) successCount++;
+                    else failCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error(`Failed to reject policy ${policyId}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Successfully rejected ${successCount} policy/policies`);
+                loadPolicies();
+                handleClearSelection();
+            }
+            if (failCount > 0) {
+                toast.error(`Failed to reject ${failCount} policy/policies`);
+            }
+        } catch (error) {
+            console.error('Bulk reject error:', error);
+            toast.error('Bulk rejection failed');
+        } finally {
+            setBulkActionLoading(false);
+            setShowBulkRejectModal(false);
+        }
+    };
+
     const closeModal = () => {
         setShowModal(false);
         setDetailsModalOpen(false);
@@ -129,6 +229,13 @@ const PolicyApprovals = () => {
         setNotes('');
         setRejectionReason('');
     };
+
+    // Filter policies based on search term
+    const filteredPolicies = policies.filter(p =>
+        p.policyNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.ownerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.tagId?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     if (loading) return <div className="loading-container"><div className="spinner"></div>Loading Approvals...</div>;
 
@@ -141,6 +248,31 @@ const PolicyApprovals = () => {
                     <span className="stat-badge">{policies.length} Pending</span>
                 </div>
             </div>
+
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+                selectedCount={selectedPolicies.size}
+                totalCount={filteredPolicies.length}
+                onSelectAll={handleSelectAll}
+                onClearSelection={handleClearSelection}
+                entityName="policies"
+                actions={[
+                    {
+                        label: 'Approve Selected',
+                        icon: <CheckCircle size={18} />,
+                        variant: 'success',
+                        onClick: () => setShowBulkApproveModal(true),
+                        disabled: bulkActionLoading
+                    },
+                    {
+                        label: 'Reject Selected',
+                        icon: <Ban size={18} />,
+                        variant: 'danger',
+                        onClick: () => setShowBulkRejectModal(true),
+                        disabled: bulkActionLoading
+                    }
+                ]}
+            />
 
             <div className="filters-section">
                 <div className="search-box">
@@ -164,127 +296,130 @@ const PolicyApprovals = () => {
                 </div>
             ) : (
                 <div className="policies-grid">
-                    {policies
-                        .filter(p =>
-                            p.policyNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            p.ownerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            p.tagId?.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .map(policy => {
-                            const policyId = policy._id || policy.id;
-                            return (
-                                <div key={policyId} className="policy-card">
-                                    <div className="policy-header">
+                    {filteredPolicies.map(policy => {
+                        const policyId = policy._id || policy.id;
+                        return (
+                            <div key={policyId} className="policy-card">
+                                <div className="policy-header">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedPolicies.has(policyId)}
+                                            onChange={() => handleSelectPolicy(policyId)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                                        />
                                         <div>
                                             <h3>{policy.policyNumber}</h3>
                                             <span className="status-badge pending">Pending Approval</span>
                                         </div>
-                                        <div className="policy-date">
-                                            {new Date(policy.createdAt).toLocaleDateString()}
-                                        </div>
                                     </div>
-
-                                    <div className="policy-details">
-                                        <div className="detail-row">
-                                            <span className="label">Customer:</span>
-                                            <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Email:</span>
-                                            <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Phone:</span>
-                                            <span className="value">{policy.ownerPhone}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Cattle Type:</span>
-                                            <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Tag ID:</span>
-                                            <span className="value">{policy.tagId}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Coverage:</span>
-                                            <span className="value highlight">{formatCurrency(policy.coverageAmount)}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Premium:</span>
-                                            <span className="value highlight">{formatCurrency(policy.premium)}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Breed:</span>
-                                            <span className="value">{policy.breed || 'N/A'}</span>
-                                        </div>
-                                        <div className="detail-row">
-                                            <span className="label">Age:</span>
-                                            <span className="value">{policy.age ? `${policy.age} Years` : 'N/A'}</span>
-                                        </div>
-                                        {policy.agent && (
-                                            <div className="detail-row">
-                                                <span className="label">Agent:</span>
-                                                <span className="value">{policy.agent.user?.fullName} ({policy.agent.agentCode})</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Photos */}
-                                    {policy.photos && (
-                                        <div className="policy-photos">
-                                            <h4>Cattle Photos:</h4>
-                                            <div className="photos-grid">
-                                                {(() => {
-                                                    let photos = policy.photos;
-                                                    if (!photos) return null;
-                                                    if (typeof photos === 'string') {
-                                                        try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
-                                                    }
-                                                    return Object.entries(photos || {}).map(([side, url]) => {
-                                                        const imgUrl = normalizeFileUrl(url);
-                                                        if (!imgUrl) return null;
-                                                        return (
-                                                            <div key={side} className="photo-item">
-                                                                <img
-                                                                    src={imgUrl}
-                                                                    alt={`${side} view`}
-                                                                    title="Click to view full size"
-                                                                    className="clickable-photo"
-                                                                    onClick={() => window.open(imgUrl, '_blank')}
-                                                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo'; }}
-                                                                />
-                                                                <span>{side}</span>
-                                                            </div>
-                                                        );
-                                                    });
-                                                })()}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="policy-actions">
-                                        <button
-                                            className="btn btn-info"
-                                            onClick={() => handleViewDetails(policy)}
-                                        >
-                                            👁️ Details
-                                        </button>
-                                        <button
-                                            className="btn btn-success"
-                                            onClick={() => handleApproveClick(policy)}
-                                        >
-                                            ✅ Approve
-                                        </button>
-                                        <button
-                                            className="btn btn-danger"
-                                            onClick={() => handleRejectClick(policy)}
-                                        >
-                                            ❌ Reject
-                                        </button>
+                                    <div className="policy-date">
+                                        {new Date(policy.createdAt).toLocaleDateString()}
                                     </div>
                                 </div>
-                            );
-                        })}
+
+                                <div className="policy-details">
+                                    <div className="detail-row">
+                                        <span className="label">Customer:</span>
+                                        <span className="value">{policy.customer?.fullName || policy.ownerName}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Email:</span>
+                                        <span className="value">{policy.ownerEmail || policy.customer?.email}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Phone:</span>
+                                        <span className="value">{policy.ownerPhone}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Cattle Type:</span>
+                                        <span className="value">{(policy.cattleType || '').toLowerCase() === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Tag ID:</span>
+                                        <span className="value">{policy.tagId}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Coverage:</span>
+                                        <span className="value highlight">{formatCurrency(policy.coverageAmount)}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Premium:</span>
+                                        <span className="value highlight">{formatCurrency(policy.premium)}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Breed:</span>
+                                        <span className="value">{policy.breed || 'N/A'}</span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="label">Age:</span>
+                                        <span className="value">{policy.age ? `${policy.age} Years` : 'N/A'}</span>
+                                    </div>
+                                    {policy.agent && (
+                                        <div className="detail-row">
+                                            <span className="label">Agent:</span>
+                                            <span className="value">{policy.agent.user?.fullName} ({policy.agent.agentCode})</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Photos */}
+                                {policy.photos && (
+                                    <div className="policy-photos">
+                                        <h4>Cattle Photos:</h4>
+                                        <div className="photos-grid">
+                                            {(() => {
+                                                let photos = policy.photos;
+                                                if (!photos) return null;
+                                                if (typeof photos === 'string') {
+                                                    try { photos = JSON.parse(photos); } catch (e) { photos = {}; }
+                                                }
+                                                return Object.entries(photos || {}).map(([side, url]) => {
+                                                    const imgUrl = normalizeFileUrl(url);
+                                                    if (!imgUrl) return null;
+                                                    return (
+                                                        <div key={side} className="photo-item">
+                                                            <img
+                                                                src={imgUrl}
+                                                                alt={`${side} view`}
+                                                                title="Click to view full size"
+                                                                className="clickable-photo"
+                                                                onClick={() => window.open(imgUrl, '_blank')}
+                                                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100?text=No+Photo'; }}
+                                                            />
+                                                            <span>{side}</span>
+                                                        </div>
+                                                    );
+                                                });
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="policy-actions">
+                                    <button
+                                        className="btn btn-info"
+                                        onClick={() => handleViewDetails(policy)}
+                                    >
+                                        👁️ Details
+                                    </button>
+                                    <button
+                                        className="btn btn-success"
+                                        onClick={() => handleApproveClick(policy)}
+                                    >
+                                        ✅ Approve
+                                    </button>
+                                    <button
+                                        className="btn btn-danger"
+                                        onClick={() => handleRejectClick(policy)}
+                                    >
+                                        ❌ Reject
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -434,6 +569,122 @@ const PolicyApprovals = () => {
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? 'Processing...' : (modalType === 'approve' ? 'Confirm Approval' : 'Confirm Rejection')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Approve Modal */}
+            {showBulkApproveModal && (
+                <div className="modal-overlay" onClick={() => !bulkActionLoading && setShowBulkApproveModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>✅ Bulk Approve Policies</h2>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>You are about to approve <strong>{selectedPolicies.size}</strong> policy/policies.</p>
+                            <p>This action will:</p>
+                            <ul>
+                                <li>✅ Activate the policies</li>
+                                <li>✅ Generate policy PDFs</li>
+                                <li>✅ Send approval notifications to customers</li>
+                                <li>✅ Make policies available for download</li>
+                            </ul>
+                            <div className="form-group">
+                                <label>Admin Notes (Optional):</label>
+                                <textarea
+                                    id="bulk-policy-approve-notes"
+                                    placeholder="Add any notes about this approval..."
+                                    rows="3"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowBulkApproveModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={() => {
+                                    const notes = document.getElementById('bulk-policy-approve-notes').value;
+                                    handleBulkApprove(notes);
+                                }}
+                                disabled={bulkActionLoading}
+                            >
+                                {bulkActionLoading ? 'Processing...' : `Approve ${selectedPolicies.size} Policy/Policies`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Reject Modal */}
+            {showBulkRejectModal && (
+                <div className="modal-overlay" onClick={() => !bulkActionLoading && setShowBulkRejectModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>❌ Bulk Reject Policies</h2>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowBulkRejectModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>You are about to reject <strong>{selectedPolicies.size}</strong> policy/policies.</p>
+                            <p className="text-danger">⚠️ This action will:</p>
+                            <ul>
+                                <li>❌ Reject the policy applications</li>
+                                <li>❌ Send rejection notifications to customers</li>
+                                <li>❌ Prevent policy activation</li>
+                            </ul>
+                            <div className="form-group">
+                                <label className="required">Rejection Reason:</label>
+                                <textarea
+                                    id="bulk-policy-reject-reason"
+                                    placeholder="Please provide a reason for rejection (required)..."
+                                    rows="4"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowBulkRejectModal(false)}
+                                disabled={bulkActionLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={() => {
+                                    const reason = document.getElementById('bulk-policy-reject-reason').value;
+                                    if (!reason.trim()) {
+                                        toast.error('Please provide a rejection reason');
+                                        return;
+                                    }
+                                    handleBulkReject(reason);
+                                }}
+                                disabled={bulkActionLoading}
+                            >
+                                {bulkActionLoading ? 'Processing...' : `Reject ${selectedPolicies.size} Policy/Policies`}
                             </button>
                         </div>
                     </div>

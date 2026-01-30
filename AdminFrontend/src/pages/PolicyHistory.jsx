@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { policyAPI, BASE_URL } from '../services/api.service';
 import { TableSkeleton } from '../components/Loader';
 import { formatCurrency } from '../utils/numberUtils';
+import { exportToCSV, formatPoliciesForExport } from '../utils/exportUtils';
 import './PolicyHistory.css';
 import toast from 'react-hot-toast';
 
@@ -107,6 +108,21 @@ const PolicyHistory = () => {
         }
     };
 
+    const handleExport = () => {
+        try {
+            if (policies.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            const formattedData = formatPoliciesForExport(policies);
+            exportToCSV(formattedData, 'policy_history_export');
+            toast.success(`Exported ${policies.length} policies successfully`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export data');
+        }
+    };
+
     const getStatusBadgeClass = (status) => {
         switch (status?.toLowerCase()) {
             case 'approved': return 'badge-success';
@@ -119,8 +135,13 @@ const PolicyHistory = () => {
     return (
         <div className="policy-history-page">
             <div className="page-header">
-                <h1>📜 Policy History</h1>
-                <p>View all policy records and their current status</p>
+                <div>
+                    <h1>📜 Policy History</h1>
+                    <p>View all policy records and their current status</p>
+                </div>
+                <button onClick={handleExport} className="btn btn-primary" style={{ marginLeft: 'auto' }}>
+                    📥 Export CSV
+                </button>
             </div>
 
             <div className="controls-section">

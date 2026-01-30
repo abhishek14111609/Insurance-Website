@@ -3,9 +3,7 @@ import axios from 'axios';
 // API Configuration with safer defaults for deployed builds
 const DEFAULT_PROD_API = 'https://backend.pashudhansuraksha.com/api';
 const isBrowser = typeof window !== 'undefined';
-const isLocalhost = isBrowser && /(localhost|127\.0\.0\.1)/.test(window.location.hostname);
-const API_BASE_URL = import.meta.env.VITE_API_URL
-    || (isLocalhost ? 'http://localhost:5000/api' : DEFAULT_PROD_API);
+const API_BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_PROD_API;
 
 export const BASE_URL = API_BASE_URL.replace('/api', '');
 
@@ -45,12 +43,9 @@ axiosInstance.interceptors.response.use(
 
         if (status === 401) {
             const path = window.location.pathname;
-            if (!(path.includes('/login') || path.includes('/agent/login'))) {
-                if (path.startsWith('/agent')) {
-                    window.location.href = '/agent/login';
-                } else {
-                    window.location.href = '/login';
-                }
+            // Redirect to login if not already on login page
+            if (!path.includes('/login')) {
+                window.location.href = '/login';
             }
         }
 

@@ -52,6 +52,7 @@ const Dashboard = () => {
             setError(null);
 
             const statsResponse = await adminAPI.getDashboardStats();
+            console.log(statsResponse)
             if (statsResponse.success) {
                 const s = statsResponse.data.stats;
                 setStats({

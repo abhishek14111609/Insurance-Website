@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { paymentAPI } from '../services/api.service';
 import { TableSkeleton } from '../components/Loader';
 import { formatCurrency } from '../utils/numberUtils';
+import { exportToCSV, formatTransactionsForExport } from '../utils/exportUtils';
 import './PolicyHistory.css'; // Reusing the clean styles from Policy History
 import toast from 'react-hot-toast';
 
@@ -76,11 +77,31 @@ const TransactionHistory = () => {
         }
     };
 
+    const handleExport = () => {
+        try {
+            if (payments.length === 0) {
+                toast.error('No data to export');
+                return;
+            }
+            const formattedData = formatTransactionsForExport(payments);
+            exportToCSV(formattedData, 'transactions_export');
+            toast.success(`Exported ${payments.length} transactions successfully`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export data');
+        }
+    };
+
     return (
         <div className="policy-history-page">
             <div className="page-header">
-                <h1>💸 Transaction History</h1>
-                <p>Monitor all payment transactions and financial records</p>
+                <div>
+                    <h1>💸 Transaction History</h1>
+                    <p>Monitor all payment transactions and financial records</p>
+                </div>
+                <button onClick={handleExport} className="btn btn-primary" style={{ marginLeft: 'auto' }}>
+                    📥 Export CSV
+                </button>
             </div>
 
             <div className="controls-section">
