@@ -54,7 +54,13 @@ app.use(cors({
             'https://pashudhansuraksha.com',
             'https://www.pashudhansuraksha.com',
             'https://admin.pashudhansuraksha.com',
-            'https://www.admin.pashudhansuraksha.com'
+            'https://www.admin.pashudhansuraksha.com',
+            // Local Development
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:5175',
+            'http://localhost:5176',
+            'http://localhost:3000'
         ];
 
         // Allow specific production origins from env

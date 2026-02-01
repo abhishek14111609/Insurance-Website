@@ -138,7 +138,7 @@ const AgentTeam = () => {
                         <input
                             type="text"
                             readOnly
-                            value={`${window.location.origin}/become-agent?ref=${user?.agentCode || ''}`}
+                            value={`${window.location.origin}/register?ref=${user?.agentCode || ''}`}
                             style={{
                                 width: '100%',
                                 border: 'none',
@@ -151,7 +151,7 @@ const AgentTeam = () => {
                         <button style={{ color: 'white' }}
                             className="btn btn-sm btn-outline"
                             onClick={() => {
-                                const link = `${window.location.origin}/become-agent?ref=${user?.agentCode || ''}`;
+                                const link = `${window.location.origin}/register?ref=${user?.agentCode || ''}`;
                                 navigator.clipboard.writeText(link);
                                 toast.success('Referral link copied!');
                             }}

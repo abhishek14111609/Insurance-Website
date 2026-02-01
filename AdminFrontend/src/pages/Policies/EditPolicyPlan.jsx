@@ -36,6 +36,7 @@ const EditPolicyPlan = () => {
         coverageAmount: '',
         duration: '1 Year',
         features: [''],
+        sellerCommission: '',
         isActive: true,
         displayOrder: 0
     });
@@ -66,7 +67,8 @@ const EditPolicyPlan = () => {
                     duration: plan.duration || '1 Year',
                     features: Array.isArray(plan.features) ? plan.features : [''],
                     isActive: plan.isActive !== undefined ? plan.isActive : true,
-                    displayOrder: plan.displayOrder || 0
+                    displayOrder: plan.displayOrder || 0,
+                    sellerCommission: plan.sellerCommission || 0
                 });
             }
         } catch (err) {
@@ -85,6 +87,11 @@ const EditPolicyPlan = () => {
             [name]: type === 'checkbox' ? checked : value
         });
     };
+
+    // ... feature handlers (omitted for brevity, assume unchanged or handle if needed in multi-replace if strictly contiguous?)
+    /* Note: Ideally I should include them if they are in the range, but I'll skip re-writing unchanged feature handlers if I can target ranges carefully. 
+    However, replace_file_content must replace a contiguous block. 
+    The block from line 37 to 120 covers ALL logic including feature handlers. So I MUST include them. */
 
     const handleFeatureChange = (index, value) => {
         const newFeatures = [...formData.features];
@@ -116,7 +123,8 @@ const EditPolicyPlan = () => {
                 coverageAmount: parseFloat(formData.coverageAmount),
                 minAge: parseInt(formData.minAge),
                 maxAge: parseInt(formData.maxAge),
-                displayOrder: parseInt(formData.displayOrder)
+                displayOrder: parseInt(formData.displayOrder),
+                sellerCommission: parseFloat(formData.sellerCommission) || 0
             };
 
             const response = await policyPlanAPI.update(id, planData);
@@ -252,6 +260,25 @@ const EditPolicyPlan = () => {
                         </div>
                     ))}
                     <button type="button" onClick={addFeature} className="btn btn-secondary">➕ Add Feature</button>
+                </div>
+
+                <div className="form-card">
+                    <h3>Seller Commission</h3>
+                    <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '15px' }}>
+                        Define the fixed commission amount (₹) an agent receives for selling this policy plan.
+                    </p>
+                    <div className="form-row">
+                        <div className="form-group full-width">
+                            <label>Commission Amount (₹)</label>
+                            <input
+                                type="number"
+                                name="sellerCommission"
+                                value={formData.sellerCommission}
+                                onChange={handleChange}
+                                placeholder="e.g. 200"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="form-card">

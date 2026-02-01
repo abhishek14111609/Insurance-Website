@@ -1741,13 +1741,15 @@ export const updateCommissionSettings = async (req, res) => {
         const updatedSettings = [];
 
         for (const setting of settings) {
-            const { id, level, percentage, description, isActive } = setting;
+            const { id, level, percentage, amount, commType, description, isActive } = setting;
 
             if (id) {
                 // Update existing
                 const existing = await CommissionSettings.findById(id);
                 if (existing) {
                     existing.percentage = percentage;
+                    existing.amount = amount;
+                    existing.commType = commType;
                     existing.description = description;
                     existing.isActive = isActive;
                     existing.updatedBy = req.user._id;
@@ -1759,6 +1761,8 @@ export const updateCommissionSettings = async (req, res) => {
                 const newSetting = await CommissionSettings.create({
                     level,
                     percentage,
+                    amount,
+                    commType,
                     description,
                     isActive,
                     updatedBy: req.user._id

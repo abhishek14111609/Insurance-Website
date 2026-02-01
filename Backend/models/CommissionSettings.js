@@ -9,7 +9,16 @@ const commissionSettingsSchema = new mongoose.Schema(
         },
         percentage: {
             type: mongoose.Decimal128,
-            required: true
+            default: 0
+        },
+        amount: {
+            type: Number,
+            default: 0
+        },
+        commType: {
+            type: String,
+            enum: ['percentage', 'fixed'],
+            default: 'percentage'
         },
         description: {
             type: String,

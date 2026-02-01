@@ -17,6 +17,7 @@ const AddPolicyPlan = () => {
         coverageAmount: '',
         duration: '1 Year',
         features: [''],
+        sellerCommission: '',
         isActive: true,
         displayOrder: 0
     });
@@ -28,6 +29,8 @@ const AddPolicyPlan = () => {
             [name]: type === 'checkbox' ? checked : value
         });
     };
+
+    // ... feature handlers stay the same ...
 
     const handleFeatureChange = (index, value) => {
         const newFeatures = [...formData.features];
@@ -59,7 +62,8 @@ const AddPolicyPlan = () => {
                 coverageAmount: parseFloat(formData.coverageAmount),
                 minAge: parseInt(formData.minAge),
                 maxAge: parseInt(formData.maxAge),
-                displayOrder: parseInt(formData.displayOrder)
+                displayOrder: parseInt(formData.displayOrder),
+                sellerCommission: parseFloat(formData.sellerCommission) || 0
             };
 
             const response = await policyPlanAPI.create(planData);
@@ -193,6 +197,25 @@ const AddPolicyPlan = () => {
                         </div>
                     ))}
                     <button type="button" onClick={addFeature} className="btn btn-secondary">➕ Add Feature</button>
+                </div>
+
+                <div className="form-card">
+                    <h3>Seller Commission</h3>
+                    <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '15px' }}>
+                        Define the fixed commission amount (₹) an agent receives for selling this policy plan.
+                    </p>
+                    <div className="form-row">
+                        <div className="form-group full-width">
+                            <label>Commission Amount (₹)</label>
+                            <input
+                                type="number"
+                                name="sellerCommission"
+                                value={formData.sellerCommission}
+                                onChange={handleChange}
+                                placeholder="e.g. 200"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="form-card">

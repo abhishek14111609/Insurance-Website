@@ -75,6 +75,27 @@ const userSchema = new mongoose.Schema(
         followUpNotes: {
             type: String,
             default: null
+        },
+        // Extended Details for Customers (KYC & Bank)
+        kycDetails: {
+            panNumber: { type: String, default: null },
+            panPhoto: { type: String, default: null },
+            aadharNumber: { type: String, default: null },
+            aadharPhotoFront: { type: String, default: null },
+            aadharPhotoBack: { type: String, default: null },
+            isVerified: { type: Boolean, default: false },
+            status: {
+                type: String,
+                enum: ['pending', 'verified', 'rejected', 'not_submitted'],
+                default: 'not_submitted'
+            }
+        },
+        bankDetails: {
+            accountHolderName: { type: String, default: null },
+            accountNumber: { type: String, default: null },
+            bankName: { type: String, default: null },
+            ifscCode: { type: String, default: null },
+            isVerified: { type: Boolean, default: false }
         }
     },
     {

@@ -36,6 +36,17 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
         const premium = decimal128ToNumber(policy.premium);
         const term = getTermYears(policy);
 
+        // Fetch Plan for Seller Commission
+        let sellerCommissionAmount = 0;
+        if (policy.planId) {
+            const plan = await mongoose.model('PolicyPlan').findById(policy.planId).session(session || null);
+            if (plan) {
+                sellerCommissionAmount = plan.sellerCommission || 0;
+            }
+        }
+
+        // Fallback or override if still 0 (Optional: keep as 0 or use old logic? Using 0 as per dynamic req)
+
         const records = [];
 
         // Seller fixed commission (distance 0)
@@ -44,7 +55,7 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
             agentId: policy.agentId,
             level: 0,
             distanceFromSeller: 0,
-            amount: fixedMap[term] || 0,
+            amount: sellerCommissionAmount,
             percentage: 0,
             commissionType: 'fixed',
             premiumAtSale: premium,
@@ -55,16 +66,44 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
         // Traverse up to 5 parents
         let currentAgent = await Agent.findById(policy.agentId).select('parentAgentId').session(session || null);
         let distance = 1;
+
+        // Fetch Global Commission Settings
+        const settings = await CommissionSettings.find({ isActive: true }).session(session || null);
+        const settingsMap = {};
+        settings.forEach(s => params = settingsMap[s.level] = s);
+
         while (currentAgent?.parentAgentId && distance <= 5) {
-            const pct = parentPercents[distance - 1];
+            const levelSettings = settingsMap[distance];
+            let amount = 0;
+            let percentage = 0;
+            let type = 'percentage';
+
+            if (levelSettings) {
+                if (levelSettings.commType === 'fixed') {
+                    amount = levelSettings.amount;
+                    type = 'fixed';
+                } else {
+                    const pct = decimal128ToNumber(levelSettings.percentage);
+                    amount = (premium * pct) / 100;
+                    percentage = pct;
+                    type = 'percentage';
+                }
+            } else {
+                // Fallback if settings missing (using old defaults just in case, or 0)
+                const oldPercents = [5, 3, 2, 2, 1];
+                const pct = oldPercents[distance - 1] || 0;
+                amount = (premium * pct) / 100;
+                percentage = pct;
+            }
+
             records.push({
                 policyId: policy._id,
                 agentId: currentAgent.parentAgentId,
                 level: distance,
                 distanceFromSeller: distance,
-                amount: (premium * pct) / 100,
-                percentage: pct,
-                commissionType: 'percentage',
+                amount: amount,
+                percentage: percentage,
+                commissionType: type,
                 premiumAtSale: premium,
                 planTermYears: term,
                 status: 'pending'
