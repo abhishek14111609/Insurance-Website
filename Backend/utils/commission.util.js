@@ -1,4 +1,3 @@
-import { Agent, Commission, CommissionSettings } from '../models/index.js';
 import mongoose from 'mongoose';
 import { decimal128ToNumber } from './mongoose.util.js';
 
@@ -27,6 +26,7 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
             return [];
         }
 
+        const Commission = mongoose.model('Commission');
         const alreadyExists = await Commission.exists({ policyId: policy._id }).session(session || null);
         if (alreadyExists) {
             console.log('Commission already generated for policy; skipping');
@@ -64,10 +64,12 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
         });
 
         // Traverse up to 5 parents
+        const Agent = mongoose.model('Agent');
         let currentAgent = await Agent.findById(policy.agentId).select('parentAgentId').session(session || null);
         let distance = 1;
 
         // Fetch Global Commission Settings
+        const CommissionSettings = mongoose.model('CommissionSettings');
         const settings = await CommissionSettings.find({ isActive: true }).session(session || null);
         const settingsMap = {};
         settings.forEach(s => settingsMap[s.level] = s);
@@ -132,6 +134,7 @@ export const approveCommission = async (commissionId, adminId) => {
     session.startTransaction();
 
     try {
+        const Commission = mongoose.model('Commission');
         const commission = await Commission.findById(commissionId)
             .populate('agent')
             .session(session);
@@ -150,6 +153,7 @@ export const approveCommission = async (commissionId, adminId) => {
         await commission.save({ session });
 
         // Update agent wallet
+        const Agent = mongoose.model('Agent');
         const agent = await Agent.findById(commission.agentId).session(session);
         const commissionAmount = decimal128ToNumber(commission.amount);
         const currentWallet = decimal128ToNumber(agent.walletBalance);
@@ -212,6 +216,7 @@ export const bulkApproveCommissions = async (commissionIds, adminId) => {
  */
 export const getAgentCommissionSummary = async (agentId) => {
     try {
+        const Commission = mongoose.model('Commission');
         const commissions = await Commission.find({ agentId })
             .populate('policy');
 
@@ -259,6 +264,7 @@ export const getAgentCommissionSummary = async (agentId) => {
  */
 export const initializeCommissionSettings = async () => {
     try {
+        const CommissionSettings = mongoose.model('CommissionSettings');
         const existingSettings = await CommissionSettings.find();
 
         if (existingSettings.length > 0) {

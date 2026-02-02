@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { Payment, Policy, Commission, Agent } from '../models/index.js';
-import { calculateAndDistributeCommissions } from '../utils/commission.util.js';
+
 import { sendEmail } from '../utils/email.util.js';
 import { notifyPaymentSuccess } from '../utils/notification.util.js';
 
