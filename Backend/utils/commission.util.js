@@ -70,7 +70,7 @@ export const calculateAndDistributeCommissions = async (policy, session = null) 
         // Fetch Global Commission Settings
         const settings = await CommissionSettings.find({ isActive: true }).session(session || null);
         const settingsMap = {};
-        settings.forEach(s => params = settingsMap[s.level] = s);
+        settings.forEach(s => settingsMap[s.level] = s);
 
         while (currentAgent?.parentAgentId && distance <= 5) {
             const levelSettings = settingsMap[distance];
