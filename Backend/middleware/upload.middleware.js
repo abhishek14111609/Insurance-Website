@@ -56,3 +56,10 @@ export const uploadClaimDocs = multer({
     limits: fiveMbLimit,
     fileFilter: createFileFilter(/jpeg|jpg|png|pdf/)
 });
+
+// Customer KYC docs (images + PDF)
+export const uploadCustomerDocs = multer({
+    storage: createStorage('customer_docs'),
+    limits: fiveMbLimit,
+    fileFilter: createFileFilter(/jpeg|jpg|png|pdf/)
+});

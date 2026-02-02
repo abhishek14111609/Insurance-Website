@@ -95,6 +95,7 @@ const userSchema = new mongoose.Schema(
             accountNumber: { type: String, default: null },
             bankName: { type: String, default: null },
             ifscCode: { type: String, default: null },
+            bankProofPhoto: { type: String, default: null },
             isVerified: { type: Boolean, default: false }
         }
     },

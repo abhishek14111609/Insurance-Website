@@ -90,6 +90,13 @@ const AnimalPolicyForm = () => {
         }
 
         if (user) {
+            // Check KYC Status
+            if (!user.kycDetails || !user.kycDetails.panNumber || !user.kycDetails.aadharNumber) {
+                toast.error('⚠️ Complete KYC Required! Please update PAN and Aadhar details in your profile to proceed.');
+                navigate('/profile');
+                return;
+            }
+
             setFormData(prev => ({
                 ...prev,
                 ownerName: user.fullName || '',

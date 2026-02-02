@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { adminAPI } from '../services/api.service';
+import { adminAPI, BASE_URL } from '../services/api.service';
 import './CustomerDetails.css';
 
 const CustomerDetails = () => {
@@ -8,9 +8,29 @@ const CustomerDetails = () => {
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const [kycActionLoading, setKycActionLoading] = useState(false);
+
     useEffect(() => {
         loadData();
     }, [id]);
+
+    const handleVerifyKyc = async (status) => {
+        if (!window.confirm(`Are you sure you want to ${status} this user's KYC?`)) return;
+
+        try {
+            setKycActionLoading(true);
+            const response = await adminAPI.updateUserKycStatus(id, status);
+            if (response.success) {
+                alert(`KYC ${status} successfully!`);
+                loadData();
+            }
+        } catch (error) {
+            console.error('Error updating KYC status:', error);
+            alert('Failed to update KYC status');
+        } finally {
+            setKycActionLoading(false);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -83,9 +103,121 @@ const CustomerDetails = () => {
                 </div>
             </div>
 
+            <div className="details-grid" style={{ marginTop: '20px' }}>
+                <div className="detail-card">
+                    <h3>Identity Proof (KYC)</h3>
+                    <div className="detail-row">
+                        <span className="label">KYC Status:</span>
+                        <span className={`status-badge ${customer.kycDetails?.status}`}>
+                            {customer.kycDetails?.status?.toUpperCase() || 'NOT SUBMITTED'}
+                        </span>
+                    </div>
+                    <div className="detail-row">
+                        <span className="label">PAN Number:</span>
+                        <span className="value">{customer.kycDetails?.panNumber || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row" style={{ alignItems: 'flex-start' }}>
+                        <span className="label">PAN Photo:</span>
+                        <span className="value">
+                            {customer.kycDetails?.panPhoto ? (
+                                <a href={`${BASE_URL}/${customer.kycDetails.panPhoto}`} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                                    <img src={`${BASE_URL}/${customer.kycDetails.panPhoto}`}
+                                        style={{ height: '80px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #eee', background: '#f8f9fa' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '📄 View Document'; }}
+                                        alt="PAN Doc" />
+                                </a>
+                            ) : <span className="text-muted">Not Uploaded</span>}
+                        </span>
+                    </div>
+
+                    <div className="detail-row">
+                        <span className="label">Aadhar Number:</span>
+                        <span className="value">{customer.kycDetails?.aadharNumber || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row" style={{ alignItems: 'flex-start' }}>
+                        <span className="label">Aadhar Front:</span>
+                        <span className="value">
+                            {customer.kycDetails?.aadharPhotoFront ? (
+                                <a href={`${BASE_URL}/${customer.kycDetails.aadharPhotoFront}`} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                                    <img src={`${BASE_URL}/${customer.kycDetails.aadharPhotoFront}`}
+                                        style={{ height: '80px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #eee', background: '#f8f9fa' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '📄 View Document'; }}
+                                        alt="Aadhar Front" />
+                                </a>
+                            ) : <span className="text-muted">Not Uploaded</span>}
+                        </span>
+                    </div>
+                    <div className="detail-row" style={{ alignItems: 'flex-start' }}>
+                        <span className="label">Aadhar Back:</span>
+                        <span className="value">
+                            {customer.kycDetails?.aadharPhotoBack ? (
+                                <a href={`${BASE_URL}/${customer.kycDetails.aadharPhotoBack}`} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                                    <img src={`${BASE_URL}/${customer.kycDetails.aadharPhotoBack}`}
+                                        style={{ height: '80px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #eee', background: '#f8f9fa' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '📄 View Document'; }}
+                                        alt="Aadhar Back" />
+                                </a>
+                            ) : <span className="text-muted">Not Uploaded</span>}
+                        </span>
+                    </div>
+
+                    {customer.kycDetails?.status === 'pending' && (
+                        <div className="action-buttons" style={{ marginTop: '1rem', display: 'flex', gap: '10px' }}>
+                            <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleVerifyKyc('verified')}
+                                disabled={kycActionLoading}
+                            >
+                                ✅ Approve KYC
+                            </button>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleVerifyKyc('rejected')}
+                                disabled={kycActionLoading}
+                            >
+                                ❌ Reject KYC
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="detail-card">
+                    <h3>Bank Details</h3>
+                    <div className="detail-row">
+                        <span className="label">Bank Name:</span>
+                        <span className="value">{customer.bankDetails?.bankName || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                        <span className="label">Account Holder:</span>
+                        <span className="value">{customer.bankDetails?.accountHolderName || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                        <span className="label">Account Number:</span>
+                        <span className="value">{customer.bankDetails?.accountNumber || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                        <span className="label">IFSC Code:</span>
+                        <span className="value">{customer.bankDetails?.ifscCode || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row" style={{ alignItems: 'flex-start' }}>
+                        <span className="label">Bank Proof:</span>
+                        <span className="value">
+                            {customer.bankDetails?.bankProofPhoto ? (
+                                <a href={`${BASE_URL}/${customer.bankDetails.bankProofPhoto}`} target="_blank" rel="noreferrer" style={{ display: 'inline-block' }}>
+                                    <img src={`${BASE_URL}/${customer.bankDetails.bankProofPhoto}`}
+                                        style={{ height: '80px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #eee', background: '#f8f9fa' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '📄 View Document'; }}
+                                        alt="Bank Proof" />
+                                </a>
+                            ) : <span className="text-muted">Not Uploaded</span>}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <div className="activity-sections">
                 <div className="detail-card">
-                    <h3>Policies ({customer.policies?.length || 0})</h3>
+                    <h3>Insurance Policies ({customer.policies?.length || 0})</h3>
                     {!customer.policies || customer.policies.length === 0 ? (
                         <p className="empty-state">No policies found.</p>
                     ) : (
@@ -152,7 +284,7 @@ const CustomerDetails = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

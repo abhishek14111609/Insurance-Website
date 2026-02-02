@@ -229,6 +229,10 @@ export const adminAPI = {
         return axiosInstance.post('/admin/setup-db', { force });
     },
 
+    updateUserKycStatus: async (userId, status) => {
+        return axiosInstance.patch(`/admin/customers/${userId}/kyc-status`, { status });
+    },
+
     // Audit Logs
     getAuditLogs: async (filters) => {
         return axiosInstance.get('/admin/audit-logs', { params: filters });

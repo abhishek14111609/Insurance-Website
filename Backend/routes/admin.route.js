@@ -14,6 +14,7 @@ import {
     getAgentById,
     getAllCustomers,
     getCustomerById,
+    updateUserKycStatus,
     getWithdrawalRequests,
     getWithdrawalHistory,
     processWithdrawal,
@@ -62,7 +63,8 @@ router.patch('/agents/:id/reset-password', resetAgentPassword);
 
 // Customers
 router.get('/customers', getAllCustomers);
-router.get('/customers/:id', getCustomerById); // Added route   ,
+router.get('/customers/:id', getCustomerById);
+router.patch('/customers/:id/kyc-status', updateUserKycStatus);
 
 // Payments / Transactions
 router.get('/payments', getAllPayments);

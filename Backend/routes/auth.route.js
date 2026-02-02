@@ -15,6 +15,7 @@ import {
     refreshSession
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
+import { uploadCustomerDocs } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -32,7 +33,12 @@ router.post('/refresh', refreshSession);
 
 // Protected routes
 router.get('/me', authenticate, getMe);
-router.put('/profile', authenticate, updateProfile);
+router.put('/profile', authenticate, uploadCustomerDocs.fields([
+    { name: 'panPhoto', maxCount: 1 },
+    { name: 'aadharPhotoFront', maxCount: 1 },
+    { name: 'aadharPhotoBack', maxCount: 1 },
+    { name: 'bankProofPhoto', maxCount: 1 }
+]), updateProfile);
 router.put('/change-password', authenticate, changePassword);
 
 export default router;

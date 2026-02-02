@@ -435,26 +435,49 @@ export const updateProfile = async (req, res) => {
         user.state = state || user.state;
         user.pincode = pincode || user.pincode;
 
-        // Update KYC details (only allow submission/update if not already verified)
-        // If the user is submitting for the first time or re-submitting after rejection
-        // We do NOT block updates here for simplicity, but in a strict app we might.
-        if (req.body.kycDetails) {
-            user.kycDetails = {
-                ...user.kycDetails,
-                ...req.body.kycDetails,
-                // If they update details, reset verified status to pending/not_submitted unless specifically handled by admin
-                // For now, we just save what is sent, assuming frontend sanitizes or admin endpoint handles verification status separately.
-                // IMPORTANT: Status updates should ideally be done by Admin ONLY. 
-                // Here we might reset status to 'pending' if critical info changes? 
-                // Let's assume the frontend sends the structure.
-            };
+        // Parse JSON strings if coming from FormData
+        let kycDetailsBody = req.body.kycDetails;
+        if (typeof kycDetailsBody === 'string') {
+            try { kycDetailsBody = JSON.parse(kycDetailsBody); } catch (e) {
+                console.error('Failed to parse kycDetails JSON:', e);
+            }
         }
 
-        if (req.body.bankDetails) {
+        let bankDetailsBody = req.body.bankDetails;
+        if (typeof bankDetailsBody === 'string') {
+            try { bankDetailsBody = JSON.parse(bankDetailsBody); } catch (e) {
+                console.error('Failed to parse bankDetails JSON:', e);
+            }
+        }
+
+        // Helper for file paths
+        const getRelativePath = (file) => {
+            if (!file) return null;
+            const p = file.path.replace(/\\/g, '/');
+            const idx = p.indexOf('uploads/');
+            return idx !== -1 ? p.substring(idx) : p;
+        };
+
+        // Update KYC details
+        if (kycDetailsBody || (req.files && (req.files.panPhoto || req.files.aadharPhotoFront || req.files.aadharPhotoBack))) {
+            user.kycDetails = {
+                ...user.kycDetails,
+                ...(kycDetailsBody || {}),
+                status: 'pending',
+                isVerified: false
+            };
+
+            if (req.files?.panPhoto) user.kycDetails.panPhoto = getRelativePath(req.files.panPhoto[0]);
+            if (req.files?.aadharPhotoFront) user.kycDetails.aadharPhotoFront = getRelativePath(req.files.aadharPhotoFront[0]);
+            if (req.files?.aadharPhotoBack) user.kycDetails.aadharPhotoBack = getRelativePath(req.files.aadharPhotoBack[0]);
+        }
+
+        if (bankDetailsBody || (req.files && req.files.bankProofPhoto)) {
             user.bankDetails = {
                 ...user.bankDetails,
-                ...req.body.bankDetails
+                ...(bankDetailsBody || {})
             };
+            if (req.files?.bankProofPhoto) user.bankDetails.bankProofPhoto = getRelativePath(req.files.bankProofPhoto[0]);
         }
 
         await user.save();

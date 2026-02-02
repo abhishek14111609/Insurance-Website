@@ -39,7 +39,7 @@ const toAbsoluteUploadPath = (maybeRelative) => {
 const formatCurrency = (value) => {
     const numeric = typeof value === 'number' ? value : parseFloat(value);
     if (Number.isNaN(numeric)) return 'N/A';
-    return `₹${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₹${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} `;
 };
 
 // Local generatePolicyPdf removed in favor of utils/pdfGenerator.js
@@ -75,7 +75,7 @@ const buildPolicyEmailAttachments = async (policy) => {
         if (absPath && fs.existsSync(absPath)) {
             const ext = path.extname(absPath) || '';
             attachments.push({
-                filename: `${policy.policyNumber}-${field}${ext}`,
+                filename: `${policy.policyNumber} -${field}${ext} `,
                 path: absPath
             });
         }
@@ -94,7 +94,7 @@ const sendPolicyDocumentsEmail = async (policy) => {
     const customerName = policy.ownerName || policy.customerId?.fullName || 'Customer';
 
     const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+    < div style = "font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;" >
             <h2 style="color: #16a34a;">Policy Approved</h2>
             <p>Hi ${customerName},</p>
             <p>Your livestock insurance policy <strong>${policy.policyNumber}</strong> has been approved. Please find the policy PDF and photos attached for your records.</p>
@@ -102,7 +102,7 @@ const sendPolicyDocumentsEmail = async (policy) => {
             <p><strong>Policy Period:</strong> ${policy.startDate ? new Date(policy.startDate).toDateString() : 'N/A'} to ${policy.endDate ? new Date(policy.endDate).toDateString() : 'N/A'}</p>
             <p>If you have questions, reply to this email and we will assist you.</p>
             <p>Thank you for choosing Pashudhan Suraksha.</p>
-        </div>
+        </div >
     `;
 
     await sendEmail({
@@ -396,7 +396,7 @@ export const getPolicyDetails = async (req, res) => {
 // @route   PATCH /api/admin/policies/:id/approve
 // @access  Private (admin)
 export const approvePolicy = async (req, res) => {
-    console.log(`[ApprovePolicy] Starting approval for policy ID: ${req.params.id}`);
+    console.log(`[ApprovePolicy] Starting approval for policy ID: ${req.params.id} `);
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -417,7 +417,7 @@ export const approvePolicy = async (req, res) => {
             });
         }
 
-        console.log(`[ApprovePolicy] Found policy ${policy.policyNumber}, current status: ${policy.status}`);
+        console.log(`[ApprovePolicy] Found policy ${policy.policyNumber}, current status: ${policy.status} `);
 
         // Prevent redundant approval
         if (policy.status === 'APPROVED') {
@@ -431,7 +431,7 @@ export const approvePolicy = async (req, res) => {
         }
 
         // Update policy status
-        console.log(`[ApprovePolicy] Updating policy status to APPROVED for ID: ${policy._id}`);
+        console.log(`[ApprovePolicy] Updating policy status to APPROVED for ID: ${policy._id} `);
         const adminId = (req.user && req.user._id) ? req.user._id : null;
 
         policy.status = 'APPROVED';
@@ -452,13 +452,13 @@ export const approvePolicy = async (req, res) => {
         console.log(`[ApprovePolicy] Policy status updated successfully`);
 
         // Calculate and distribute commissions
-        console.log(`[ApprovePolicy] Calculating commissions for agent: ${policy.agentId}`);
+        console.log(`[ApprovePolicy] Calculating commissions for agent: ${policy.agentId} `);
         const commissions = await calculateAndDistributeCommissions(policy, session);
         console.log(`[ApprovePolicy] Created ${commissions.length} commission records`);
 
         // Create notification (wrapped in try-catch to not fail the whole approval)
         try {
-            console.log(`[ApprovePolicy] Sending approval notification to customer ${policy.customerId}`);
+            console.log(`[ApprovePolicy] Sending approval notification to customer ${policy.customerId} `);
             await notifyPolicyApproval(policy);
         } catch (notifyError) {
             console.error('[ApprovePolicy] Notification Error (non-blocking):', notifyError);
@@ -823,7 +823,7 @@ export const createAgent = async (req, res) => {
         let finalAgentCode = agentCode;
         if (!finalAgentCode || finalAgentCode === 'generated automatically') {
             const count = await Agent.countDocuments().session(session);
-            finalAgentCode = `AGT${1000 + count + 1}`;
+            finalAgentCode = `AGT${1000 + count + 1} `;
         }
 
         // Create Agent Profile
@@ -849,14 +849,14 @@ export const createAgent = async (req, res) => {
             to: email,
             subject: 'Welcome to Pashudhan Suraksha - Verify your account',
             html: `
-                <h1>Welcome, ${fullName}!</h1>
+    < h1 > Welcome, ${fullName} !</h1 >
                 <p>Your agent account has been created.</p>
                 <p><strong>Email:</strong> ${email}</p>
                 <p><strong>Password:</strong> ${password}</p>
                 <p>Please login and use the following code to verify your account:</p>
                 <h2>${otp}</h2>
                 <p>This code will expire in 24 hours.</p>
-            `
+`
         }).catch((err) => {
             console.error('Send agent OTP email failed:', err);
         });
@@ -1021,7 +1021,7 @@ export const bulkApproveAgents = async (req, res) => {
 
                 // Send notification (non-blocking)
                 notifyAgentApproval(agent).catch(err =>
-                    console.error(`Failed to notify agent ${agentId}:`, err)
+                    console.error(`Failed to notify agent ${agentId}: `, err)
                 );
 
                 results.success.push(agentId);
@@ -1088,7 +1088,7 @@ export const bulkRejectAgents = async (req, res) => {
 
                 // Send notification (non-blocking)
                 notifyAgentRejection(agent).catch(err =>
-                    console.error(`Failed to notify agent ${agentId}:`, err)
+                    console.error(`Failed to notify agent ${agentId}: `, err)
                 );
 
                 results.success.push(agentId);
@@ -1410,6 +1410,79 @@ export const getCustomerById = async (req, res) => {
     }
 };
 
+// @desc    Update customer KYC status
+// @route   PATCH /api/admin/customers/:id/kyc-status
+// @access  Private (admin)
+export const updateUserKycStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'verified', 'rejected'
+
+        if (!['verified', 'rejected'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be verified or rejected.'
+            });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Customer not found'
+            });
+        }
+
+        if (!user.kycDetails) {
+            user.kycDetails = {};
+        }
+
+        user.kycDetails.status = status;
+        user.kycDetails.isVerified = status === 'verified';
+
+        await user.save();
+
+        // Send email notification
+        try {
+            const subject = status === 'verified'
+                ? 'KYC Verification Successful - Pashudhan Suraksha'
+                : 'KYC Verification Rejected - Pashudhan Suraksha';
+
+            const message = status === 'verified'
+                ? `Dear ${user.fullName},\n\nYour KYC documents have been verified successfully. You can now access all features of Pashudhan Suraksha.`
+                : `Dear ${user.fullName},\n\nYour KYC verification was rejected. Please log in to check your status and re-upload valid documents.`;
+
+            await sendEmail({
+                to: user.email,
+                subject,
+                text: message,
+                html: `<div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h2 style="color: ${status === 'verified' ? 'green' : 'red'};">${subject}</h2>
+                        <p>${message.replace(/\n/g, '<br>')}</p>
+                        <p>Regards,<br>Team Pashudhan Suraksha</p>
+                       </div>`
+            });
+        } catch (emailError) {
+            console.error('Failed to send KYC email:', emailError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `KYC status updated to ${status}`,
+            data: {
+                kycDetails: user.kycDetails
+            }
+        });
+    } catch (error) {
+        console.error('Update KYC status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating KYC status',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Get withdrawal requests
 // @route   GET /api/admin/withdrawals
 // @access  Private (admin)
@@ -1638,7 +1711,7 @@ export const rejectCommissionController = async (req, res) => {
         if (commission.status !== 'pending') {
             return res.status(400).json({
                 success: false,
-                message: `Commission is already ${commission.status}`
+                message: `Commission is already ${commission.status} `
             });
         }
 
