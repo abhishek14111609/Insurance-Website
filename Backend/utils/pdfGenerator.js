@@ -12,16 +12,35 @@ const ensureDirectory = (dirPath) => {
 const formatCurrency = (value) => {
     const numeric = typeof value === 'number' ? value : parseFloat(value);
     if (Number.isNaN(numeric)) return 'N/A';
-    // Using simple 'Rs.' if '₹' causes issues in some viewers, but user asked for '₹' explicitly.
-    // Helvetica standard font doesn't always support '₹'.
-    // If we want to be safe we would use a font that supports it or an image. 
-    // But since the user asked for it, we will use the symbol.
+    // Using Rs. instead of ₹ for better visibility in PDF
     return `₹ ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatDate = (date) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+// Helper to add watermark
+const addWatermark = (doc) => {
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    
+    doc.save();
+    doc.opacity(0.08); // Semi-transparent
+    doc.fontSize(80);
+    doc.fillColor('gray');
+    
+    // Position from bottom-left to top-right diagonal
+    doc.translate(pageWidth / 2, pageHeight / 2);
+    doc.rotate(-45);
+    doc.text('PASHUDHAN SURAKSHA', -250, -50, { 
+        align: 'center', 
+        width: 500,
+        font: 'Helvetica-Bold'
+    });
+    
+    doc.restore();
 };
 
 // Helper to draw a cell in a grid
@@ -60,6 +79,9 @@ export const generatePolicyPdf = async (policy) => {
 
     doc.pipe(stream);
 
+    // Add watermark to first page
+    addWatermark(doc);
+
     // Register a font that supports Rupee if possible, but for now we stick to standard.
     // If the default font doesn't support Rupee, it might show blank.
     // However, in many PDFKit versions, standard fonts don't include it. 
@@ -84,8 +106,9 @@ export const generatePolicyPdf = async (policy) => {
 
     // Address & GST
     doc.fontSize(8).font('Helvetica')
-        .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Opp. APMC Market, Vijapur, Dist. Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
-    currentY += 12;
+        .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road,`, startX, currentY, { align: 'center' })
+    currentY += 10;
+    doc.text(`Opp. APMC Market, Vijapur, Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
     doc.text(`GSTIN: 24ABIFP7717Q1ZI | State Code: 24 (Gujarat)`, startX, currentY, { align: 'center' });
     currentY += 20;
 
@@ -131,16 +154,16 @@ export const generatePolicyPdf = async (policy) => {
     let rightY = currentY;
 
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Issuing Office Details:`, true, false); rightY += rowHeight; // Header centered
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: PUSH-HO-001`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: Vijapur21506`, true); rightY += rowHeight;
 
     // Address wrapping
     doc.rect(col2X, rightY, colWidth, rowHeight * 3).stroke();
     doc.font('Helvetica-Bold').fontSize(8).text('Address:', col2X + 2, rightY + 2);
-    doc.font('Helvetica').fontSize(8).text(`Pashudhan Suraksha HQ, Vijapur, Gujarat`,
+    doc.font('Helvetica').fontSize(7).text(`Shop No-10, Second Floor,\nSuvidhi Solitaire, TB Road,\nOpp. APMC Market, Vijapur,\nMahesana, Gujarat - 384570`,
         col2X + 45, rightY + 2, { width: colWidth - 50 });
     rightY += (rowHeight * 3);
 
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 1800-123-4567`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 79903 39567`, true); rightY += rowHeight;
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Code: ${policy.agentCode || 'DIRECT'}`, true); rightY += rowHeight;
     // Handle populated agentId with nested userId for name
     const resolvedAgentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || '';
@@ -183,16 +206,17 @@ export const generatePolicyPdf = async (policy) => {
 
     // --- PREMIUM TABLE ---
     // Headers - Adjust column widths to give more space to Receipt No & Date
-    const premColW1 = pageWidth * 0.22; // Premium
-    const premColW2 = pageWidth * 0.18; // GST
-    const premColW3 = pageWidth * 0.22; // Total
-    const premColW4 = pageWidth * 0.38; // Receipt No & Date (wider)
+    const premColW1 = pageWidth * 0.20; // Premium
+    const premColW2 = pageWidth * 0.15; // GST
+    const premColW3 = pageWidth * 0.20; // Total
+    const premColW4 = pageWidth * 0.45; // Receipt No & Date (wider)
+    const premiumRowHeight = 25; // Larger row height for premium table
     
-    drawCell(doc, startX, currentY, premColW1, rowHeight, 'Premium', true, false);
-    drawCell(doc, startX + premColW1, currentY, premColW2, rowHeight, 'GST', true, false);
-    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, rowHeight, 'Total (₹)', true, false);
-    drawCell(doc, startX + premColW1 + premColW2 + premColW3, currentY, premColW4, rowHeight, 'Receipt No & Date', true, false);
-    currentY += rowHeight;
+    drawCell(doc, startX, currentY, premColW1, premiumRowHeight, 'Premium', true, false);
+    drawCell(doc, startX + premColW1, currentY, premColW2, premiumRowHeight, 'GST', true, false);
+    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, premiumRowHeight, 'Total (₹)', true, false);
+    drawCell(doc, startX + premColW1 + premColW2 + premColW3, currentY, premColW4, premiumRowHeight, 'Receipt No & Date', true, false);
+    currentY += premiumRowHeight;
 
     // Values (Approximation for GST splitting)
     const premium = parseFloat(policy.premium) || 0;
@@ -203,12 +227,12 @@ export const generatePolicyPdf = async (policy) => {
     // Let's just put the total in Total and '-' in breakdown to avoid math errors if not sure.
     // OR: Assume standard breakdown if applicable.
 
-    drawCell(doc, startX, currentY, premColW1, rowHeight, formatCurrency(premium)); // Base
-    drawCell(doc, startX + premColW1, currentY, premColW2, rowHeight, 'Included'); // GST
-    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, rowHeight, formatCurrency(premium)); // Total
+    drawCell(doc, startX, currentY, premColW1, premiumRowHeight, formatCurrency(premium)); // Base
+    drawCell(doc, startX + premColW1, currentY, premColW2, premiumRowHeight, 'Included'); // GST
+    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, premiumRowHeight, formatCurrency(premium)); // Total
     
-    // Format receipt info with date on same line but in compact format
-    const receiptNo = policy.paymentId ? policy.paymentId.substring(0, 15) : 'NA'; // Shorten receipt ID
+    // Format receipt info with date on separate lines with larger cell
+    const receiptNo = policy.paymentId ? policy.paymentId.substring(0, 18) : 'NA'; // Shorten receipt ID
     // Use paymentDate if available, otherwise use createdAt or approvedAt as fallback
     const receiptDate = policy.paymentDate 
         ? formatDate(policy.paymentDate) 
@@ -216,12 +240,12 @@ export const generatePolicyPdf = async (policy) => {
     
     // Create a custom cell for receipt info with better text wrapping
     const receiptCellX = startX + premColW1 + premColW2 + premColW3;
-    doc.rect(receiptCellX, currentY, premColW4, rowHeight).stroke();
-    doc.font('Helvetica').fontSize(7);
-    doc.text(`${receiptNo}`, receiptCellX + 2, currentY + 2, { width: premColW4 - 4 });
-    doc.text(`${receiptDate}`, receiptCellX + 2, currentY + 8, { width: premColW4 - 4 });
+    doc.rect(receiptCellX, currentY, premColW4, premiumRowHeight).stroke();
+    doc.font('Helvetica').fontSize(8);
+    doc.text(`${receiptNo}`, receiptCellX + 3, currentY + 4, { width: premColW4 - 6, align: 'center' });
+    doc.text(`${receiptDate}`, receiptCellX + 3, currentY + 14, { width: premColW4 - 6, align: 'center' });
     
-    currentY += rowHeight + 15;
+    currentY += premiumRowHeight + 15;
 
 
     // --- POLICY SCHEDULE HEADER ---
@@ -268,7 +292,7 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, x, currentY, cattleCols[4].w, rowHeight, policy.gender, false, false); x += cattleCols[4].w;
     drawCell(doc, x, currentY, cattleCols[5].w, rowHeight, `${policy.age} Yrs`, false, false); x += cattleCols[5].w;
     drawCell(doc, x, currentY, cattleCols[6].w, rowHeight, policy.healthStatus, false, false); x += cattleCols[6].w;
-    drawCell(doc, x, currentY, cattleCols[7].w, rowHeight, formatCurrency(policy.coverageAmount), false, false); x += cattleCols[7].w;
+    drawCell(doc, x, currentY, cattleCols[7].w, rowHeight, formatCurrency(policy.coverageAmount), false, true); x += cattleCols[7].w;
     drawCell(doc, x, currentY, cattleCols[8].w, rowHeight, '0', false, false);
 
     currentY += rowHeight + 20;
@@ -307,6 +331,7 @@ export const generatePolicyPdf = async (policy) => {
 
     // --- ADD NEW PAGE FOR TERMS AND CONDITIONS ---
     doc.addPage();
+    addWatermark(doc); // Add watermark to second page
     let termsY = 40;
 
     // Terms Header
@@ -397,9 +422,15 @@ export const generatePolicyPdf = async (policy) => {
     doc.font('Helvetica-Bold').fontSize(9).fillColor('#003366').text('CUSTOMER CARE CONTACT:', startX, termsY);
     termsY += 12;
     doc.font('Helvetica').fontSize(8).fillColor('black')
-        .text('Phone: 1800-123-4567 | Email: claims@pashudhansuraksha.com', startX + 10, termsY)
-        .text('Office Address: Pashudhan Suraksha HQ, Vijapur, Gujarat - 384570', startX + 10, termsY + 10)
-        .text('Working Hours: 9:00 AM - 6:00 PM (Monday to Friday)', startX + 10, termsY + 20);
+        .text('Phone: 79903 39567 | Email: pashudhansuraksha2026@gmail.com', startX + 10, termsY);
+    termsY += 12;
+    doc.text('Shop No-10, Second Floor,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Suvidhi Solitaire, TB Road,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Opp. APMC Market, Vijapur,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Mahesana, Gujarat - 384570', startX + 10, termsY);
 
     doc.end();
 
