@@ -13,7 +13,7 @@ const formatCurrency = (value) => {
     const numeric = typeof value === 'number' ? value : parseFloat(value);
     if (Number.isNaN(numeric)) return 'N/A';
     // Using Rs. instead of ₹ for better visibility in PDF
-    return `₹ ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `Rs. ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatDate = (date) => {
