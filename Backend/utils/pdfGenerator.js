@@ -101,13 +101,16 @@ export const generatePolicyPdf = async (policy) => {
     const colWidth = pageWidth / 2;
 
     const startDetailsY = currentY;
+    const detailsBoxHeight = rowHeight * 9;
 
     // Left Column: Insured Details
-    doc.rect(col1X, currentY, colWidth, 120).stroke();
+    doc.rect(col1X, currentY, colWidth, detailsBoxHeight).stroke();
     let leftY = currentY;
 
+    const customerIdNumber = policy.customerId?.id || policy.customerId?._id || policy.customerId;
+    const customerIdText = customerIdNumber ? customerIdNumber.toString() : 'NA';
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `Insured Name: ${policy.ownerName || policy.customerId?.fullName || ''}`, true); leftY += rowHeight;
-    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID: ${policy.customerId?.id || 'CUST-001'}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID No: ${customerIdText}`, true); leftY += rowHeight;
 
     // Address wrapping
     doc.rect(col1X, leftY, colWidth, rowHeight * 3).stroke();
@@ -121,7 +124,7 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `PAN No: ${policy.panNumber || 'NA'}`, true); leftY += rowHeight;
 
     // Right Column: Office/Agent Details
-    doc.rect(col2X, currentY, colWidth, 120).stroke();
+    doc.rect(col2X, currentY, colWidth, detailsBoxHeight).stroke();
     let rightY = currentY;
 
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Issuing Office Details:`, true, false); rightY += rowHeight; // Header centered
@@ -137,8 +140,11 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 1800-123-4567`, true); rightY += rowHeight;
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Code: ${policy.agentCode || 'DIRECT'}`, true); rightY += rowHeight;
     // Handle populated agentId with nested userId for name
-    const agentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || 'Direct Business';
+    const resolvedAgentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || '';
+    const agentName = resolvedAgentName || (policy.agentCode ? 'NA' : 'Direct Business');
+    const agentPhone = policy.agentId?.userId?.phone || policy.agentId?.phone || 'NA';
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Name: ${agentName}`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Phone No: ${agentPhone}`, true); rightY += rowHeight;
 
     currentY = Math.max(leftY, rightY) + 10;
 
@@ -191,7 +197,9 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, startX, currentY, premColW, rowHeight, formatCurrency(premium)); // Base
     drawCell(doc, startX + premColW, currentY, premColW, rowHeight, 'Included'); // GST
     drawCell(doc, startX + (premColW * 2), currentY, premColW, rowHeight, formatCurrency(premium)); // Total
-    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, `${policy.paymentId || 'NA'} - ${formatDate(policy.paymentDate)}`);
+    const receiptNo = policy.paymentId || 'NA';
+    const receiptDate = policy.paymentDate ? formatDate(policy.paymentDate) : 'NA';
+    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, `${receiptNo} - ${receiptDate}`);
     currentY += rowHeight + 15;
 
 

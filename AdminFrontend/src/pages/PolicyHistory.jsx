@@ -96,11 +96,11 @@ const PolicyHistory = () => {
                 return;
             }
 
-            // Construct the PDF URL from policy number
-            const pdfUrl = `${BASE_URL}/uploads/policy_docs/Policy-${policy.policyNumber}.pdf`;
+            // Use the API endpoint to download PDF (generates if missing)
+            const downloadUrl = `${BASE_URL}/api/admin/policies/${policy.policyNumber}/download`;
 
             // Open in new tab for download
-            window.open(pdfUrl, '_blank');
+            window.open(downloadUrl, '_blank');
             toast.success('Opening PDF...');
         } catch (error) {
             console.error('Error downloading PDF:', error);
