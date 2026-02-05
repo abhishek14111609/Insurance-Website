@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { agentAPI } from '../services/api.service';
 import { exportToCSV, formatCommissionsForExport } from '../utils/exportUtils';
+import { formatCurrency, formatNumber } from '../utils/numberUtils';
 import toast from 'react-hot-toast';
 import './AgentCommissions.css';
 
@@ -94,19 +95,19 @@ const AgentCommissions = () => {
             <div className="commission-stats-grid">
                 <div className="stat-card">
                     <h3>Total Earned</h3>
-                    <p className="stat-value">₹{stats?.totalEarned?.toLocaleString() || '0'}</p>
+                    <p className="stat-value">{formatCurrency(stats?.totalEarned)}</p>
                 </div>
                 <div className="stat-card">
                     <h3>This Month</h3>
-                    <p className="stat-value">₹{stats?.thisMonth?.toLocaleString() || '0'}</p>
+                    <p className="stat-value">{formatCurrency(stats?.thisMonth)}</p>
                 </div>
                 <div className="stat-card">
                     <h3>Pending</h3>
-                    <p className="stat-value">₹{stats?.pending?.toLocaleString() || '0'}</p>
+                    <p className="stat-value">{formatCurrency(stats?.pending)}</p>
                 </div>
                 <div className="stat-card">
                     <h3>Paid</h3>
-                    <p className="stat-value">₹{stats?.paid?.toLocaleString() || '0'}</p>
+                    <p className="stat-value">{formatCurrency(stats?.paid)}</p>
                 </div>
             </div>
 
@@ -158,15 +159,15 @@ const AgentCommissions = () => {
                                 <div className="commission-details">
                                     <div className="detail-item">
                                         <span>Commission Amount</span>
-                                        <strong className="amount">₹{commission.amount?.toLocaleString()}</strong>
+                                        <strong className="amount">{formatCurrency(commission.amount)}</strong>
                                     </div>
                                     <div className="detail-item">
                                         <span>Percentage</span>
-                                        <strong>{commission.percentage}%</strong>
+                                        <strong>{formatNumber(commission.percentage)}%</strong>
                                     </div>
                                     <div className="detail-item">
                                         <span>Policy Premium</span>
-                                        <strong>₹{commission.policy?.premium?.toLocaleString()}</strong>
+                                        <strong>{formatCurrency(commission.policy?.premium)}</strong>
                                     </div>
                                     <div className="detail-item">
                                         <span>Earned On</span>
