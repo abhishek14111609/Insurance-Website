@@ -167,6 +167,12 @@ const AgentDashboard = () => {
                         <p>Enroll a new customer now</p>
                     </Link>
 
+                    <Link to="/renewals" className="action-card">
+                        <span className="action-icon">🔄</span>
+                        <h3>Renewals</h3>
+                        <p>Process policy renewals</p>
+                    </Link>
+
                     <Link to="/policies" className="action-card">
                         <span className="action-icon">📄</span>
                         <h3>My Policies</h3>
@@ -185,11 +191,11 @@ const AgentDashboard = () => {
                         <p>Track your earnings</p>
                     </Link>
 
-                    <Link to="/wallet" className="action-card">
+                    {/* <Link to="/wallet" className="action-card">
                         <span className="action-icon">💳</span>
                         <h3>Wallet</h3>
                         <p>Manage withdrawals</p>
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
 
@@ -205,8 +211,8 @@ const AgentDashboard = () => {
                                 <span className="count-badge warning">{stats?.upcomingRenewalsCount || 0}</span>
                             </div>
                             <p>Policies expiring in the next 30 days. Contact these customers for renewals to maintain your commissions.</p>
-                            <Link to="/policies?filter=EXPIRING" className="btn btn-sm btn-primary">
-                                View Expiries
+                            <Link to="/renewals" className="btn btn-sm btn-primary">
+                                View Renewals
                             </Link>
                         </div>
 

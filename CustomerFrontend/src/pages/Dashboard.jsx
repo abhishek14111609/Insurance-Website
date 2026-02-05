@@ -150,9 +150,9 @@ const Dashboard = () => {
                             <span className="action-icon">🏥</span>
                             <span>File Claim</span>
                         </button>
-                        <button className="action-card" onClick={() => navigate('/claims')}>
-                            <span className="action-icon">�</span>
-                            <span>View Claims</span>
+                        <button className="action-card" onClick={() => navigate('/renewals')}>
+                            <span className="action-icon">🔄</span>
+                            <span>Renew Policy</span>
                         </button>
                     </div>
                 </div>

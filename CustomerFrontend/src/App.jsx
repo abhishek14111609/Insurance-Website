@@ -30,6 +30,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import PolicyDetails from './pages/PolicyDetails';
 import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Customer Dashboard Pages
 import Dashboard from './pages/Dashboard';
@@ -89,7 +90,8 @@ function App() {
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+
             <Route path="/become-partner" element={<AgentRegister />} />
             <Route path="/policies" element={<AnimalInsurance />} />
             {/* Backward compatibility */}

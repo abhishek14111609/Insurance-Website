@@ -3,7 +3,7 @@
 .notifications-page {
     min-height: 100vh;
     background: var(--background-body);
-    padding: 140px 20px 60px;
+    padding: 120px 20px 60px;
 }
 
 .notifications-container {
@@ -11,253 +11,281 @@
     margin: 0 auto;
 }
 
+/* Header */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .header-info h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     color: var(--primary-dark);
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 800;
 }
 
 .header-info p {
     color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 1rem;
+    margin: 0;
 }
 
 .mark-all-btn {
     background: white;
-    border: 2px solid var(--primary-color);
+    border: 1px solid var(--border-color);
     color: var(--primary-color);
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
     font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .mark-all-btn:hover:not(:disabled) {
     background: var(--primary-color);
     color: white;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .mark-all-btn:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
-    border-color: var(--border-color);
-    color: var(--text-secondary);
+    cursor: default;
+    box-shadow: none;
+    border-color: #e2e8f0;
+    background: #f8fafc;
 }
 
+/* TABS - Redesigned to be Bordered Tabs which are safer */
 .filter-tabs {
     display: flex;
-    gap: 1rem;
+    gap: 2rem;
     margin-bottom: 2rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .tab {
-    background: white;
-    border: 1px solid var(--border-color);
-    padding: 0.6rem 1.5rem;
-    border-radius: 20px;
+    background: transparent;
+    border: none;
+    padding: 0.8rem 0;
     font-weight: 600;
+    font-size: 1rem;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.3s;
-    white-space: nowrap;
-    position: relative;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
+    position: relative;
+}
+
+.tab::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.tab:hover {
+    color: var(--primary-dark);
 }
 
 .tab.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-.tab[data-count]::after {
-    content: attr(data-count);
-    background: #ef4444;
-    color: white;
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 10px;
-}
-
-.tab.active[data-count]::after {
-    background: white;
     color: var(--primary-color);
 }
 
+.tab.active::after {
+    width: 100%;
+}
+
+.badge {
+    background: #ef4444;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Notification List */
 .notifications-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
+/* Card Styles */
 .notification-card {
     background: white;
-    border-radius: 1rem;
+    border-radius: 12px;
     padding: 1.5rem;
     display: flex;
-    gap: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    gap: 1.25rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
     cursor: pointer;
     position: relative;
-    border-left: 5px solid transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .notification-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    border-color: var(--primary-light);
 }
 
 .notification-card.unread {
-    border-left-color: var(--primary-color);
-    background: #fffdf5;
+    background: #f8fbff;
+    border-left: 4px solid var(--primary-color);
 }
 
-.card-icon {
-    font-size: 2.5rem;
+/* Icon */
+.notification-icon-wrapper {
+    flex-shrink: 0;
+    padding-top: 4px;
+}
+
+.notification-icon {
+    width: 44px;
+    height: 44px;
+    background: #e0f2fe;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 60px;
-    height: 60px;
-    background: var(--background-body);
-    border-radius: 50%;
+    font-size: 1.4rem;
+    color: var(--primary-color);
 }
 
+.notification-card.unread .notification-icon {
+    background: white;
+    box-shadow: 0 4px 10px rgba(14, 165, 233, 0.15);
+}
+
+/* Content */
 .card-content {
     flex: 1;
+    min-width: 0;
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+    gap: 10px;
 }
 
 .card-header h3 {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--primary-dark);
     margin: 0;
+    line-height: 1.3;
 }
 
 .time {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    color: var(--text-light);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .card-content p {
-    color: var(--text-primary);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
     line-height: 1.5;
-    margin-bottom: 1rem;
+    margin: 0 0 0.75rem 0;
 }
 
 .action-link {
-    display: inline-block;
+    font-size: 0.9rem;
     color: var(--primary-color);
     font-weight: 600;
     text-decoration: none;
-    font-size: 0.95rem;
-    transition: letter-spacing 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.25rem;
 }
 
 .action-link:hover {
-    letter-spacing: 0.5px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
 
+/* Actions */
 .card-actions {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-end;
+    margin-left: 0.5rem;
 }
 
 .delete-btn {
-    background: none;
+    background: transparent;
     border: none;
+    color: #94a3b8;
+    font-size: 1.25rem;
     cursor: pointer;
-    font-size: 1.2rem;
-    padding: 5px;
-    opacity: 0.3;
-    transition: opacity 0.3s;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.notification-card:hover .delete-btn {
-    opacity: 1;
+.delete-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
 }
 
-.unread-indicator {
-    width: 8px;
-    height: 8px;
+.unread-dot {
+    width: 10px;
+    height: 10px;
     background: var(--primary-color);
     border-radius: 50%;
+    margin-top: 10px;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+/* Filter Tabs Mobile Scroll */
+.filter-tabs::-webkit-scrollbar {
+    display: none;
 }
 
-.empty-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.loading-state {
-    text-align: center;
-    padding: 3rem;
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--border-color);
-    border-top: 4px solid var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 600px) {
     .notifications-page {
         padding: 100px 15px 40px;
     }
 
     .page-header {
-        flex-direction: column;
         align-items: flex-start;
-        gap: 1.5rem;
+        gap: 1rem;
     }
 
-    .header-info h1 {
-        font-size: 2rem;
+    .filter-tabs {
+        gap: 1.5rem;
+        overflow-x: auto;
+        padding-bottom: 0;
+        /* Align border */
+        margin-bottom: 1.5rem;
     }
 
     .notification-card {
@@ -265,14 +293,14 @@
         gap: 1rem;
     }
 
-    .card-icon {
-        font-size: 2rem;
-        min-width: 50px;
-        height: 50px;
+    .notification-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
     }
 
-    .card-header {
-        flex-direction: column;
-        gap: 0.25rem;
+    .delete-btn {
+        padding: 8px;
+        /* Larger hit area */
     }
 }

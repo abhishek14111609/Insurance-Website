@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { policyAPI } from '../services/api.service';
 import { formatCurrency } from '../constants/policyPlans';
 import toast from 'react-hot-toast';
 import TermsModal from '../components/TermsModal';
@@ -10,13 +11,18 @@ const RenewalForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { isAgent } = useAuth();
-    const { policy } = location.state || {};
+    const { policy: initialPolicy } = location.state || {}; // Rename to initialPolicy
+
+    const [policy, setPolicy] = useState(initialPolicy); // State for the full policy object
+    const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         renewalDuration: '1',
         paymentMethod: 'card',
         agreeTerms: false
     });
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Modal state
     const [modalState, setModalState] = useState({
@@ -29,10 +35,31 @@ const RenewalForm = () => {
             navigate('/agent/dashboard');
             return;
         }
-        if (!policy) {
+        if (!initialPolicy) {
             navigate('/renewals');
+            return;
         }
-    }, [policy, navigate]);
+
+        // Fetch full policy details to ensure we have photos and latest data
+        const fetchFullPolicyDetails = async () => {
+            try {
+                setLoading(true);
+                const response = await policyAPI.getById(initialPolicy.id);
+                if (response.success && response.data.policy) {
+                    setPolicy(response.data.policy);
+                } else {
+                    toast.error('Failed to load latest policy details. Using cached data.');
+                }
+            } catch (error) {
+                console.error('Error fetching full policy details:', error);
+                // Fallback to initialPolicy is already set in state
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFullPolicyDetails();
+    }, [isAgent, navigate, initialPolicy]);
 
     const calculateRenewalPremium = () => {
         const basePremium = policy?.premium || 2460;
@@ -47,7 +74,7 @@ const RenewalForm = () => {
         return premiumMap[duration] || basePremium;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!formData.agreeTerms) {
@@ -55,26 +82,89 @@ const RenewalForm = () => {
             return;
         }
 
-        const renewalData = {
-            id: Date.now(),
-            policyId: policy.id,
-            oldPolicyNumber: policy.policyNumber,
-            newPolicyNumber: `POL-${Date.now()}`,
-            duration: formData.renewalDuration,
-            premium: calculateRenewalPremium(),
-            status: 'PENDING',
-            submittedAt: new Date().toISOString()
-        };
+        try {
+            setIsSubmitting(true);
+            const durationYears = parseInt(formData.renewalDuration);
 
-        // Navigate to payment
-        navigate('/payment', {
-            state: {
-                policyData: renewalData,
+            // Calculate new dates
+            const currentEndDate = new Date(policy.endDate);
+            const newStartDate = new Date(currentEndDate);
+            newStartDate.setDate(newStartDate.getDate() + 1);
+
+            const newEndDate = new Date(newStartDate);
+            newEndDate.setFullYear(newEndDate.getFullYear() + durationYears);
+
+            // Construct payload for new policy
+            const payload = {
+                // Cattle Details (copied from old policy)
+                cattleType: policy.cattleType,
+                tagId: policy.tagId,
+                age: policy.age + durationYears, // Aging the cattle
+                breed: policy.breed,
+                gender: policy.gender,
+                milkYield: policy.milkYield,
+                healthStatus: 'healthy', // User confirmed health via checkbox
+
+                // New Policy Details
+                coverageAmount: policy.coverageAmount,
                 premium: calculateRenewalPremium(),
-                isRenewal: true
+                duration: `${durationYears} Year${durationYears > 1 ? 's' : ''}`,
+                startDate: newStartDate.toISOString(),
+                endDate: newEndDate.toISOString(),
+
+                // Owner Details
+                ownerName: policy.ownerName,
+                ownerEmail: policy.ownerEmail,
+                ownerPhone: policy.ownerPhone,
+                ownerAddress: policy.ownerAddress,
+                ownerCity: policy.ownerCity,
+                ownerState: policy.ownerState,
+                ownerPincode: policy.ownerPincode,
+
+                // Agent Info
+                agentCode: policy.agentCode,
+
+                // Photos (MUST pass existing photos if we want to reuse them)
+                // If API returns photos object, reuse it. Check structure.
+                photos: policy.photos || {},
+                planId: policy.planId
+            };
+
+            // Call API to create the REAL policy in backend
+            const response = await policyAPI.create(payload);
+
+            if (response.success && response.data.policy) {
+                // Success! Now navigate to payment with the REAL policy ID
+                toast.success('Renewal policy created! Proceeding to payment...');
+                navigate('/payment', {
+                    state: {
+                        policyId: response.data.policy.id
+                    }
+                });
+            } else {
+                throw new Error(response.message || 'Failed to create renewal policy');
             }
-        });
+
+        } catch (error) {
+            console.error('Renewal Error:', error);
+            toast.error(error.message || 'Failed to process renewal. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="renewal-form-page">
+                <div className="container">
+                    <div className="loading-state">
+                        <div className="spinner"></div>
+                        <p>Loading policy details...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!policy) return null;
 
@@ -107,7 +197,7 @@ const RenewalForm = () => {
                             </div>
                             <div className="info-item">
                                 <span>Expiry Date / સમાપ્તિ તારીખ:</span>
-                                <strong className="text-error">{policy.endDate}</strong>
+                                <strong className="text-error">{new Date(policy.endDate).toLocaleDateString()}</strong>
                             </div>
                         </div>
                     </div>
@@ -192,7 +282,7 @@ const RenewalForm = () => {
                             </div>
                             <div className="summary-row">
                                 <span>Coverage Amount / કવરેજ રકમ:</span>
-                                <span>₹{policy.coverageAmount?.toLocaleString()}</span>
+                                <span>₹{policy?.coverageAmount?.toLocaleString() || '0'}</span>
                             </div>
                             <div className="summary-row">
                                 <span>Premium / પ્રીમિયમ:</span>
@@ -205,8 +295,12 @@ const RenewalForm = () => {
                         </div>
 
                         {/* Submit Button */}
-                        <button type="submit" className="btn btn-primary btn-block btn-large">
-                            Proceed to Payment / ચુકવણી માટે આગળ વધો - {formatCurrency(premium)}
+                        <button
+                            type="submit"
+                            className="btn btn-primary btn-block btn-large"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Processing...' : `Proceed to Payment / ચુકવણી માટે આગળ વધો - ${formatCurrency(premium)}`}
                         </button>
 
                         <div className="secure-badge">

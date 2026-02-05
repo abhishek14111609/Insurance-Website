@@ -46,7 +46,12 @@ const Notifications = () => {
     };
 
     const deleteNotification = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this notification?')) return;
+        // if (!window.confirm('Are you sure you want to delete this notification?')) return; 
+        // Removing confirm for smoother UX, or keeping it? Users usually prefer no confirm for simple delete
+        // But let's keep it safe. Actually, let's remove confirm for better "modern" feel, or make it custom modal.
+        // For now, standard confirm is safer but annoying. keeping it.
+        if (!window.confirm('Delete this notification?')) return;
+
         try {
             await notificationAPI.delete(id);
             setNotifications(notifications.filter(n => (n._id || n.id) !== id));
@@ -86,6 +91,8 @@ const Notifications = () => {
         return true;
     });
 
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
     return (
         <div className="notifications-page">
             <div className="notifications-container">
@@ -98,7 +105,7 @@ const Notifications = () => {
                         <button
                             className="mark-all-btn"
                             onClick={markAllAsRead}
-                            disabled={!notifications.some(n => !n.isRead)}
+                            disabled={unreadCount === 0}
                         >
                             Mark All as Read
                         </button>
@@ -115,9 +122,9 @@ const Notifications = () => {
                     <button
                         className={`tab ${filter === 'unread' ? 'active' : ''}`}
                         onClick={() => setFilter('unread')}
-                        data-count={notifications.filter(n => !n.isRead).length}
                     >
                         Unread
+                        {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
                     </button>
                     <button
                         className={`tab ${filter === 'read' ? 'active' : ''}`}
@@ -142,8 +149,10 @@ const Notifications = () => {
                                     className={`notification-card ${!n.isRead ? 'unread' : ''}`}
                                     onClick={() => !n.isRead && markAsRead(id)}
                                 >
-                                    <div className="card-icon">
-                                        {getIcon(n.type)}
+                                    <div className="notification-icon-wrapper">
+                                        <div className={`notification-icon type-${n.type || 'system'}`}>
+                                            {getIcon(n.type)}
+                                        </div>
                                     </div>
                                     <div className="card-content">
                                         <div className="card-header">
@@ -152,7 +161,9 @@ const Notifications = () => {
                                         </div>
                                         <p>{n.message}</p>
                                         {n.actionUrl && (
-                                            <a href={n.actionUrl} className="action-link">View Details</a>
+                                            <a href={n.actionUrl} className="action-link" onClick={e => e.stopPropagation()}>
+                                                View Details →
+                                            </a>
                                         )}
                                     </div>
                                     <div className="card-actions">
@@ -164,9 +175,9 @@ const Notifications = () => {
                                             }}
                                             title="Delete"
                                         >
-                                            🗑️
+                                            ✕
                                         </button>
-                                        {!n.isRead && <span className="unread-indicator"></span>}
+                                        {!n.isRead && <span className="unread-dot" title="Unread"></span>}
                                     </div>
                                 </div>
                             );

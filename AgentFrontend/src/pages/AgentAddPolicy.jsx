@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { agentAPI, policyPlanAPI } from '../services/api.service';
 import { useAuth } from '../context/AuthContext';
 import PhotoUpload from '../components/PhotoUpload';
@@ -8,7 +8,11 @@ import './AgentAddPolicy.css';
 
 const AgentAddPolicy = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
+
+    // Check for renewal data passed from Renewals page
+    const { renewalData } = location.state || {};
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -45,7 +49,12 @@ const AgentAddPolicy = () => {
         ownerCity: '',
         ownerState: '',
         ownerPincode: '',
-        paymentMethod: 'Cash' // Default payment method
+        paymentMethod: 'Cash', // Default payment method
+
+        // Date fields for renewal continuity
+        startDate: '',
+        endDate: '',
+        previousPolicyId: ''
     });
 
     const [photos, setPhotos] = useState({
@@ -55,20 +64,128 @@ const AgentAddPolicy = () => {
         right: null
     });
 
+    // Helper to format date for input
+    const formatDateForInput = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+    };
+
+    // Helper to calculate End Date based on Start Date and Duration (Years)
+    const calculateEndDate = (startDateStr, durationString) => {
+        if (!startDateStr || !durationString) return '';
+        const start = new Date(startDateStr);
+        // Extract years from string like "1 Year" or "2 Years"
+        const years = parseInt(durationString);
+        if (isNaN(years)) return '';
+
+        const end = new Date(start);
+        end.setFullYear(end.getFullYear() + years);
+        // Usually end date is minus 1 day from the full year period
+        end.setDate(end.getDate() - 1);
+        return end.toISOString();
+    };
+
     // Fetch plans on mount
     useEffect(() => {
         const fetchPlans = async () => {
             try {
                 const response = await policyPlanAPI.getAll();
                 if (response.success) {
-                    setPlans(response.data.plans.filter(p => p.isActive));
+                    const activePlans = response.data.plans.filter(p => p.isActive);
+                    setPlans(activePlans);
+
+                    // If renewal, try to pre-select plan
+                    if (renewalData && renewalData.planId) {
+                        const matchingPlan = activePlans.find(p => p.id === renewalData.planId || p._id === renewalData.planId);
+                        if (matchingPlan) {
+                            setSelectedPlan(matchingPlan);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching plans:', err);
             }
         };
         fetchPlans();
-    }, []);
+    }, [renewalData]);
+
+    // Handle Renewal Pre-filling
+    useEffect(() => {
+        if (renewalData) {
+            console.log('Pre-filling renewal data:', renewalData);
+
+            // 1. Set Customer Info
+            setCustomerPhone(renewalData.ownerPhone);
+
+            const prefilledCustomer = {
+                fullName: renewalData.ownerName,
+                email: renewalData.ownerEmail,
+                phone: renewalData.ownerPhone,
+                address: renewalData.ownerAddress,
+                city: renewalData.ownerCity,
+                state: renewalData.ownerState,
+                pincode: renewalData.ownerPincode
+            };
+            setCustomerData(prefilledCustomer);
+
+            // Set existing customer ID if available to link correctly
+            if (renewalData.customerId) {
+                setExistingCustomer({
+                    _id: renewalData.customerId,
+                    ...prefilledCustomer
+                });
+            }
+
+            // 2. Calculate Renewal Start Date
+            // Default to tomorrow if active, or today if expired
+            const oldEndDate = new Date(renewalData.endDate);
+            const today = new Date();
+
+            let newStartDate = new Date();
+            if (oldEndDate >= today) {
+                // Policy still active, renew from next day
+                newStartDate = new Date(oldEndDate);
+                newStartDate.setDate(newStartDate.getDate() + 1);
+            } else {
+                // Policy expired, renew from today
+                newStartDate = today;
+            }
+
+            // 3. Set Policy Info (Cattle & Dates)
+            setPolicyData(prev => ({
+                ...prev,
+                cattleType: renewalData.cattleType,
+                tagId: renewalData.tagId,
+                age: renewalData.age ? String(parseInt(renewalData.age) + 1) : '', // Auto-increment age
+                breed: renewalData.breed,
+                gender: renewalData.gender,
+                milkYield: renewalData.milkYield ? String(renewalData.milkYield) : '',
+
+                ownerName: renewalData.ownerName,
+                ownerPhone: renewalData.ownerPhone,
+                ownerEmail: renewalData.ownerEmail,
+                ownerAddress: renewalData.ownerAddress,
+                ownerCity: renewalData.ownerCity,
+                ownerState: renewalData.ownerState,
+                ownerPincode: renewalData.ownerPincode,
+
+                startDate: formatDateForInput(newStartDate),
+                previousPolicyId: renewalData.id
+            }));
+
+            // Jump to Step 2 to verify customer details
+            setStep(2);
+            toast.success('Renewal details pre-filled. Please verify customer info.');
+        }
+    }, [renewalData]);
+
+    // Effect to update End Date whenever Start Date or Plan changes
+    useEffect(() => {
+        if (policyData.startDate && selectedPlan?.duration) {
+            const endDate = calculateEndDate(policyData.startDate, selectedPlan.duration);
+            setPolicyData(prev => ({ ...prev, endDate }));
+        }
+    }, [policyData.startDate, selectedPlan]);
+
 
     const handleSearchCustomer = async () => {
         if (!customerPhone || customerPhone.length < 10) {
@@ -107,7 +224,7 @@ const AgentAddPolicy = () => {
 
     const handleCustomerSubmit = (e) => {
         e.preventDefault();
-        // Comprehensive Validation for all fields required by Policy schema
+        // Validation
         const requiredFields = {
             fullName: 'Full Name',
             email: 'Email Address',
@@ -124,13 +241,12 @@ const AgentAddPolicy = () => {
             return;
         }
 
-        // Basic email validation
         if (!/\S+@\S+\.\S+/.test(customerData.email)) {
             toast.error('Please enter a valid email address');
             return;
         }
 
-        // Sync policy owner info with customer info
+        // Sync policy owner info
         setPolicyData(prev => ({
             ...prev,
             ownerName: customerData.fullName,
@@ -158,9 +274,6 @@ const AgentAddPolicy = () => {
     };
 
     const handlePhotoChange = (side, file, preview) => {
-        // Since the agent might be using high-quality images, we just store the preview/base64 for simplicity if needed, 
-        // or handled by PhotoUpload if it handles backend upload directly.
-        // Assuming PhotoUpload provides a path or handle
         setPhotos(prev => ({ ...prev, [side]: preview }));
     };
 
@@ -175,11 +288,21 @@ const AgentAddPolicy = () => {
         try {
             setLoading(true);
 
+            // Ensure we have start and end dates
+            let finalStartDate = policyData.startDate || formatDateForInput(new Date());
+            let finalEndDate = policyData.endDate;
+
+            if (!finalEndDate && selectedPlan) {
+                finalEndDate = calculateEndDate(finalStartDate, selectedPlan.duration);
+            }
+
             const payload = {
                 customerId: existingCustomer?.id || existingCustomer?._id,
                 customerData: existingCustomer ? null : customerData,
                 policyData: {
                     ...policyData,
+                    startDate: new Date(finalStartDate).toISOString(),
+                    endDate: new Date(finalEndDate).toISOString(),
                     photos: photos
                 }
             };
@@ -198,7 +321,7 @@ const AgentAddPolicy = () => {
                     });
                 } else {
                     toast.success('Policy added successfully!');
-                    navigate("/policies");
+                    navigate(renewalData ? "/renewals" : "/policies"); // Go back to renewals if came from there
                 }
             }
         } catch (err) {
@@ -216,8 +339,8 @@ const AgentAddPolicy = () => {
         <div className="agent-add-policy">
             <div className="page-header">
                 <div>
-                    <h1>Sell New Policy</h1>
-                    <p>Issue a policy on behalf of your customer</p>
+                    <h1>{renewalData ? `Renew Policy #${renewalData.policyNumber}` : 'Sell New Policy'}</h1>
+                    <p>{renewalData ? 'Process renewal & ensure continuous coverage' : 'Issue a policy on behalf of your customer'}</p>
                 </div>
                 <div className="step-indicator">
                     <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>1</div>
@@ -237,7 +360,7 @@ const AgentAddPolicy = () => {
                 {step === 1 && (
                     <div className="form-step">
                         <h2>Step 1: Find Customer</h2>
-                        <p>Search for an existing customer by their phone number or start a new enrollment.</p>
+                        <p>Search for an existing customer by their phone number.</p>
                         <div className="search-box">
                             <label>Customer Phone Number</label>
                             <div className="input-with-button">
@@ -264,6 +387,8 @@ const AgentAddPolicy = () => {
                 {step === 2 && (
                     <form onSubmit={handleCustomerSubmit} className="form-step">
                         <h2>Step 2: Customer Information</h2>
+                        {renewalData && <div className="info-badge">ℹ️ Reviewing existing customer details for renewal</div>}
+
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>Full Name *</label>
@@ -272,6 +397,8 @@ const AgentAddPolicy = () => {
                                     value={customerData.fullName}
                                     onChange={(e) => setCustomerData({ ...customerData, fullName: e.target.value })}
                                     required
+                                    readOnly={!!renewalData} // Lock for renewal to prevent accidental change
+                                    className={renewalData ? 'read-only' : ''}
                                 />
                             </div>
                             <div className="form-group">
@@ -326,8 +453,8 @@ const AgentAddPolicy = () => {
                             </div>
                         </div>
                         <div className="form-actions">
-                            <button type="button" className="btn btn-outline" onClick={() => setStep(1)}>Back</button>
-                            <button type="submit" className="btn btn-primary">Save & Continue</button>
+                            {!renewalData && <button type="button" className="btn btn-outline" onClick={() => setStep(1)}>Back</button>}
+                            <button type="submit" className="btn btn-primary">Confirm & Continue</button>
                         </div>
                     </form>
                 )}
@@ -336,16 +463,27 @@ const AgentAddPolicy = () => {
                 {step === 3 && (
                     <div className="form-step">
                         <h2>Step 3: Choose Insurance Plan</h2>
+                        {renewalData && selectedPlan && (
+                            <div className="success-badge mb-3">
+                                ✨ Previous Plan: <strong>{selectedPlan.name}</strong> (Recommended)
+                            </div>
+                        )}
                         <div className="plans-grid">
                             {plans.map(plan => (
-                                <div key={plan.id || plan._id} className="plan-item-card" onClick={() => handleSelectPlan(plan)}>
+                                <div
+                                    key={plan.id || plan._id}
+                                    className={`plan-item-card ${selectedPlan?.id === plan.id ? 'selected' : ''}`}
+                                    onClick={() => handleSelectPlan(plan)}
+                                >
                                     <h3>{plan.name}</h3>
                                     <div className="plan-price">{formatCurrency(plan.premium)}</div>
                                     <div className="plan-meta">
                                         <span>Coverage: <strong>{formatCurrency(plan.coverageAmount)}</strong></span>
                                         <span>Duration: <strong>{plan.duration}</strong></span>
                                     </div>
-                                    <button className="btn btn-outline btn-block mt-3">Select Plan</button>
+                                    <button className={`btn btn-block mt-3 ${selectedPlan?.id === plan.id ? 'btn-primary' : 'btn-outline'}`}>
+                                        {selectedPlan?.id === plan.id ? 'Selected' : 'Select Plan'}
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -355,10 +493,10 @@ const AgentAddPolicy = () => {
                     </div>
                 )}
 
-                {/* Step 4: Cattle Details */}
+                {/* Step 4: Cattle Details & Dates */}
                 {step === 4 && (
                     <form onSubmit={(e) => { e.preventDefault(); setStep(5); }} className="form-step">
-                        <h2>Step 4: Cattle Information</h2>
+                        <h2>Step 4: Cattle Information & Schedule</h2>
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>Cattle Type *</label>
@@ -398,10 +536,34 @@ const AgentAddPolicy = () => {
                                     onChange={(e) => setPolicyData({ ...policyData, breed: e.target.value })}
                                 />
                             </div>
+
+                            {/* Date Fields - Critical for Renewal */}
+                            <div className="form-group">
+                                <label>Policy Start Date *</label>
+                                <input
+                                    type="date"
+                                    value={policyData.startDate}
+                                    onChange={(e) => setPolicyData({ ...policyData, startDate: e.target.value })}
+                                    required
+                                />
+                                <small className="helper-text">
+                                    {renewalData ? 'Automatically set to maintain continuity.' : 'Default is today.'}
+                                </small>
+                            </div>
+                            <div className="form-group">
+                                <label>Policy End Date</label>
+                                <input
+                                    type="text" // Read-only mostly
+                                    value={policyData.endDate ? new Date(policyData.endDate).toLocaleDateString() : ''}
+                                    readOnly
+                                    className="read-only"
+                                />
+                            </div>
                         </div>
 
                         <div className="photos-section mt-4">
                             <h3>Upload Photos (4 Sides)</h3>
+                            <p className="hint-text">{renewalData ? "For renewal, please update photos to confirm current health." : "Upload clear photos for cattle identification."}</p>
                             <div className="photos-row">
                                 <PhotoUpload side="front" label="Front" value={photos.front} onChange={handlePhotoChange} />
                                 <PhotoUpload side="back" label="Back" value={photos.back} onChange={handlePhotoChange} />
@@ -431,8 +593,14 @@ const AgentAddPolicy = () => {
                             <div className="review-section">
                                 <h3>📋 Plan Details</h3>
                                 <p><strong>Plan:</strong> {selectedPlan?.name}</p>
-                                <p><strong>Coverage:</strong> {formatCurrency(selectedPlan?.coverageAmount)}</p>
+                                <p><strong>Premium:</strong> {formatCurrency(selectedPlan?.premium)}</p>
                                 <p><strong>Duration:</strong> {selectedPlan?.duration}</p>
+                            </div>
+                            <div className="review-section">
+                                <h3>📅 Coverage Period</h3>
+                                <p><strong>Start:</strong> {new Date(policyData.startDate).toLocaleDateString()}</p>
+                                <p><strong>End:</strong> {new Date(policyData.endDate).toLocaleDateString()}</p>
+                                {renewalData && <span className="badge badge-info">Renewal Coverage</span>}
                             </div>
                             <div className="review-section">
                                 <h3>🐄 Cattle Details</h3>

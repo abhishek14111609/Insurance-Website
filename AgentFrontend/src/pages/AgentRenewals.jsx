@@ -81,22 +81,13 @@ const AgentRenewals = () => {
         setStats(stats);
     };
 
-    const handleRenewal = async (policyId) => {
-        try {
-            toast.loading('Processing renewal...');
-            // This would call a renewal API endpoint
-            // const response = await agentAPI.renewPolicy(policyId);
-
-            // Simulated for now
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            toast.dismiss();
-            toast.success('Renewal initiated! Customer will be notified.');
-            fetchRenewalData();
-        } catch (error) {
-            toast.dismiss();
-            console.error('Renewal error:', error);
-            toast.error('Failed to initiate renewal');
+    const handleRenewal = (policyId) => {
+        const policy = policies.find(p => p.id === policyId);
+        if (policy) {
+            // Redirect to Add Policy page with pre-filled details for renewal
+            navigate('/agent/add-policy', { state: { renewalData: policy } });
+        } else {
+            toast.error('Policy data not found');
         }
     };
 
@@ -130,7 +121,6 @@ const AgentRenewals = () => {
     };
 
     const handleExport = () => {
-        // ... (existing export logic)
         try {
             if (filteredPolicies.length === 0) {
                 toast.error('No data to export');
@@ -150,7 +140,6 @@ const AgentRenewals = () => {
         : policies.filter(p => p.renewalStatus.status === filter);
 
     const getStatusBadge = (renewalStatus) => {
-        // ... (existing badge logic)
         const badges = {
             'expiring-soon': { class: 'status-warning', text: `${renewalStatus.daysLeft} days left`, icon: '⚠️' },
             'expired': { class: 'status-expired', text: 'Expired', icon: '❌' },
@@ -161,7 +150,6 @@ const AgentRenewals = () => {
         return badges[renewalStatus.status] || badges.unknown;
     };
 
-    // ... (existing loading check)
     if (loading) {
         return (
             <div className="agent-renewals">

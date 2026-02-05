@@ -1,0 +1,355 @@
+/* Compact Privacy Policy Page */
+.policy-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    padding: 90px 20px 40px;
+}
+
+.policy-container-compact {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Header */
+.policy-header-compact {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    padding: 50px 40px;
+    text-align: center;
+}
+
+.header-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.policy-header-compact h1 {
+    font-size: 42px;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.policy-header-compact h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    opacity: 0.95;
+}
+
+.subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    margin: 10px 0 0 0;
+}
+
+/* Language Tabs */
+.language-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    padding: 30px 40px 0;
+    background: white;
+}
+
+.language-tabs .tab {
+    flex: 1;
+    max-width: 250px;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px 12px 0 0;
+}
+
+.language-tabs .tab:first-child {
+    margin-right: 5px;
+}
+
+.language-tabs .tab.active {
+    background: #16a34a;
+    color: white;
+    transform: translateY(-5px);
+    box-shadow: 0 -4px 12px rgba(22, 163, 74, 0.2);
+}
+
+.language-tabs .tab:hover:not(.active) {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+/* Introduction */
+.policy-intro {
+    padding: 30px 40px 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #374151;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Cards Grid */
+.policy-cards-grid {
+    padding: 30px 40px;
+    display: grid;
+    gap: 20px;
+}
+
+/* Individual Card */
+.policy-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.policy-card:hover {
+    border-color: #16a34a;
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.1);
+}
+
+/* Card Header */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.card-header:hover {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.card-icon {
+    font-size: 32px;
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.card-title h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.toggle-icon {
+    font-size: 28px;
+    font-weight: 300;
+    color: #16a34a;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(22, 163, 74, 0.1);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.card-header:hover .toggle-icon {
+    background: rgba(22, 163, 74, 0.2);
+    transform: scale(1.1);
+}
+
+/* Card Content */
+.card-content {
+    padding: 25px 30px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 2000px;
+    }
+}
+
+/* Policy List Compact */
+.policy-list-compact {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.policy-list-compact li {
+    padding: 12px 0 12px 35px;
+    position: relative;
+    line-height: 1.7;
+    color: #374151;
+    font-size: 15px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.policy-list-compact li:last-child {
+    border-bottom: none;
+}
+
+.policy-list-compact li::before {
+    content: "•";
+    position: absolute;
+    left: 10px;
+    top: 12px;
+    color: #16a34a;
+    font-weight: bold;
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* Footer */
+.policy-footer {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: white;
+    padding: 40px;
+    text-align: center;
+}
+
+.policy-footer h3 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 25px 0;
+}
+
+.contact-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.contact-btn {
+    padding: 14px 28px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    color: white;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.contact-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .policy-page {
+        padding: 70px 15px 30px;
+    }
+
+    .policy-header-compact {
+        padding: 40px 25px;
+    }
+
+    .policy-header-compact h1 {
+        font-size: 32px;
+    }
+
+    .policy-header-compact h2 {
+        font-size: 22px;
+    }
+
+    .language-tabs {
+        padding: 20px 20px 0;
+    }
+
+    .language-tabs .tab {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .policy-cards-grid {
+        padding: 20px;
+    }
+
+    .card-header {
+        padding: 15px 20px;
+    }
+
+    .card-title h3 {
+        font-size: 17px;
+    }
+
+    .card-icon {
+        font-size: 28px;
+    }
+
+    .card-content {
+        padding: 20px;
+    }
+
+    .contact-buttons {
+        flex-direction: column;
+    }
+
+    .contact-btn {
+        width: 100%;
+    }
+}
+
+@media print {
+    .policy-page {
+        background: white;
+        padding: 0;
+    }
+
+    .policy-container-compact {
+        box-shadow: none;
+    }
+
+    .language-tabs {
+        display: none;
+    }
+
+    .toggle-icon {
+        display: none;
+    }
+
+    .card-content {
+        display: block !important;
+        opacity: 1 !important;
+        max-height: none !important;
+    }
+
+    .policy-footer {
+        background: white;
+        color: black;
+        border-top: 2px solid #000;
+    }
+
+    .contact-btn {
+        color: black;
+        border-color: black;
+    }
+}

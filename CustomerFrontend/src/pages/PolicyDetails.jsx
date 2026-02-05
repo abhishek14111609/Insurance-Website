@@ -56,6 +56,16 @@ const PolicyDetails = () => {
         window.print();
     };
 
+    // Calculate days to expiry for Renewal button
+    const getDaysUntilExpiry = (endDate) => {
+        if (!endDate) return 1000;
+        const today = new Date();
+        const expiry = new Date(endDate);
+        const diffTime = expiry - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    };
+
     if (loading) {
         return (
             <div className="policy-details-page">
@@ -76,6 +86,9 @@ const PolicyDetails = () => {
             </div>
         );
     }
+
+    const daysLeft = getDaysUntilExpiry(policy.endDate);
+    const canRenew = (daysLeft <= 60 || daysLeft < 0) && policy.status !== 'RENEWED' && policy.status !== 'CANCELLED' && policy.status !== 'REJECTED' && policy.status !== 'PENDING';
 
     // Helper to safely get date
     const formatDate = (dateStr) => {
@@ -128,6 +141,29 @@ const PolicyDetails = () => {
                             onClick={() => navigate('/payment', { state: { policyId: policy.id } })}
                         >
                             Complete Payment
+                        </button>
+                    </div>
+                )}
+
+                {canRenew && (
+                    <div className="payment-alert" style={{
+                        background: '#f0f9ff',
+                        padding: '15px',
+                        borderRadius: '8px',
+                        border: '1px solid #0288d1',
+                        marginBottom: '20px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <span>
+                            <strong>Renewal Available:</strong> This policy is expiring soon or expired.
+                        </span>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => navigate('/renew', { state: { policy } })}
+                        >
+                            🔄 Renew Policy
                         </button>
                     </div>
                 )}

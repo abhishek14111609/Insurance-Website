@@ -38,11 +38,11 @@ const MyPolicies = () => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            PENDING: { class: 'status-pending', icon: '🟡', text: 'Payment Pending' },
-            PENDING_APPROVAL: { class: 'status-pending', icon: '⏳', text: 'Pending Approval' },
-            APPROVED: { class: 'status-approved', icon: '🟢', text: 'Active' },
-            REJECTED: { class: 'status-rejected', icon: '🔴', text: 'Rejected' },
-            EXPIRED: { class: 'status-expired', icon: '⚪', text: 'Expired' }
+            PENDING: { class: 'status-pending', icon: '⏳', text: 'Payment Pending' },
+            PENDING_APPROVAL: { class: 'status-pending', icon: '🕑', text: 'Approval Pending' },
+            APPROVED: { class: 'status-approved', icon: '✅', text: 'Active Policy' },
+            REJECTED: { class: 'status-rejected', icon: '❌', text: 'Rejected' },
+            EXPIRED: { class: 'status-expired', icon: '⚠️', text: 'Expired' }
         };
         return badges[status] || badges.PENDING;
     };
@@ -73,7 +73,7 @@ const MyPolicies = () => {
                 <div className="container">
                     <div className="error-state">
                         <p>{error}</p>
-                        <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
+                        <button className="buy-policy-btn" onClick={() => window.location.reload()}>Retry</button>
                     </div>
                 </div>
             </div>
@@ -83,34 +83,34 @@ const MyPolicies = () => {
     return (
         <div className="my-policies-page">
             <div className="container">
-                <div className="page-header">
+                <header className="page-header">
                     <h1>My Policies</h1>
-                    <button className="btn btn-primary" onClick={() => navigate('/policies')}>
-                        + Buy New Policy
+                    <button className="buy-policy-btn" onClick={() => navigate('/policies')}>
+                        <span>+</span> Buy New Policy
                     </button>
-                </div>
+                </header>
 
                 <div className="filter-tabs">
                     <button
-                        className={filter === 'ALL' ? 'active' : ''}
+                        className={`tab-btn ${filter === 'ALL' ? 'active' : ''}`}
                         onClick={() => setFilter('ALL')}
                     >
-                        All ({policies.length})
+                        All Policies ({policies.length})
                     </button>
                     <button
-                        className={filter === 'PENDING' ? 'active' : ''}
+                        className={`tab-btn ${filter === 'PENDING' ? 'active' : ''}`}
                         onClick={() => setFilter('PENDING')}
                     >
                         Pending ({policies.filter(p => p.status === 'PENDING' || p.status === 'PENDING_APPROVAL').length})
                     </button>
                     <button
-                        className={filter === 'APPROVED' ? 'active' : ''}
+                        className={`tab-btn ${filter === 'APPROVED' ? 'active' : ''}`}
                         onClick={() => setFilter('APPROVED')}
                     >
                         Active ({policies.filter(p => p.status === 'APPROVED').length})
                     </button>
                     <button
-                        className={filter === 'EXPIRED' ? 'active' : ''}
+                        className={`tab-btn ${filter === 'EXPIRED' ? 'active' : ''}`}
                         onClick={() => setFilter('EXPIRED')}
                     >
                         Expired ({policies.filter(p => p.status === 'EXPIRED').length})
@@ -124,66 +124,66 @@ const MyPolicies = () => {
                             return (
                                 <div key={policy.id} className="policy-card">
                                     <div className="policy-card-header">
-                                        <span className="policy-number">{policy.policyNumber || 'Processing...'}</span>
-                                        <span className={`status-badge ${badge.class}`}>
-                                            {badge.icon} {badge.text}
-                                        </span>
+                                        <span className="policy-number">#{policy.policyNumber || 'PROCESSING'}</span>
+                                        <div className={`status-badge ${badge.class}`}>
+                                            <span>{badge.icon}</span>
+                                            {badge.text}
+                                        </div>
                                     </div>
 
                                     <div className="policy-card-body">
                                         <div className="cattle-info">
-                                            <span className="cattle-icon">
+                                            <div className="cattle-icon-wrapper">
                                                 {policy.cattleType === 'cow' ? '🐄' : '🐃'}
-                                            </span>
-                                            <div>
-                                                <strong>{policy.tagId}</strong>
-                                                <p>{policy.breed} • {policy.age} years</p>
+                                            </div>
+                                            <div className="cattle-details">
+                                                <h3>Tag: {policy.tagId}</h3>
+                                                <p className="cattle-breed">{policy.breed} • {policy.age} Years</p>
                                             </div>
                                         </div>
 
                                         <div className="policy-details">
                                             <div className="detail-row">
-                                                <span>Coverage:</span>
-                                                <strong>{formatCurrency(policy.coverageAmount)}</strong>
+                                                <span className="label">Start Date</span>
+                                                <span className="value">{new Date(policy.startDate).toLocaleDateString()}</span>
                                             </div>
                                             <div className="detail-row">
-                                                <span>Premium:</span>
-                                                <strong>{formatCurrency(policy.premium)}</strong>
+                                                <span className="label">End Date</span>
+                                                <span className="value">{new Date(policy.endDate).toLocaleDateString()}</span>
                                             </div>
                                             <div className="detail-row">
-                                                <span>Period:</span>
-                                                <span>{new Date(policy.startDate).toLocaleDateString()} to {new Date(policy.endDate).toLocaleDateString()}</span>
+                                                <span className="label">Sum Insured</span>
+                                                <span className="value">{formatCurrency(policy.coverageAmount)}</span>
+                                            </div>
+                                            <div className="detail-row">
+                                                <span className="label">Premium</span>
+                                                <span className="value amount">{formatCurrency(policy.premium)}</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="policy-card-footer">
                                         <button
-                                            className="btn btn-sm btn-outline"
+                                            className="btn-view"
                                             onClick={() => navigate(`/policy/${policy.id}`)}
                                         >
                                             View Details
                                         </button>
 
                                         {policy.status === 'APPROVED' && (
-                                            <>
-                                                {/* <button className="btn btn-sm btn-outline">
-                                                    Download PDF
-                                                </button> */}
-                                                <button
-                                                    className="btn btn-sm btn-primary"
-                                                    onClick={() => navigate('/claims/new', { state: { policy } })}
-                                                >
-                                                    File Claim
-                                                </button>
-                                            </>
+                                            <button
+                                                className="btn-action"
+                                                onClick={() => navigate('/claims/new', { state: { policy } })}
+                                            >
+                                                File Claim
+                                            </button>
                                         )}
                                         {policy.status === 'PENDING' && (
                                             <button
-                                                className="btn btn-sm btn-primary"
+                                                className="btn-action"
                                                 onClick={() => navigate('/payment', { state: { policyId: policy.id } })}
                                             >
-                                                Complete Payment
+                                                Pay Now
                                             </button>
                                         )}
                                     </div>
@@ -193,16 +193,16 @@ const MyPolicies = () => {
                     </div>
                 ) : (
                     <div className="empty-state">
-                        <span className="empty-icon">📄</span>
+                        <span className="empty-icon">🛡️</span>
                         <h3>No Policies Found</h3>
                         <p>
                             {filter === 'ALL'
-                                ? "You haven't purchased any policies yet."
-                                : `No ${filter.toLowerCase()} policies found.`
+                                ? "You haven't purchased any insurance policies yet."
+                                : `You don't have any ${filter.toLowerCase()} policies.`
                             }
                         </p>
-                        <button className="btn btn-primary" onClick={() => navigate('/policies')}>
-                            Get Protected Now
+                        <button className="buy-policy-btn" onClick={() => navigate('/policies')}>
+                            Protect Your Cattle Now
                         </button>
                     </div>
                 )}
