@@ -12,16 +12,35 @@ const ensureDirectory = (dirPath) => {
 const formatCurrency = (value) => {
     const numeric = typeof value === 'number' ? value : parseFloat(value);
     if (Number.isNaN(numeric)) return 'N/A';
-    // Using simple 'Rs.' if '₹' causes issues in some viewers, but user asked for '₹' explicitly.
-    // Helvetica standard font doesn't always support '₹'.
-    // If we want to be safe we would use a font that supports it or an image. 
-    // But since the user asked for it, we will use the symbol.
-    return `₹ ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Using Rs. instead of ₹ for better visibility in PDF
+    return `Rs. ${numeric.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatDate = (date) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+// Helper to add watermark
+const addWatermark = (doc) => {
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    
+    doc.save();
+    doc.opacity(0.08); // Semi-transparent
+    doc.fontSize(80);
+    doc.fillColor('gray');
+    
+    // Position from bottom-left to top-right diagonal
+    doc.translate(pageWidth / 2, pageHeight / 2);
+    doc.rotate(-45);
+    doc.text('PASHUDHAN SURAKSHA', -250, -50, { 
+        align: 'center', 
+        width: 500,
+        font: 'Helvetica-Bold'
+    });
+    
+    doc.restore();
 };
 
 // Helper to draw a cell in a grid
@@ -60,6 +79,9 @@ export const generatePolicyPdf = async (policy) => {
 
     doc.pipe(stream);
 
+    // Add watermark to first page
+    addWatermark(doc);
+
     // Register a font that supports Rupee if possible, but for now we stick to standard.
     // If the default font doesn't support Rupee, it might show blank.
     // However, in many PDFKit versions, standard fonts don't include it. 
@@ -84,8 +106,10 @@ export const generatePolicyPdf = async (policy) => {
 
     // Address & GST
     doc.fontSize(8).font('Helvetica')
-        .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road, Opp. APMC Market, Vijapur, Dist. Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
-    currentY += 12;
+        .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road,`, startX, currentY, { align: 'center' })
+    currentY += 10;
+    doc.text(`Opp. APMC Market, Vijapur, Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
+    currentY += 10;
     doc.text(`GSTIN: 24ABIFP7717Q1ZI | State Code: 24 (Gujarat)`, startX, currentY, { align: 'center' });
     currentY += 20;
 
@@ -101,13 +125,16 @@ export const generatePolicyPdf = async (policy) => {
     const colWidth = pageWidth / 2;
 
     const startDetailsY = currentY;
+    const detailsBoxHeight = rowHeight * 10;
 
     // Left Column: Insured Details
-    doc.rect(col1X, currentY, colWidth, 120).stroke();
+    doc.rect(col1X, currentY, colWidth, detailsBoxHeight).stroke();
     let leftY = currentY;
 
+    const customerIdNumber = policy.customerId?.id || policy.customerId?._id || policy.customerId;
+    const customerIdText = customerIdNumber ? customerIdNumber.toString() : 'NA';
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `Insured Name: ${policy.ownerName || policy.customerId?.fullName || ''}`, true); leftY += rowHeight;
-    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID: ${policy.customerId?.id || 'CUST-001'}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Customer ID No: ${customerIdText}`, true); leftY += rowHeight;
 
     // Address wrapping
     doc.rect(col1X, leftY, colWidth, rowHeight * 3).stroke();
@@ -118,27 +145,33 @@ export const generatePolicyPdf = async (policy) => {
 
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `Phone No: ${policy.ownerPhone}`, true); leftY += rowHeight;
     drawCell(doc, col1X, leftY, colWidth, rowHeight, `Email: ${policy.ownerEmail}`, true); leftY += rowHeight;
-    drawCell(doc, col1X, leftY, colWidth, rowHeight, `PAN No: ${policy.panNumber || 'NA'}`, true); leftY += rowHeight;
+    const panNumber = policy.customerId?.kycDetails?.panNumber || 'NA';
+    const aadharNumber = policy.customerId?.kycDetails?.aadharNumber || 'NA';
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `PAN No: ${panNumber}`, true); leftY += rowHeight;
+    drawCell(doc, col1X, leftY, colWidth, rowHeight, `Aadhar No: ${aadharNumber}`, true); leftY += rowHeight;
 
     // Right Column: Office/Agent Details
-    doc.rect(col2X, currentY, colWidth, 120).stroke();
+    doc.rect(col2X, currentY, colWidth, detailsBoxHeight).stroke();
     let rightY = currentY;
 
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Issuing Office Details:`, true, false); rightY += rowHeight; // Header centered
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: PUSH-HO-001`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Office Code: Vijapur21506`, true); rightY += rowHeight;
 
     // Address wrapping
     doc.rect(col2X, rightY, colWidth, rowHeight * 3).stroke();
     doc.font('Helvetica-Bold').fontSize(8).text('Address:', col2X + 2, rightY + 2);
-    doc.font('Helvetica').fontSize(8).text(`Pashudhan Suraksha HQ, Vijapur, Gujarat`,
+    doc.font('Helvetica').fontSize(7).text(`Shop No-10, Second Floor,\nSuvidhi Solitaire, TB Road,\nOpp. APMC Market, Vijapur,\nMahesana, Gujarat - 384570`,
         col2X + 45, rightY + 2, { width: colWidth - 50 });
     rightY += (rowHeight * 3);
 
-    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 1800-123-4567`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Phone No: 79903 39567`, true); rightY += rowHeight;
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Code: ${policy.agentCode || 'DIRECT'}`, true); rightY += rowHeight;
     // Handle populated agentId with nested userId for name
-    const agentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || 'Direct Business';
+    const resolvedAgentName = policy.agentId?.userId?.fullName || policy.agentId?.fullName || '';
+    const agentName = resolvedAgentName || (policy.agentCode ? 'NA' : 'Direct Business');
+    const agentPhone = policy.agentId?.userId?.phone || policy.agentId?.phone || 'NA';
     drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Name: ${agentName}`, true); rightY += rowHeight;
+    drawCell(doc, col2X, rightY, colWidth, rowHeight, `Agent Phone No: ${agentPhone}`, true); rightY += rowHeight;
 
     currentY = Math.max(leftY, rightY) + 10;
 
@@ -152,32 +185,39 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Policy Number', true);
     drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, policy.policyNumber);
     drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Business Source', true);
-    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'Direct / Agent');
+    const businessSource = policy.agentCode ? 'Agent' : 'Direct';
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, businessSource);
     currentY += rowHeight;
 
     // Row 2
     drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Period of Insurance', true);
     drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, `${formatDate(policy.startDate)} to ${formatDate(policy.endDate)}`);
     drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Dev. Off Level', true);
-    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'NA');
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'HO');
     currentY += rowHeight;
 
     // Row 3
     drawCell(doc, startX, currentY, pageWidth * 0.25, rowHeight, 'Date of Proposal', true);
     drawCell(doc, startX + pageWidth * 0.25, currentY, pageWidth * 0.25, rowHeight, formatDate(policy.createdAt));
     drawCell(doc, startX + pageWidth * 0.5, currentY, pageWidth * 0.25, rowHeight, 'Prev. Policy No', true);
-    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, 'NA');
+    const prevPolicyNo = policy.previousPolicyNumber || 'New Policy';
+    drawCell(doc, startX + pageWidth * 0.75, currentY, pageWidth * 0.25, rowHeight, prevPolicyNo);
     currentY += rowHeight;
     currentY += 10;
 
     // --- PREMIUM TABLE ---
-    // Headers
-    const premColW = pageWidth / 4;
-    drawCell(doc, startX, currentY, premColW, rowHeight, 'Premium', true, false);
-    drawCell(doc, startX + premColW, currentY, premColW, rowHeight, 'GST', true, false);
-    drawCell(doc, startX + (premColW * 2), currentY, premColW, rowHeight, 'Total (₹)', true, false);
-    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, 'Receipt No & Date', true, false);
-    currentY += rowHeight;
+    // Headers - Adjust column widths to give more space to Receipt No & Date
+    const premColW1 = pageWidth * 0.20; // Premium
+    const premColW2 = pageWidth * 0.15; // GST
+    const premColW3 = pageWidth * 0.20; // Total
+    const premColW4 = pageWidth * 0.45; // Receipt No & Date (wider)
+    const premiumRowHeight = 25; // Larger row height for premium table
+    
+    drawCell(doc, startX, currentY, premColW1, premiumRowHeight, 'Premium', true, false);
+    drawCell(doc, startX + premColW1, currentY, premColW2, premiumRowHeight, 'GST', true, false);
+    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, premiumRowHeight, 'Total (₹)', true, false);
+    drawCell(doc, startX + premColW1 + premColW2 + premColW3, currentY, premColW4, premiumRowHeight, 'Receipt No & Date', true, false);
+    currentY += premiumRowHeight;
 
     // Values (Approximation for GST splitting)
     const premium = parseFloat(policy.premium) || 0;
@@ -188,11 +228,25 @@ export const generatePolicyPdf = async (policy) => {
     // Let's just put the total in Total and '-' in breakdown to avoid math errors if not sure.
     // OR: Assume standard breakdown if applicable.
 
-    drawCell(doc, startX, currentY, premColW, rowHeight, formatCurrency(premium)); // Base
-    drawCell(doc, startX + premColW, currentY, premColW, rowHeight, 'Included'); // GST
-    drawCell(doc, startX + (premColW * 2), currentY, premColW, rowHeight, formatCurrency(premium)); // Total
-    drawCell(doc, startX + (premColW * 3), currentY, premColW, rowHeight, `${policy.paymentId || 'NA'} - ${formatDate(policy.paymentDate)}`);
-    currentY += rowHeight + 15;
+    drawCell(doc, startX, currentY, premColW1, premiumRowHeight, formatCurrency(premium)); // Base
+    drawCell(doc, startX + premColW1, currentY, premColW2, premiumRowHeight, 'Included'); // GST
+    drawCell(doc, startX + premColW1 + premColW2, currentY, premColW3, premiumRowHeight, formatCurrency(premium)); // Total
+    
+    // Format receipt info with date on separate lines with larger cell
+    const receiptNo = policy.paymentId ? policy.paymentId.substring(0, 18) : 'NA'; // Shorten receipt ID
+    // Use paymentDate if available, otherwise use createdAt or approvedAt as fallback
+    const receiptDate = policy.paymentDate 
+        ? formatDate(policy.paymentDate) 
+        : (policy.approvedAt ? formatDate(policy.approvedAt) : formatDate(policy.createdAt));
+    
+    // Create a custom cell for receipt info with better text wrapping
+    const receiptCellX = startX + premColW1 + premColW2 + premColW3;
+    doc.rect(receiptCellX, currentY, premColW4, premiumRowHeight).stroke();
+    doc.font('Helvetica').fontSize(8);
+    doc.text(`${receiptNo}`, receiptCellX + 3, currentY + 4, { width: premColW4 - 6, align: 'center' });
+    doc.text(`${receiptDate}`, receiptCellX + 3, currentY + 14, { width: premColW4 - 6, align: 'center' });
+    
+    currentY += premiumRowHeight + 15;
 
 
     // --- POLICY SCHEDULE HEADER ---
@@ -239,7 +293,7 @@ export const generatePolicyPdf = async (policy) => {
     drawCell(doc, x, currentY, cattleCols[4].w, rowHeight, policy.gender, false, false); x += cattleCols[4].w;
     drawCell(doc, x, currentY, cattleCols[5].w, rowHeight, `${policy.age} Yrs`, false, false); x += cattleCols[5].w;
     drawCell(doc, x, currentY, cattleCols[6].w, rowHeight, policy.healthStatus, false, false); x += cattleCols[6].w;
-    drawCell(doc, x, currentY, cattleCols[7].w, rowHeight, formatCurrency(policy.coverageAmount), false, false); x += cattleCols[7].w;
+    drawCell(doc, x, currentY, cattleCols[7].w, rowHeight, formatCurrency(policy.coverageAmount), false, true); x += cattleCols[7].w;
     drawCell(doc, x, currentY, cattleCols[8].w, rowHeight, '0', false, false);
 
     currentY += rowHeight + 20;
@@ -276,10 +330,108 @@ export const generatePolicyPdf = async (policy) => {
         .text('2. This policy is subject to the Cattle Insurance Clause attached hereto.', startX, currentY + 22)
         .text('3. In case of claim, ear tag/s intact condition is mandatory.', startX, currentY + 32);
 
-    // --- ATTACH TERMS IF NEEDED (Simplified for now to keep it "Strict" to the Schedule page) ---
-    // The request was for the SCHEDULE. If terms pages are needed, they can be appended. 
-    // Given "strictly", usually means the Schedule page itself. 
-    // I will append a basic Terms page just in case, or leave it if it fits on one page (which it likely does).
+    // --- ADD NEW PAGE FOR TERMS AND CONDITIONS ---
+    doc.addPage();
+    addWatermark(doc); // Add watermark to second page
+    let termsY = 40;
+
+    // Terms Header
+    doc.font('Helvetica-Bold').fontSize(12).fillColor('#003366')
+        .text('TERMS AND CONDITIONS', startX, termsY, { align: 'center' });
+    termsY += 20;
+
+    // Special Conditions Section
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black').text('Special Conditions:', startX, termsY);
+    termsY += 12;
+
+    const specialConditions = [
+        "1. This policy covers death of the animal due to diseases and accidents as per policy wordings.",
+        "2. Immediate intimation of claim is mandatory (within 24 hours of incident).",
+        "3. Ear tag is mandatory for claim settlement. No tag = No claim.",
+        "4. In case of any discrepancy, please contact customer care within 15 days of commencement of risk.",
+        "5. If the doctor does not come for post-mortem, the claim will be rejected and the premium will be refunded within 16 days."
+    ];
+
+    specialConditions.forEach(condition => {
+        doc.font('Helvetica').fontSize(8).fillColor('black')
+            .text(condition, startX + 10, termsY, { width: pageWidth - 20 });
+        termsY += 15;
+    });
+
+    termsY += 10;
+
+    // Post-Mortem Conditions
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black').text('Post-Mortem (P.M) Conditions:', startX, termsY);
+    termsY += 12;
+
+    const pmConditions = [
+        "1. Lump and other communicable cattle diseases not covered. Lumpy cattle, intact original tag & second tag & treatment papers are to be submitted.",
+        "2. If the doctor comes within 5 hours, the tag will be available for P.M. If the doctor comes after 5 hours, the next day morning will be available.",
+        "3. If the doctor does not come within 3 days, the claim will be rejected and the premium will be refunded.",
+        "4. In case of sudden death, immediate post-mortem must be conducted for claim settlement."
+    ];
+
+    pmConditions.forEach(condition => {
+        doc.font('Helvetica').fontSize(8).fillColor('black')
+            .text(condition, startX + 10, termsY, { width: pageWidth - 20 });
+        termsY += 18;
+    });
+
+    termsY += 10;
+
+    // Restrictions Section
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black').text('Restrictions & Exclusions:', startX, termsY);
+    termsY += 12;
+
+    const restrictions = [
+        "1. Animals under treatment or sickly animals are not covered.",
+        "2. Death due to starvation, negligence, or improper care is excluded.",
+        "3. Surgical treatment and accidents due to owner's negligence are not covered.",
+        "4. Claims must be supported with valid veterinary certificate and photographs.",
+        "5. Tag must be intact. Damaged or missing tags may result in claim rejection."
+    ];
+
+    restrictions.forEach(restriction => {
+        doc.font('Helvetica').fontSize(8).fillColor('black')
+            .text(restriction, startX + 10, termsY, { width: pageWidth - 20 });
+        termsY += 15;
+    });
+
+    termsY += 10;
+
+    // Claim Procedure Section
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black').text('Claim Procedure:', startX, termsY);
+    termsY += 12;
+
+    const claimProcedures = [
+        "1. Report the incident to our office within 24 hours",
+        "2. Arrange for veterinary post-mortem examination",
+        "3. Submit all required documents (PM report, photographs, original tag)",
+        "4. Our team will verify and process the claim within 3-5 working days",
+        "5. Approved claims will be settled within 15 working days from approval"
+    ];
+
+    claimProcedures.forEach(procedure => {
+        doc.font('Helvetica').fontSize(8).fillColor('black')
+            .text(procedure, startX + 10, termsY, { width: pageWidth - 20 });
+        termsY += 12;
+    });
+
+    termsY += 15;
+
+    // Contact Information
+    doc.font('Helvetica-Bold').fontSize(9).fillColor('#003366').text('CUSTOMER CARE CONTACT:', startX, termsY);
+    termsY += 12;
+    doc.font('Helvetica').fontSize(8).fillColor('black')
+        .text('Phone: 79903 39567 | Email: pashudhansuraksha2026@gmail.com', startX + 10, termsY);
+    termsY += 12;
+    doc.text('Shop No-10, Second Floor,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Suvidhi Solitaire, TB Road,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Opp. APMC Market, Vijapur,', startX + 10, termsY);
+    termsY += 10;
+    doc.text('Mahesana, Gujarat - 384570', startX + 10, termsY);
 
     doc.end();
 

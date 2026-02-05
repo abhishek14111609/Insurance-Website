@@ -283,7 +283,12 @@ export const getPendingPolicies = async (req, res) => {
 // @access  Private
 export const downloadPolicyDocument = async (req, res) => {
     try {
-        const policy = await Policy.findById(req.params.id);
+        const policy = await Policy.findById(req.params.id)
+            .populate('customerId')
+            .populate({
+                path: 'agentId',
+                populate: { path: 'userId' }
+            });
 
         if (!policy) {
             return res.status(404).json({ success: false, message: 'Policy not found' });
@@ -304,12 +309,41 @@ export const downloadPolicyDocument = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Policy is not approved yet' });
         }
 
+        // Hydrate missing agent/payment details before PDF generation
+        let policyUpdated = false;
+
+        if (!policy.agentId && policy.agentCode) {
+            const agentByCode = await Agent.findOne({ agentCode: policy.agentCode })
+                .populate('userId');
+            if (agentByCode) {
+                policy.agentId = agentByCode._id;
+                policyUpdated = true;
+                policy.agentId = agentByCode; // for in-memory PDF rendering
+            }
+        }
+
+        if (!policy.paymentDate || !policy.paymentId) {
+            const payment = await Payment.findOne({ policyId: policy._id, status: 'success' })
+                .sort({ paidAt: -1 });
+            if (payment) {
+                if (!policy.paymentId && payment.paymentId) {
+                    policy.paymentId = payment.paymentId;
+                }
+                if (!policy.paymentDate && payment.paidAt) {
+                    policy.paymentDate = payment.paidAt;
+                }
+                policyUpdated = true;
+            }
+        }
+
         let pdfPath = null;
         if (policy.documentUrl) {
             pdfPath = path.join(process.cwd(), policy.documentUrl);
         }
 
-        if (!pdfPath || !fs.existsSync(pdfPath)) {
+        const shouldRegenerate = !pdfPath || !fs.existsSync(pdfPath) || policyUpdated || (!policy.paymentDate && !policy.paymentId);
+
+        if (shouldRegenerate) {
             console.log(`[Download] PDF missing for policy ${policy.policyNumber}, regenerating...`);
             pdfPath = await generatePolicyPdf(policy);
 

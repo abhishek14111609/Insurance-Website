@@ -6,6 +6,7 @@ import {
     getPolicyDetails,
     approvePolicy,
     rejectPolicy,
+    downloadPolicyPDF,
     getAllAgents,
     approveAgent,
     rejectAgent,
@@ -46,6 +47,7 @@ router.get('/dashboard', getDashboardStats);
 router.get('/policies', getAllPolicies);
 router.get('/policies/sales/history', getPolicySalesHistory);
 router.get('/policies/:id', getPolicyDetails);
+router.get('/policies/:policyNumber/download', downloadPolicyPDF);
 router.patch('/policies/:id/approve', approvePolicy);
 router.patch('/policies/:id/reject', rejectPolicy);
 

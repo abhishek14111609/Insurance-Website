@@ -405,6 +405,10 @@ export const approvePolicy = async (req, res) => {
 
         const policy = await Policy.findById(req.params.id)
             .populate('customerId')
+            .populate({
+                path: 'agentId',
+                populate: { path: 'userId' }
+            })
             .session(session);
 
         if (!policy) {
@@ -438,6 +442,35 @@ export const approvePolicy = async (req, res) => {
         policy.approvedAt = new Date();
         policy.approvedBy = adminId;
         policy.adminNotes = adminNotes;
+
+        // Hydrate missing agent/payment details before PDF generation
+        let policyUpdated = false;
+
+        if (!policy.agentId && policy.agentCode) {
+            const agentByCode = await Agent.findOne({ agentCode: policy.agentCode })
+                .populate('userId')
+                .session(session);
+            if (agentByCode) {
+                policy.agentId = agentByCode._id;
+                policyUpdated = true;
+                policy.agentId = agentByCode; // for in-memory PDF rendering
+            }
+        }
+
+        if (!policy.paymentDate || !policy.paymentId) {
+            const payment = await Payment.findOne({ policyId: policy._id, status: 'success' })
+                .sort({ paidAt: -1 })
+                .session(session);
+            if (payment) {
+                if (!policy.paymentId && payment.paymentId) {
+                    policy.paymentId = payment.paymentId;
+                }
+                if (!policy.paymentDate && payment.paidAt) {
+                    policy.paymentDate = payment.paidAt;
+                }
+                policyUpdated = true;
+            }
+        }
 
         // Generate PDF immediately
         try {
@@ -575,6 +608,80 @@ export const rejectPolicy = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error rejecting policy',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Download policy PDF
+// @route   GET /api/admin/policies/:policyNumber/download
+// @access  Private (admin)
+export const downloadPolicyPDF = async (req, res) => {
+    try {
+        const { policyNumber } = req.params;
+        
+        // Find policy by policy number
+        const policy = await Policy.findOne({ policyNumber })
+            .populate('customerId', 'fullName email phone')
+            .populate('agentId', 'fullName agentCode');
+
+        if (!policy) {
+            return res.status(404).json({
+                success: false,
+                message: 'Policy not found'
+            });
+        }
+
+        // Check if policy is approved
+        if (policy.status?.toLowerCase() !== 'approved') {
+            return res.status(400).json({
+                success: false,
+                message: 'PDF is only available for approved policies'
+            });
+        }
+
+        // Check if PDF already exists
+        const pdfPath = path.join(process.cwd(), 'uploads', 'policy_docs', `Policy-${policyNumber}.pdf`);
+        
+        if (!fs.existsSync(pdfPath)) {
+            // Generate PDF if it doesn't exist
+            console.log(`[DownloadPDF] PDF not found, generating for policy ${policyNumber}`);
+            try {
+                await generatePolicyPdf(policy);
+            } catch (genError) {
+                console.error('[DownloadPDF] Failed to generate PDF:', genError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to generate policy PDF'
+                });
+            }
+        }
+
+        // Verify file exists after generation
+        if (!fs.existsSync(pdfPath)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Policy PDF file not found'
+            });
+        }
+
+        // Send file for download
+        res.download(pdfPath, `Policy-${policyNumber}.pdf`, (err) => {
+            if (err) {
+                console.error('[DownloadPDF] Error sending file:', err);
+                if (!res.headersSent) {
+                    res.status(500).json({
+                        success: false,
+                        message: 'Error downloading policy PDF'
+                    });
+                }
+            }
+        });
+    } catch (error) {
+        console.error('[DownloadPDF] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error downloading policy PDF',
             error: error.message
         });
     }
