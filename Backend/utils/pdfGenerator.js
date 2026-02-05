@@ -109,6 +109,7 @@ export const generatePolicyPdf = async (policy) => {
         .text(`Regd. Office: Shop No-10, Second Floor, Suvidhi Solitaire, TB Road,`, startX, currentY, { align: 'center' })
     currentY += 10;
     doc.text(`Opp. APMC Market, Vijapur, Mahesana, Gujarat - 384570`, startX, currentY, { align: 'center' });
+    currentY += 10;
     doc.text(`GSTIN: 24ABIFP7717Q1ZI | State Code: 24 (Gujarat)`, startX, currentY, { align: 'center' });
     currentY += 20;
 
