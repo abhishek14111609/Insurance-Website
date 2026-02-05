@@ -1,6 +1,8 @@
 /* AgentAnalytics.css */
 .agent-analytics {
-    padding: 2rem 0;
+    padding: 2rem;
+    padding-top: 1rem;
+    /* Adjust based on navbar */
     min-height: calc(100vh - 70px);
     background-color: var(--background-secondary);
 }
@@ -63,6 +65,8 @@
     align-items: center;
     gap: 1rem;
     transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    /* Prevent spill */
 }
 
 .metric-card:hover {
@@ -71,9 +75,11 @@
 }
 
 .metric-icon {
-    font-size: 2.5rem;
+    font-size: 2rem;
     width: 60px;
     height: 60px;
+    min-width: 60px;
+    /* Prevent shrink */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -84,6 +90,8 @@
 
 .metric-content {
     flex: 1;
+    min-width: 0;
+    /* Enable truncation/wrapping */
 }
 
 .metric-content h3 {
@@ -91,18 +99,27 @@
     color: var(--text-secondary);
     margin-bottom: 0.5rem;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .metric-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
+    /* Slightly smaller to fit better */
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
+    word-break: break-word;
+    /* Handle long numbers */
+    line-height: 1.2;
 }
 
 .metric-content small {
     font-size: 0.75rem;
     color: var(--text-secondary);
+    display: block;
+    margin-top: 0.25rem;
 }
 
 /* Charts Grid */
@@ -165,7 +182,8 @@
 
 .bar {
     width: 100%;
-    max-width: 60px;
+    max-width: 50px;
+    /* Slightly narrower */
     background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
     border-radius: 8px 8px 0 0;
     position: relative;
@@ -190,6 +208,7 @@
     white-space: nowrap;
     opacity: 0;
     transition: opacity 0.3s;
+    pointer-events: none;
 }
 
 .bar:hover .bar-value {
@@ -200,6 +219,7 @@
     font-size: 0.75rem;
     color: var(--text-secondary);
     font-weight: 500;
+    text-align: center;
 }
 
 /* Commission Chart Variant */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { agentAPI } from '../services/api.service';
+import { agentAPI, policyAPI } from '../services/api.service';
 import { exportToCSV, formatPoliciesForExport } from '../utils/exportUtils';
 import SkeletonLoader from '../components/SkeletonLoader';
 import toast from 'react-hot-toast';
@@ -100,7 +100,37 @@ const AgentRenewals = () => {
         }
     };
 
+    const handleDownload = async (policy) => {
+        try {
+            toast.loading('Downloading document...');
+            const blob = await policyAPI.downloadDocument(policy.id);
+
+            if (blob.type === 'application/json') {
+                const text = await blob.text();
+                const json = JSON.parse(text);
+                throw new Error(json.message || 'Download failed');
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Policy-${policy.policyNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.dismiss();
+            toast.success('Document downloaded successfully');
+        } catch (error) {
+            toast.dismiss();
+            console.error("Download error:", error);
+            toast.error(error.message || 'Failed to download document');
+        }
+    };
+
     const handleExport = () => {
+        // ... (existing export logic)
         try {
             if (filteredPolicies.length === 0) {
                 toast.error('No data to export');
@@ -120,6 +150,7 @@ const AgentRenewals = () => {
         : policies.filter(p => p.renewalStatus.status === filter);
 
     const getStatusBadge = (renewalStatus) => {
+        // ... (existing badge logic)
         const badges = {
             'expiring-soon': { class: 'status-warning', text: `${renewalStatus.daysLeft} days left`, icon: '⚠️' },
             'expired': { class: 'status-expired', text: 'Expired', icon: '❌' },
@@ -130,6 +161,7 @@ const AgentRenewals = () => {
         return badges[renewalStatus.status] || badges.unknown;
     };
 
+    // ... (existing loading check)
     if (loading) {
         return (
             <div className="agent-renewals">
@@ -268,12 +300,18 @@ const AgentRenewals = () => {
                                     >
                                         View Details
                                     </button>
+                                    <button
+                                        className="btn btn-sm btn-outline"
+                                        onClick={() => handleDownload(policy)}
+                                    >
+                                        📄 PDF
+                                    </button>
                                     {canRenew && (
                                         <button
                                             className="btn btn-sm btn-primary"
                                             onClick={() => handleRenewal(policy.id)}
                                         >
-                                            🔄 Initiate Renewal
+                                            🔄 Renew
                                         </button>
                                     )}
                                 </div>

@@ -25,6 +25,7 @@ import AgentLanding from './pages/AgentLanding';
 import AgentLogin from './pages/AgentLogin';
 import AgentRenewals from './pages/AgentRenewals';
 import AgentAnalytics from './pages/AgentAnalytics';
+import AgentPolicyDetails from './pages/AgentPolicyDetails';
 
 import './App.css';
 
@@ -110,7 +111,11 @@ function App() {
                 <Route path="notifications" element={<AgentNotifications />} />
                 <Route path="reports" element={<AgentReports />} />
                 <Route path="commissions" element={<AgentCommissions />} />
+                <Route path="policy/:id" element={<AgentPolicyDetails />} />
               </Route>
+
+              {/* Redirect legacy /agent/* routes */}
+              <Route path="/agent/policies" element={<Navigate to="/policies" replace />} />
 
               {/* Catch all */}
               <Route path="*" element={<NotFoundPage />} />

@@ -77,7 +77,7 @@ const AgentAnalytics = () => {
 
         // Average Policy Value
         const avgPolicyValue = policies.length > 0
-            ? policies.reduce((sum, p) => sum + (p.premium || 0), 0) / policies.length
+            ? policies.reduce((sum, p) => sum + (Number(p.premium) || 0), 0) / policies.length
             : 0;
 
         // Customer Growth
@@ -137,7 +137,7 @@ const AgentAnalytics = () => {
                     return cDate.getMonth() === date.getMonth() &&
                         cDate.getFullYear() === date.getFullYear();
                 })
-                .reduce((sum, c) => sum + (c.amount || 0), 0);
+                .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
             trend.push({ label: monthName, value: total });
         }

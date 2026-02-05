@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { agentAPI } from '../services/api.service';
+import { formatCurrency } from '../utils/numberUtils';
 import './AgentDashboard.css';
 
 const AgentDashboard = () => {
@@ -61,14 +62,36 @@ const AgentDashboard = () => {
 
     return (
         <div className="agent-dashboard">
-            <div className="dashboard-header">
-                <div>
-                    <h1>Agent Dashboard</h1>
-                    <p>Welcome back, {user?.fullName}!</p>
+            {/* Profile Header */}
+            <div className="dashboard-header-profile">
+                <div className="profile-main">
+                    <div className="profile-avatar">
+                        {user?.fullName?.charAt(0) || 'A'}
+                        {user?.kycStatus === 'verfied' && <span className="verified-badge">✓</span>}
+                    </div>
+                    <div className="profile-details">
+                        <div className="profile-name-row">
+                            <h1>{user?.fullName}</h1>
+                            {user?.kycStatus === 'verified' && (
+                                <span className="status-pill verified">Verified Agent</span>
+                            )}
+                        </div>
+                        <p className="profile-email">{user?.email}</p>
+                        <div className="profile-meta">
+                            <div className="meta-item">
+                                <span className="meta-label">Agent Code</span>
+                                <span className="meta-value code">{user?.agentCode || 'PENDING'}</span>
+                            </div>
+                            <div className="meta-item">
+                                <span className="meta-label">Joined</span>
+                                <span className="meta-value">{new Date(user?.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="header-actions">
                     <Link to="/profile" className="btn btn-outline">
-                        My Profile
+                        Edit Profile
                     </Link>
                 </div>
             </div>
@@ -101,7 +124,7 @@ const AgentDashboard = () => {
                     <div className="stat-icon">💰</div>
                     <div className="stat-content">
                         <h3>Total Earnings</h3>
-                        <p className="stat-value">₹{stats?.totalEarnings?.toLocaleString() || '0'}</p>
+                        <p className="stat-value">{formatCurrency(stats?.totalEarnings)}</p>
                         <small>Lifetime commissions</small>
                     </div>
                 </div>
@@ -128,7 +151,7 @@ const AgentDashboard = () => {
                     <div className="stat-icon">💳</div>
                     <div className="stat-content">
                         <h3>Wallet Balance</h3>
-                        <p className="stat-value">₹{stats?.walletBalance?.toLocaleString() || '0'}</p>
+                        <p className="stat-value">{formatCurrency(stats?.walletBalance)}</p>
                         <small>Available for withdrawal</small>
                     </div>
                 </div>
@@ -170,101 +193,123 @@ const AgentDashboard = () => {
                 </div>
             </div>
 
-            {/* Maintenance & Performance Grid */}
-            <div className="performance-grid-new">
-                {/* Upcoming Renewals Card */}
-                <div className="maintenance-card">
-                    <div className="card-header">
-                        <h2>♻️ Expiring Soon</h2>
-                        <span className="count-badge warning">{stats?.upcomingRenewalsCount || 0}</span>
-                    </div>
-                    <p>Policies expiring in the next 30 days. Contact these customers for renewals to maintain your commissions.</p>
-                    <Link to="/agent/policies?filter=EXPIRING" className="btn btn-sm btn-primary">
-                        View Expiries
-                    </Link>
-                </div>
-
-                {/* Top Performers Card */}
-                <div className="maintenance-card">
-                    <div className="card-header">
-                        <h2>🏆 Team Leaders</h2>
-                    </div>
-                    {stats?.topPerformers && stats.topPerformers.length > 0 ? (
-                        <div className="performers-list">
-                            {stats.topPerformers.map((performer, idx) => {
-                                const key = performer.agentCode || performer.id || idx;
-                                return (
-                                    <div key={key} className="performer-item">
-                                        <span className="rank">#{idx + 1}</span>
-                                        <div className="performer-info">
-                                            <strong>{performer.name}</strong>
-                                            <small>{performer.agentCode}</small>
-                                        </div>
-                                        <div className="performer-stat">
-                                            <strong>₹{performer.totalEarnings?.toLocaleString()}</strong>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+            <div className="dashboard-columns-grid">
+                {/* Main Content Column */}
+                <div className="main-column">
+                    {/* Maintenance & Performance Grid */}
+                    <div className="performance-grid-new">
+                        {/* Upcoming Renewals Card */}
+                        <div className="maintenance-card">
+                            <div className="card-header">
+                                <h2>♻️ Expiring Soon</h2>
+                                <span className="count-badge warning">{stats?.upcomingRenewalsCount || 0}</span>
+                            </div>
+                            <p>Policies expiring in the next 30 days. Contact these customers for renewals to maintain your commissions.</p>
+                            <Link to="/policies?filter=EXPIRING" className="btn btn-sm btn-primary">
+                                View Expiries
+                            </Link>
                         </div>
-                    ) : (
-                        <p className="empty-msg">No team members yet. Build your network to see leaders!</p>
-                    )}
-                    <Link to="/team" className="view-link">View Full Team →</Link>
-                </div>
-            </div>
 
-            {/* Recent Activity */}
-            <div className="recent-activity">
-                <div className="section-header">
-                    <h2>Recent Commissions</h2>
-                    <Link to="/commissions" className="view-all-link">View All →</Link>
-                </div>
-
-                {stats?.recentCommissions && stats.recentCommissions.length > 0 ? (
-                    <div className="activity-list">
-                        {stats.recentCommissions.slice(0, 5).map((commission, idx) => {
-                            const key = commission.id || commission._id || idx;
-                            return (
-                                <div key={key} className="activity-item">
-                                    <div className="activity-icon">💰</div>
-                                    <div className="activity-content">
-                                        <h4>Commission Earned</h4>
-                                        <p>Policy #{commission.policy?.policyNumber}</p>
-                                        <small>{new Date(commission.createdAt).toLocaleDateString()}</small>
-                                    </div>
-                                    <div className="activity-amount">
-                                        <span className={`status-badge status-${commission.status}`}>
-                                            {commission.status}
-                                        </span>
-                                        <strong>₹{commission.amount?.toLocaleString()}</strong>
-                                    </div>
+                        {/* Top Performers Card */}
+                        <div className="maintenance-card">
+                            <div className="card-header">
+                                <h2>🏆 Team Leaders</h2>
+                            </div>
+                            {stats?.topPerformers && stats.topPerformers.length > 0 ? (
+                                <div className="performers-list">
+                                    {stats.topPerformers.map((performer, idx) => {
+                                        const key = performer.agentCode || performer.id || idx;
+                                        return (
+                                            <div key={key} className="performer-item">
+                                                <span className="rank">#{idx + 1}</span>
+                                                <div className="performer-info">
+                                                    <strong>{performer.name}</strong>
+                                                    <small>{performer.agentCode}</small>
+                                                </div>
+                                                <div className="performer-stat">
+                                                    <strong>{formatCurrency(performer.totalEarnings)}</strong>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
+                            ) : (
+                                <div className="empty-state-mini">
+                                    <p>No team members yet.</p>
+                                </div>
+                            )}
+                            <Link to="/team" className="view-link">View Full Team →</Link>
+                        </div>
                     </div>
-                ) : (
-                    <div className="empty-state">
-                        <p>No recent commissions</p>
-                    </div>
-                )}
-            </div>
 
-            {/* Performance Summary */}
-            <div className="performance-section">
-                <h2>This Month's Performance</h2>
-                <div className="performance-grid">
-                    <div className="performance-card">
-                        <h3>Policies Sold</h3>
-                        <p className="performance-value">{stats?.thisMonth?.policies || 0}</p>
+                    {/* Performance Summary */}
+                    <div className="performance-section">
+                        <div className="section-header">
+                            <h2>📊 Monthly Performance</h2>
+                            <span className="period-badge">This Month</span>
+                        </div>
+                        <div className="monthly-stats-grid">
+                            <div className="monthly-stat-card">
+                                <div className="stat-icon-mini policies">📄</div>
+                                <div className="stat-info">
+                                    <span className="label">Policies Sold</span>
+                                    <span className="value">{stats?.thisMonth?.policies || 0}</span>
+                                </div>
+                            </div>
+                            <div className="monthly-stat-card">
+                                <div className="stat-icon-mini income">💰</div>
+                                <div className="stat-info">
+                                    <span className="label">Commissions</span>
+                                    <span className="value">{formatCurrency(stats?.thisMonth?.commissions)}</span>
+                                </div>
+                            </div>
+                            <div className="monthly-stat-card">
+                                <div className="stat-icon-mini team">👥</div>
+                                <div className="stat-info">
+                                    <span className="label">New Recruits</span>
+                                    <span className="value">{stats?.thisMonth?.newMembers || 0}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="performance-card">
-                        <h3>Commissions Earned</h3>
-                        <p className="performance-value">₹{stats?.thisMonth?.commissions?.toLocaleString() || '0'}</p>
-                    </div>
-                    <div className="performance-card">
-                        <h3>New Team Members</h3>
-                        <p className="performance-value">{stats?.thisMonth?.newMembers || 0}</p>
+                </div>
+
+                {/* Sidebar Column */}
+                <div className="sidebar-column">
+                    {/* Recent Activity */}
+                    <div className="recent-activity-panel">
+                        <div className="panel-header">
+                            <h2>Recent Commissions</h2>
+                            <Link to="/commissions" className="link-sm">View All</Link>
+                        </div>
+
+                        {stats?.recentCommissions && stats.recentCommissions.length > 0 ? (
+                            <div className="activity-timeline">
+                                {stats.recentCommissions.slice(0, 5).map((commission, idx) => {
+                                    const key = commission.id || commission._id || idx;
+                                    return (
+                                        <div key={key} className="timeline-item">
+                                            <div className="timeline-icon">💰</div>
+                                            <div className="timeline-content">
+                                                <div className="timeline-header">
+                                                    <span className="commission-amount">{formatCurrency(commission.amount)}</span>
+                                                    <span className={`status-dot ${commission.status}`}></span>
+                                                </div>
+                                                <p className="policy-ref">Policy #{commission.policy?.policyNumber}</p>
+                                                <span className="timeline-date">
+                                                    {new Date(commission.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="empty-state-panel">
+                                <div className="empty-icon">💸</div>
+                                <p>No recent activity</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

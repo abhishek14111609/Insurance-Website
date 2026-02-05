@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { agentAPI, policyAPI } from '../services/api.service';
 import { exportToCSV, formatPoliciesForExport } from '../utils/exportUtils';
@@ -8,6 +8,7 @@ import './AgentPolicies.css';
 
 const AgentPolicies = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAgent } = useAuth();
 
     const [policies, setPolicies] = useState([]);
@@ -20,8 +21,17 @@ const AgentPolicies = () => {
             return;
         }
 
+        // Parse query params
+        const params = new URLSearchParams(location.search);
+        const filterParam = params.get('filter');
+        if (filterParam) {
+            setFilter(filterParam);
+        }
+
         fetchPolicies();
-    }, [isAgent, navigate]);
+    }, [isAgent, navigate, location.search]);
+
+    // ... (keep logic same)
 
     const fetchPolicies = async () => {
         try {
@@ -82,7 +92,16 @@ const AgentPolicies = () => {
 
     const filteredPolicies = filter === 'all'
         ? policies
-        : policies.filter(p => p.status === filter);
+        : filter === 'EXPIRING'
+            ? policies.filter(p => {
+                if (p.status !== 'APPROVED') return false;
+                const endDate = new Date(p.endDate);
+                const today = new Date();
+                const thirtyDaysFromNow = new Date();
+                thirtyDaysFromNow.setDate(today.getDate() + 30);
+                return endDate >= today && endDate <= thirtyDaysFromNow;
+            })
+            : policies.filter(p => p.status === filter);
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -153,6 +172,12 @@ const AgentPolicies = () => {
                     onClick={() => setFilter('APPROVED')}
                 >
                     Active ({policies.filter(p => p.status === 'APPROVED').length})
+                </button>
+                <button
+                    className={filter === 'EXPIRING' ? 'active' : ''}
+                    onClick={() => setFilter('EXPIRING')}
+                >
+                    Expiring Soon
                 </button>
             </div>
 

@@ -89,10 +89,10 @@ export const registerAgent = async (req, res) => {
 export const getAgentProfile = async (req, res) => {
     try {
         const agent = await Agent.findOne({ userId: req.user._id })
-            .populate('user')
+            .populate('userId')
             .populate({
                 path: 'parentAgent',
-                populate: { path: 'user' }
+                populate: { path: 'userId' }
             });
 
         if (!agent) {
@@ -124,7 +124,7 @@ export const updateAgentProfile = async (req, res) => {
     session.startTransaction();
     try {
         const agent = await Agent.findOne({ userId: req.user._id })
-            .populate('user')
+            .populate('userId')
             .session(session);
 
         if (!agent) {
@@ -176,7 +176,7 @@ export const updateAgentProfile = async (req, res) => {
 
         // Refetch to get updated data
         const updatedAgent = await Agent.findById(agent._id)
-            .populate('user');
+            .populate('userId');
 
         res.json({
             success: true,
@@ -212,7 +212,7 @@ export const getAgentHierarchy = async (req, res) => {
         // Get all sub-agents recursively
         const buildHierarchy = async (agentId) => {
             const subAgents = await Agent.find({ parentAgentId: agentId })
-                .populate('user');
+                .populate('userId');
 
             const hierarchy = [];
             for (const subAgent of subAgents) {
@@ -258,7 +258,7 @@ export const getTeam = async (req, res) => {
         // Logic to get all downline agents (recursively or iterative)
         // Level 1: Direct sub-agents
         const level1 = await Agent.find({ parentAgentId: agent._id })
-            .populate('user');
+            .populate('userId');
 
         let team = level1.map(a => ({ ...a.toJSON(), relativeLevel: 1 }));
 
@@ -266,14 +266,14 @@ export const getTeam = async (req, res) => {
         if (level1.length > 0) {
             const level1Ids = level1.map(a => a._id);
             const level2 = await Agent.find({ parentAgentId: { $in: level1Ids } })
-                .populate('user');
+                .populate('userId');
             team = [...team, ...level2.map(a => ({ ...a.toJSON(), relativeLevel: 2 }))];
 
             // Level 3: Sub-agents of Level 2
             if (level2.length > 0) {
                 const level2Ids = level2.map(a => a._id);
                 const level3 = await Agent.find({ parentAgentId: { $in: level2Ids } })
-                    .populate('user');
+                    .populate('userId');
                 team = [...team, ...level3.map(a => ({ ...a.toJSON(), relativeLevel: 3 }))];
             }
         }
@@ -355,7 +355,7 @@ export const getAgentStats = async (req, res) => {
 
         // Top Performing Sub-agents (Direct only)
         const topPerformers = await Agent.find({ parentAgentId: agent._id })
-            .populate({ path: 'user', select: 'fullName email' })
+            .populate({ path: 'userId', select: 'fullName email' })
             .sort({ totalEarnings: -1 })
             .limit(3);
 

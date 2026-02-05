@@ -37,17 +37,6 @@ const AgentTeam = () => {
         }
     };
 
-    const handleUpdateTraining = async (memberId, trainingData) => {
-        try {
-            const response = await agentAPI.updateSubAgentTraining(memberId, trainingData);
-            if (response.success) {
-                fetchTeamMembers(); // Refresh to see changes
-            }
-        } catch (error) {
-            console.error('Error updating training:', error);
-        }
-    };
-
     const handleExport = () => {
         try {
             if (filteredMembers.length === 0) {
@@ -215,7 +204,12 @@ const AgentTeam = () => {
                                     </div>
                                     <div className="member-info">
                                         <h3>{member.user?.fullName}</h3>
-                                        <p>Agent Code: {member.agentCode}</p>
+                                        <p className="member-code">Code: {member.agentCode}</p>
+                                        {(member.user?.city || member.user?.state) && (
+                                            <p className="member-location">
+                                                📍 {[member.user?.city, member.user?.state].filter(Boolean).join(', ')}
+                                            </p>
+                                        )}
                                     </div>
                                     <span className={`status-badge ${badge.class}`}>
                                         {badge.text}
@@ -236,50 +230,27 @@ const AgentTeam = () => {
                                         <strong>₹{member.totalEarnings?.toLocaleString() || '0'}</strong>
                                     </div>
                                     <div className="detail-item">
-                                        <span>Joined</span>
-                                        <strong>{new Date(member.createdAt).toLocaleDateString()}</strong>
+                                        <span>Joined On</span>
+                                        <strong>{new Date(member.createdAt).toLocaleDateString(undefined, {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}</strong>
                                     </div>
                                 </div>
 
                                 <div className="member-contact">
                                     <p>📧 {member.user?.email}</p>
                                     <p>📱 {member.user?.phone}</p>
+                                    {member.user?.address && (
+                                        <p style={{ alignItems: 'flex-start' }}>
+                                            🏠 <span style={{ marginLeft: '4px' }}>
+                                                {member.user.address}
+                                                {member.user.pincode ? ` - ${member.user.pincode}` : ''}
+                                            </span>
+                                        </p>
+                                    )}
                                 </div>
-
-                                {/* Training Section - Only for Direct Downline (Level 1) */}
-                                {member.relativeLevel === 1 && (
-                                    <div className="training-section">
-                                        <div className="section-label">Training Progress</div>
-                                        <div className="progress-container">
-                                            <div className="progress-bar-bg">
-                                                <div
-                                                    className="progress-bar-fill"
-                                                    style={{ width: `${member.trainingProgress || 0}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="progress-text">{member.trainingProgress || 0}%</span>
-                                        </div>
-                                        <div className="training-controls">
-                                            <select
-                                                value={member.trainingStatus || 'not_started'}
-                                                onChange={(e) => handleUpdateTraining(member.id, { status: e.target.value })}
-                                                className="training-select"
-                                            >
-                                                <option value="not_started">Not Started</option>
-                                                <option value="in_progress">In Progress</option>
-                                                <option value="completed">Completed</option>
-                                            </select>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                value={member.trainingProgress || 0}
-                                                onChange={(e) => handleUpdateTraining(member.id, { progress: parseInt(e.target.value) })}
-                                                className="training-range"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         );
                     })}

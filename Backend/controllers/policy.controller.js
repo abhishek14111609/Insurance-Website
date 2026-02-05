@@ -171,10 +171,7 @@ export const getPolicies = async (req, res) => {
 // @access  Private
 export const getPolicyById = async (req, res) => {
     try {
-        const policy = await Policy.findOne({
-            _id: req.params.id,
-            customerId: req.user._id
-        })
+        const policy = await Policy.findById(req.params.id)
             .populate({
                 path: 'agentId',
                 populate: { path: 'userId' }
@@ -186,6 +183,33 @@ export const getPolicyById = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Policy not found'
+            });
+        }
+
+        // Authorization Check
+        const isOwner = policy.customerId.toString() === req.user._id.toString();
+        let isAuthorized = isOwner;
+
+        if (!isAuthorized) {
+            // Check if user is the assigned agent
+            const agent = await Agent.findOne({ userId: req.user._id });
+            if (agent && policy.agentId) {
+                // policy.agentId might be an object (populated) or ID
+                const policyAgentId = policy.agentId._id ? policy.agentId._id.toString() : policy.agentId.toString();
+                if (policyAgentId === agent._id.toString()) {
+                    isAuthorized = true;
+                }
+            }
+        }
+
+        if (!isAuthorized && req.user.role === 'admin') {
+            isAuthorized = true;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to view this policy'
             });
         }
 
@@ -295,14 +319,25 @@ export const downloadPolicyDocument = async (req, res) => {
         }
 
         const isOwner = policy.customerId.toString() === req.user._id.toString();
+        let isAuthorized = isOwner;
 
-        if (!isOwner) {
+        if (!isAuthorized) {
             const agent = await Agent.findOne({ userId: req.user._id });
-            if (!agent || (policy.agentId && policy.agentId.toString() !== agent._id.toString())) {
-                if (req.user.role !== 'admin') {
-                    return res.status(403).json({ success: false, message: 'Not authorized to view this policy' });
+            if (agent && policy.agentId) {
+                // policy.agentId might be an object (populated) or ID
+                const policyAgentId = policy.agentId._id ? policy.agentId._id.toString() : policy.agentId.toString();
+                if (policyAgentId === agent._id.toString()) {
+                    isAuthorized = true;
                 }
             }
+        }
+
+        if (!isAuthorized && req.user.role === 'admin') {
+            isAuthorized = true;
+        }
+
+        if (!isAuthorized) {
+            return res.status(403).json({ success: false, message: 'Not authorized to view this policy' });
         }
 
         if (policy.status !== 'APPROVED') {
