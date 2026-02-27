@@ -1018,10 +1018,22 @@ export const agentAddPolicy = async (req, res) => {
             status: 'PENDING_APPROVAL',
             paymentStatus: policyData.paymentMethod === 'Online' ? 'PENDING' : 'PAID',
             paymentDate: policyData.paymentMethod === 'Online' ? null : new Date(),
-            paymentId: null
+            paymentId: null,
+            previousPolicyId: policyData.previousPolicyId || null
         };
 
         const policy = await Policy.create(policyDoc);
+
+        // ------------------------- RENEWAL LOGIC -------------------------
+        // If this is a renewal (previousPolicyId provided), update old policy
+        if (policyData.previousPolicyId) {
+            const oldPolicy = await Policy.findById(policyData.previousPolicyId);
+            if (oldPolicy) {
+                oldPolicy.status = 'RENEWED';
+                await oldPolicy.save();
+            }
+        }
+        // -----------------------------------------------------------------
 
         // 3. Handle Payment Recording (Offline)
         if (policyData.paymentMethod !== 'Online') {

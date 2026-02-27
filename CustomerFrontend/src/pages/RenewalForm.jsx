@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { policyAPI } from '../services/api.service';
+import { policyAPI, policyPlanAPI } from '../services/api.service';
 import { formatCurrency } from '../constants/policyPlans';
 import toast from 'react-hot-toast';
 import TermsModal from '../components/TermsModal';
@@ -17,12 +17,14 @@ const RenewalForm = () => {
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        renewalDuration: '1',
+        paymentMethod: 'card',
         paymentMethod: 'card',
         agreeTerms: false
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [plans, setPlans] = useState([]);
+    const [selectedPlan, setSelectedPlan] = useState(null);
 
     // Modal state
     const [modalState, setModalState] = useState({
@@ -58,21 +60,26 @@ const RenewalForm = () => {
             }
         };
 
-        fetchFullPolicyDetails();
-    }, [isAgent, navigate, initialPolicy]);
-
-    const calculateRenewalPremium = () => {
-        const basePremium = policy?.premium || 2460;
-        const duration = parseInt(formData.renewalDuration);
-
-        const premiumMap = {
-            1: 2460,
-            2: 4620,
-            3: 6590
+        const fetchPlans = async () => {
+            try {
+                const response = await policyPlanAPI.getAll();
+                if (response.success) {
+                    const activePlans = response.data.plans.filter(p => p.isActive);
+                    setPlans(activePlans);
+                    if (activePlans.length > 0) {
+                        setSelectedPlan(activePlans[0]);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching plans:', err);
+            }
         };
 
-        return premiumMap[duration] || basePremium;
-    };
+        fetchFullPolicyDetails();
+        fetchPlans();
+    }, [isAgent, navigate, initialPolicy]);
+
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -82,9 +89,19 @@ const RenewalForm = () => {
             return;
         }
 
+        if (!selectedPlan) {
+            toast.error('Please select a renewal plan');
+            return;
+        }
+
         try {
             setIsSubmitting(true);
-            const durationYears = parseInt(formData.renewalDuration);
+
+            let durationYears = 1;
+            const yearsMatch = String(selectedPlan.duration).match(/\d+/);
+            if (yearsMatch) {
+                durationYears = parseInt(yearsMatch[0]);
+            }
 
             // Calculate new dates
             const currentEndDate = new Date(policy.endDate);
@@ -106,9 +123,9 @@ const RenewalForm = () => {
                 healthStatus: 'healthy', // User confirmed health via checkbox
 
                 // New Policy Details
-                coverageAmount: policy.coverageAmount,
-                premium: calculateRenewalPremium(),
-                duration: `${durationYears} Year${durationYears > 1 ? 's' : ''}`,
+                coverageAmount: selectedPlan.coverageAmount,
+                premium: selectedPlan.premium,
+                duration: selectedPlan.duration,
                 startDate: newStartDate.toISOString(),
                 endDate: newEndDate.toISOString(),
 
@@ -127,7 +144,8 @@ const RenewalForm = () => {
                 // Photos (MUST pass existing photos if we want to reuse them)
                 // If API returns photos object, reuse it. Check structure.
                 photos: policy.photos || {},
-                planId: policy.planId
+                planId: selectedPlan.id || selectedPlan._id,
+                previousPolicyId: policy.id || policy._id
             };
 
             // Call API to create the REAL policy in backend
@@ -168,8 +186,6 @@ const RenewalForm = () => {
 
     if (!policy) return null;
 
-    const premium = calculateRenewalPremium();
-
     return (
         <div className="renewal-form-page">
             <div className="container">
@@ -203,57 +219,37 @@ const RenewalForm = () => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="renewal-form">
-                        {/* Renewal Duration */}
+                        {/* Renewal Plan Selection */}
                         <div className="form-section">
-                            <h2 className="section-title">Select Renewal Duration / રિન્યુઅલ સમયગાળો પસંદ કરો</h2>
+                            <h2 className="section-title">Select Renewal Plan / રિન્યુઅલ પ્લાન પસંદ કરો</h2>
 
                             <div className="duration-options">
-                                <label className={`duration-card ${formData.renewalDuration === '1' ? 'selected' : ''}`}>
-                                    <input
-                                        type="radio"
-                                        name="renewalDuration"
-                                        value="1"
-                                        checked={formData.renewalDuration === '1'}
-                                        onChange={(e) => setFormData({ ...formData, renewalDuration: e.target.value })}
-                                    />
-                                    <div className="duration-content">
-                                        <h3>1 Year / 1 વર્ષ</h3>
-                                        <p className="duration-price">₹2,460</p>
-                                        <p className="duration-note">₹2,460/year / ₹2,460/વર્ષ</p>
-                                    </div>
-                                </label>
+                                {plans.map((plan, index) => {
+                                    const isSelected = selectedPlan && (
+                                        (plan.id && selectedPlan.id === plan.id) ||
+                                        (plan._id && selectedPlan._id === plan._id)
+                                    );
+                                    const badgeText = index === 1 ? 'BEST VALUE' : (index === 2 ? 'MAX SAVINGS' : null);
 
-                                <label className={`duration-card ${formData.renewalDuration === '2' ? 'selected' : ''}`}>
-                                    <input
-                                        type="radio"
-                                        name="renewalDuration"
-                                        value="2"
-                                        checked={formData.renewalDuration === '2'}
-                                        onChange={(e) => setFormData({ ...formData, renewalDuration: e.target.value })}
-                                    />
-                                    <div className="duration-content">
-                                        <div className="best-value-badge">BEST VALUE</div>
-                                        <h3>2 Years / 2 વર્ષ</h3>
-                                        <p className="duration-price">₹4,620</p>
-                                        <p className="duration-note">₹2,310/year • Save ₹300 / ₹2,310/વર્ષ • ₹300 બચાવો</p>
-                                    </div>
-                                </label>
-
-                                <label className={`duration-card ${formData.renewalDuration === '3' ? 'selected' : ''}`}>
-                                    <input
-                                        type="radio"
-                                        name="renewalDuration"
-                                        value="3"
-                                        checked={formData.renewalDuration === '3'}
-                                        onChange={(e) => setFormData({ ...formData, renewalDuration: e.target.value })}
-                                    />
-                                    <div className="duration-content">
-                                        <div className="max-savings-badge">MAX SAVINGS</div>
-                                        <h3>3 Years / 3 વર્ષ</h3>
-                                        <p className="duration-price">₹6,590</p>
-                                        <p className="duration-note">₹2,197/year • Save ₹789 / ₹2,197/વર્ષ • ₹789 બચાવો</p>
-                                    </div>
-                                </label>
+                                    return (
+                                        <label key={plan.id || plan._id || index} className={`duration-card ${isSelected ? 'selected' : ''}`}>
+                                            <input
+                                                type="radio"
+                                                name="renewalPlan"
+                                                value={plan.id || plan._id}
+                                                checked={isSelected}
+                                                onChange={() => setSelectedPlan(plan)}
+                                            />
+                                            <div className="duration-content">
+                                                {badgeText && <div className={badgeText === 'BEST VALUE' ? 'best-value-badge' : 'max-savings-badge'}>{badgeText}</div>}
+                                                <h3>{plan.name}</h3>
+                                                <p className="duration-price">{formatCurrency(plan.premium)}</p>
+                                                <p className="duration-note">Coverage: {formatCurrency(plan.coverageAmount)}</p>
+                                                <p className="duration-note">Duration: {plan.duration}</p>
+                                            </div>
+                                        </label>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -277,20 +273,24 @@ const RenewalForm = () => {
                         <div className="payment-summary">
                             <h3>Payment Summary / ચુકવણી સારાંશ</h3>
                             <div className="summary-row">
+                                <span>Renewal Plan / રિન્યુઅલ પ્લાન:</span>
+                                <span>{selectedPlan?.name || '-'}</span>
+                            </div>
+                            <div className="summary-row">
                                 <span>Renewal Duration / રિન્યુઅલ સમયગાળો:</span>
-                                <span>{formData.renewalDuration} Year{formData.renewalDuration > 1 ? 's' : ''}</span>
+                                <span>{selectedPlan?.duration || '-'}</span>
                             </div>
                             <div className="summary-row">
                                 <span>Coverage Amount / કવરેજ રકમ:</span>
-                                <span>₹{policy?.coverageAmount?.toLocaleString() || '0'}</span>
+                                <span>{formatCurrency(selectedPlan?.coverageAmount || 0)}</span>
                             </div>
                             <div className="summary-row">
                                 <span>Premium / પ્રીમિયમ:</span>
-                                <span>{formatCurrency(premium)}</span>
+                                <span>{formatCurrency(selectedPlan?.premium || 0)}</span>
                             </div>
                             <div className="summary-row total">
                                 <span>Total Payable / કુલ ચૂકવવાપાત્ર:</span>
-                                <span>{formatCurrency(premium)}</span>
+                                <span>{formatCurrency(selectedPlan?.premium || 0)}</span>
                             </div>
                         </div>
 
@@ -300,7 +300,7 @@ const RenewalForm = () => {
                             className="btn btn-primary btn-block btn-large"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Processing...' : `Proceed to Payment / ચુકવણી માટે આગળ વધો - ${formatCurrency(premium)}`}
+                            {isSubmitting ? 'Processing...' : `Proceed to Payment / ચુકવણી માટે આગળ વધો - ${formatCurrency(selectedPlan?.premium || 0)}`}
                         </button>
 
                         <div className="secure-badge">

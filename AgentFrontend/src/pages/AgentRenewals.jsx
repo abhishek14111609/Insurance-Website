@@ -85,7 +85,7 @@ const AgentRenewals = () => {
         const policy = policies.find(p => p.id === policyId);
         if (policy) {
             // Redirect to Add Policy page with pre-filled details for renewal
-            navigate('/agent/add-policy', { state: { renewalData: policy } });
+            navigate('/sell', { state: { renewalData: policy } });
         } else {
             toast.error('Policy data not found');
         }

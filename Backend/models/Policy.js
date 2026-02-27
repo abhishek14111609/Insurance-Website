@@ -22,6 +22,11 @@ const policySchema = new mongoose.Schema(
             ref: 'PolicyPlan',
             default: null
         },
+        previousPolicyId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Policy',
+            default: null
+        },
         // Cattle Details
         cattleType: {
             type: String,
@@ -78,7 +83,7 @@ const policySchema = new mongoose.Schema(
         // Status
         status: {
             type: String,
-            enum: ['PENDING', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXPIRED', 'CANCELLED'],
+            enum: ['PENDING', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'EXPIRED', 'CANCELLED', 'RENEWED'],
             default: 'PENDING'
         },
         paymentStatus: {

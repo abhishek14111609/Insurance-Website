@@ -19,7 +19,7 @@ export const createPolicy = async (req, res) => {
             cattleType, tagId, age, breed, gender, milkYield, healthStatus,
             coverageAmount, premium, duration, startDate, endDate,
             ownerName, ownerEmail, ownerPhone, ownerAddress, ownerCity, ownerState, ownerPincode,
-            agentCode, photos, planId
+            agentCode, photos, planId, previousPolicyId
         } = req.body;
 
         const normalizedAgentCode = agentCode ? String(agentCode).toUpperCase() : null;
@@ -77,9 +77,21 @@ export const createPolicy = async (req, res) => {
             ownerPincode,
             agentCode: normalizedAgentCode,
             photos: normalizedPhotos,
+            previousPolicyId: previousPolicyId || null,
             status: 'PENDING',
             paymentStatus: 'PENDING'
         });
+
+        // ------------------------- RENEWAL LOGIC -------------------------
+        // If this is a renewal (previousPolicyId provided), update old policy
+        if (previousPolicyId) {
+            const oldPolicy = await Policy.findById(previousPolicyId);
+            if (oldPolicy && oldPolicy.customerId.toString() === req.user._id.toString()) {
+                oldPolicy.status = 'RENEWED';
+                await oldPolicy.save();
+            }
+        }
+        // -----------------------------------------------------------------
 
         res.status(201).json({
             success: true,
