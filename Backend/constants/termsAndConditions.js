@@ -43,14 +43,14 @@ export const CLAIM_PROCEDURES = {
         "Claim Intimation: Notify within 24 hours of the incident",
         "Documentation: Post-mortem report, veterinary certificate, and photographs required",
         "Verification: Our team will verify the claim within 3-5 working days",
-        "Settlement: Approved claims will be settled within 15 working days",
+        "Settlement: Approved claims will be settled within 45 working days",
         "Contact: For claims assistance, call our helpline or email claims@pashudhansuraksha.com"
     ],
     gujarati: [
         "દાવાની જાણ: ઘટનાના 24 કલાકની અંદર જાણ કરો",
         "દસ્તાવેજીકરણ: પોસ્ટ-મોર્ટમ રિપોર્ટ, પશુચિકિત્સા પ્રમાણપત્ર અને ફોટોગ્રાફ્સ જરૂરી છે",
         "ચકાસણી: અમારી ટીમ 3-5 કાર્યકારી દિવસોમાં દાવાની ચકાસણી કરશે",
-        "પતાવટ: મંજૂર થયેલા દાવાઓ 15 કાર્યકારી દિવસોમાં પતાવટ કરવામાં આવશે",
+        "પતાવટ: મંજૂર થયેલા દાવાઓ 45 કાર્યકારી દિવસોમાં પતાવટ કરવામાં આવશે",
         "સંપર્ક: દાવાની સહાય માટે, અમારી હેલ્પલાઇન પર કૉલ કરો અથવા claims@pashudhansuraksha.com પર ઇમેઇલ કરો"
     ]
 };

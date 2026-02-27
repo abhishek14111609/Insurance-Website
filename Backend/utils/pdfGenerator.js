@@ -408,7 +408,7 @@ export const generatePolicyPdf = async (policy) => {
         "2. Arrange for veterinary post-mortem examination",
         "3. Submit all required documents (PM report, photographs, original tag)",
         "4. Our team will verify and process the claim within 3-5 working days",
-        "5. Approved claims will be settled within 15 working days from approval"
+        "5. Approved claims will be settled within 45 working days from approval"
     ];
 
     claimProcedures.forEach(procedure => {
