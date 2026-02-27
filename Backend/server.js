@@ -79,6 +79,20 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true
 }));
+// Capture raw body for Razorpay webhook signature verification
+// Must be BEFORE express.json() so we get the original bytes
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+    // Store raw body string for HMAC verification in payment controller
+    req.rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : req.body;
+    // Also parse as JSON so the rest of the handler can read req.body normally
+    try {
+        req.body = typeof req.rawBody === 'string' ? JSON.parse(req.rawBody) : req.rawBody;
+    } catch {
+        // If not valid JSON, leave body as-is
+    }
+    next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -100,6 +114,24 @@ app.use('/uploads', express.static(uploadDir, {
         res.set('X-Content-Type-Options', 'nosniff');
     }
 }));
+
+// Security: Strip internal error details from 5xx JSON responses in production
+// Patches res.json per-request so no raw error.message leaks to clients
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        const originalJson = res.json.bind(res);
+        res.json = (body) => {
+            if (res.statusCode >= 500 && body && typeof body === 'object') {
+                const sanitized = { ...body };
+                delete sanitized.error;  // Remove raw error.message field
+                delete sanitized.stack;  // Remove stack traces if any
+                return originalJson(sanitized);
+            }
+            return originalJson(body);
+        };
+        next();
+    });
+}
 
 // Quiet 404s for missing favicon in Render
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -148,7 +180,7 @@ app.use('/api/contact', contactRoutes);
 // Audit Logs Routes (nested under /api/admin)
 app.use('/api/admin/audit-logs', auditLogRoutes);
 
-// Error handling middleware
+// Error handling middleware (catches errors passed via next(err))
 app.use((err, req, res, next) => {
     console.error(`❌ Error [${req.method} ${req.url}]:`, err);
     res.status(err.status || 500).json({
@@ -157,6 +189,8 @@ app.use((err, req, res, next) => {
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 });
+
+
 
 // 404 handler
 app.use((req, res) => {

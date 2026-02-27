@@ -1,0 +1,364 @@
+# 🔍 Pashudhan Suraksha Insurance — Full Project Bug & Issue Report
+
+> **Analyzed:** Backend (Node.js/Express/MongoDB), AdminFrontend, AgentFrontend, CustomerFrontend
+> **Date:** 2026-02-27
+> **Scope:** Controllers, Models, Routes, Middleware, Services, Auth, Payment, Commissions
+
+---
+
+## 🔴 CRITICAL BUGS (Break Core Functionality)
+
+---
+
+### 1. [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — Undefined `payment` variable in webhook handler
+**File:** [Backend/controllers/payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — Line ~378
+
+```javascript
+// BUG: 'payment' is undefined — the in-scope variable is named 'paymentRecord'
+const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;
+const policyLabel = policy?.policyNumber || payment.policyId?.toString(); // crash
+```
+
+**Impact:** The Razorpay webhook `payment.captured` event will **crash at runtime** when trying to send the payment confirmation email. `payment` is not in scope — `paymentRecord` is. Webhook-based fallback payment emails will never send.
+
+**Fix:** Replace `payment` with `paymentRecord` on lines 378 and 382.
+
+---
+
+### 2. [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — [updateAgentProfile](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#119-197) uses `agent.user` but populated field is `agent.userId`
+**File:** [Backend/controllers/agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — Lines 155–162
+
+```javascript
+// agent is populated with .populate('userId') — field is agent.userId, NOT agent.user
+if (agent.user) {  // ALWAYS false; agent.user is undefined
+    agent.user.fullName = fullName || agent.user.fullName;
+    await agent.user.save({ session });
+}
+```
+
+**Impact:** Updating an agent's user profile fields (fullName, phone, address, etc.) via `PUT /api/agents/profile` **never works**. The `agent.user` guard is always falsy.
+
+**Fix:** Change all `agent.user` references to `agent.userId`.
+
+---
+
+### 3. [admin.route.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/routes/admin.route.js) — Route conflict: `/policies/:id` shadows `/policies/:policyNumber/download`
+**File:** [Backend/routes/admin.route.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/routes/admin.route.js) — Lines 49–50
+
+```javascript
+router.get('/policies/:id', getPolicyDetails);
+router.get('/policies/:policyNumber/download', downloadPolicyPDF); // unreachable!
+```
+
+**Impact:** Any GET to `/api/admin/policies/xxx/download` is matched by `:id` first and routed to [getPolicyDetails](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/admin.controller.js#354-394). The download route is **effectively unreachable**.
+
+**Fix:** Move the `/policies/:policyNumber/download` route BEFORE the [/:id](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/CustomerFrontend/src/context/AuthContext.jsx#11-246) route.
+
+---
+
+### 4. Agent Code Generation — No uniqueness check in [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js)
+**File:** [Backend/controllers/agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — Lines 38–39
+
+```javascript
+const randomBytes = crypto.randomBytes(3).toString('hex').toUpperCase();
+const agentCode = `AG${randomBytes}`;  // NOT checked for uniqueness!
+```
+
+**Impact:** The "upgrade to agent" flow generates agent codes without checking for collisions. Concurrent registrations can produce duplicate `agentCode` values causing `MongoServerError: duplicate key`. (Note: [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) correctly uses [generateAgentCodeV2()](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js#73-87) with a uniqueness loop — but [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) does not.)
+
+---
+
+### 5. [agentAddPolicy](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#932-1082) — New customer created with no email verification or notification
+**File:** [Backend/controllers/agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — Lines 982–987
+
+```javascript
+const newUser = await User.create({
+    ...customerData,
+    role: 'customer',
+    password: `PS@${customerData.phone.slice(-4)}`  // Weak default password
+});
+```
+
+**Issues:**
+- `emailVerified` defaults to `false` — customer **cannot log in** without OTP, but no OTP email is sent.
+- No email notification/welcome message is sent to the newly created customer.
+- Weak, predictable password is set as default.
+
+---
+
+## 🟠 IMPORTANT BUGS (Functional Issues)
+
+---
+
+### 6. [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — `.populate('policy')` on a non-existent virtual in Payment model
+**File:** [Backend/controllers/payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — Line 277
+
+```javascript
+const payments = await Payment.find({ customerId: req.user._id })
+    .populate('policy')  // 'policy' virtual does NOT exist on Payment model
+    .sort({ createdAt: -1 });
+```
+
+**Impact:** Silently fails — returns `policy: null` for all payments. The Payment model has `policyId` (ref: Policy), not a `policy` virtual.
+
+**Fix:** Change to `.populate('policyId')` or add a `policy` virtual to the Payment schema.
+
+---
+
+### 7. [claim.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/claim.controller.js) — Wrong populate paths (`policy`, `reviewer` instead of `policyId`, `reviewedBy`)
+**File:** [Backend/controllers/claim.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/claim.controller.js) — Lines 92–93
+
+```javascript
+.populate({ path: 'policy', strictPopulate: false })     // should be 'policyId'
+.populate({ path: 'reviewer', strictPopulate: false })   // should be 'reviewedBy'
+```
+
+**Impact:** Both populate calls return `null` even though the data exists. The `strictPopulate: false` silences the error but returns no data.
+
+---
+
+### 8. [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) [handlePaymentFailed](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js#409-420) — Query will always return null
+
+**File:** [Backend/controllers/payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — Line 411
+
+```javascript
+const payment = await Payment.findOne({ razorpayPaymentId: paymentEntity.id });
+```
+
+When payment **fails**, `razorpayPaymentId` is never assigned to the record (it's only set on success). This always returns `null`, so failed payment statuses are **never updated** via webhook.
+
+**Fix:** Query by `razorpayOrderId` instead: `Payment.findOne({ razorpayOrderId: paymentEntity.order_id })`.
+
+---
+
+### 9. [policy.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/policy.controller.js) — `policy.customerId.toString()` fails when customerId is populated
+**File:** [Backend/controllers/policy.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/policy.controller.js) — Line 333
+
+```javascript
+// policy.populate('customerId') was called above — customerId is now a full document
+const isOwner = policy.customerId.toString()  // returns '[object Object]'
+```
+
+**Fix:** Use `policy.customerId._id?.toString()` when the field may be populated.
+
+---
+
+### 10. [commission.util.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/utils/commission.util.js) — Zero-amount commission records are still inserted
+**File:** [Backend/utils/commission.util.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/utils/commission.util.js) — Lines 53–64
+
+When `sellerCommissionAmount = 0`, a commission record with `amount = 0` is still persisted. This clutters the commissions table and confuses admin dashboards.
+
+**Fix:** Only push the seller commission record if `sellerCommissionAmount > 0`.
+
+---
+
+### 11. [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — [refreshSession](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js#713-753) validates `emailVerified` which may cause issues for valid agent sessions
+
+**File:** [Backend/controllers/auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — Line 731
+
+```javascript
+if (!user || user.status !== 'active' || !user.emailVerified) {
+    return res.status(401).json({ success: false, message: 'User not allowed' });
+}
+```
+
+Agents created via [agentAddPolicy](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#932-1082) have `emailVerified: false`. A valid agent session refresh can silently fail for such users.
+
+---
+
+## 🟡 LOGIC & DESIGN ISSUES
+
+---
+
+### 12. Both access and refresh tokens use the same `JWT_SECRET`
+**File:** [Backend/middleware/auth.middleware.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/middleware/auth.middleware.js) — Lines 138–151
+
+Using the same secret for both token types reduces security. Best practice is a separate `JWT_REFRESH_SECRET`.
+
+---
+
+### 13. OTP codes logged to console — security risk in production
+**File:** [Backend/controllers/auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — Line 44
+
+```javascript
+console.log(`Sending OTP to ${user.email} (Name: ${user.fullName}): ${otp}`);
+```
+
+OTP codes in server logs is a security vulnerability. Should be wrapped in `if (process.env.NODE_ENV === 'development')`.
+
+---
+
+### 14. `error.message` exposed in 500 API responses across all controllers
+
+```javascript
+res.status(500).json({ success: false, message: '...', error: error.message });
+```
+
+In production, `error.message` can leak database schema details, internal paths, or stack information.
+
+---
+
+### 15. [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) [getAgentStats](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#296-395) — `a.user` references non-existent field
+**File:** [Backend/controllers/agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — Line 370
+
+```javascript
+name: a.user?.fullName,  // 'a.user' is undefined; should be 'a.userId?.fullName'
+```
+
+All top performer names will be `undefined` on the agent dashboard.
+
+---
+
+### 16. [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) [updateCustomerNotes](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#753-790) — No null check on [agent](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#932-1082)
+**File:** [Backend/controllers/agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) — Lines 760–771
+
+```javascript
+const agent = await Agent.findOne({ userId: req.user._id });
+// No null check! Next line crashes if agent is null:
+const policy = await Policy.findOne({ agentId: agent._id, customerId: id });
+```
+
+---
+
+### 17. [admin.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/admin.controller.js) [getAllAgents](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/admin.controller.js#690-869) — Full collection loaded to memory for pagination
+**File:** [Backend/controllers/admin.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/admin.controller.js) — Lines 749–753
+
+```javascript
+const allAgents = await baseQuery; // ALL agents in memory
+const validAgents = allAgents.filter(a => a.userId);
+```
+
+This is a scalability issue. Should use MongoDB `$lookup` + `$match` aggregation instead.
+
+---
+
+### 18. Webhook signature verified against re-serialized JSON (not raw body)
+**File:** [Backend/controllers/payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) — Line 304
+
+```javascript
+shasum.update(JSON.stringify(req.body)); // Re-serialized — may differ from original
+```
+
+Razorpay recommends verifying against the **raw request body**. JSON re-serialization can change property order and cause signature mismatches.
+
+**Fix:** Use `express.raw()` for the webhook route to capture the raw body.
+
+---
+
+### 19. [verifyEmailOTP](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js#640-679) checks invalidity before expiry — reversed logic
+**File:** [Backend/controllers/auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — Lines 660–665
+
+Expiry should be checked first. If OTP is expired, user should be told to request a new one rather than "Invalid OTP".
+
+---
+
+## 🔵 MINOR / CODE QUALITY ISSUES
+
+---
+
+### 20. `razorpay` server-side Node.js SDK installed as frontend dependency (wrong package)
+**Files:** [AgentFrontend/package.json](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/package.json), [CustomerFrontend/package.json](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/CustomerFrontend/package.json)
+
+```json
+"razorpay": "^2.9.6"
+```
+
+This is the server-side SDK. Frontend should use Razorpay Checkout.js via CDN `<script>` tag. The `window.Razorpay` constructor comes from the CDN script, not this npm package.
+
+---
+
+### 21. `isBrowser` variable declared but never used in both [api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) files
+**Files:** [CustomerFrontend/src/services/api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/CustomerFrontend/src/services/api.service.js) L5, [AgentFrontend/src/services/api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) L5
+
+```javascript
+const isBrowser = typeof window !== 'undefined'; // dead variable
+```
+
+---
+
+### 22. ESLint `no-unused-vars` errors found in all three frontends
+
+- **AdminFrontend:** `username`, `password` unused
+- **AgentFrontend:** ESLint exit code 1 (errors present)
+- **CustomerFrontend:** `paymentId`, `signature` unused (in payment handler)
+
+All three frontends fail `npm run lint` with exit code 1.
+
+---
+
+### 23. [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) [register](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js#182-186) — Redundant ternary with hardcoded role
+**File:** [Backend/controllers/auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — Lines 122–124
+
+```javascript
+const targetRole = 'customer'; // hardcoded
+emailVerified: targetRole === 'admin' ? true : false, // always false
+otpCode: targetRole === 'admin' ? null : otp,          // always otp
+```
+
+Simplify to: `emailVerified: false, otpCode: otp`
+
+---
+
+### 24. Commented-out dead code block in [api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) (both Customer and Agent)
+**File:** [api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) — Lines 340–353
+
+A fully commented-out duplicate `contactAPI` block should be removed.
+
+---
+
+### 25. [forgotPassword](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js#551-597) saves reset token to DB before sending email — token is saved even if email fails
+**File:** [Backend/controllers/auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) — Lines 566–587
+
+If `sendEmail()` throws, the reset token is already in the DB but the email was never sent. User is stuck with a token they can't use. The token should only be saved if email succeeds, or the failure should be handled gracefully.
+
+---
+
+## 📊 Summary Table
+
+| # | Severity | Location | Issue |
+|---|----------|----------|-------|
+| 1 | 🔴 Critical | [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) L378 | `payment` undefined in webhook (should be `paymentRecord`) |
+| 2 | 🔴 Critical | [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) L155 | `agent.user` always null; should be `agent.userId` |
+| 3 | 🔴 Critical | [admin.route.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/routes/admin.route.js) L49–50 | Download route unreachable (shadowed by `:id` route) |
+| 4 | 🔴 Critical | [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) L38–39 | Agent code not checked for uniqueness |
+| 5 | 🔴 Critical | [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) L982–987 | New customer created with no email verification/notification |
+| 6 | 🟠 Important | [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) L277 | `.populate('policy')` wrong field — should be `policyId` |
+| 7 | 🟠 Important | [claim.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/claim.controller.js) L92–93 | Wrong populate paths — `policy`/`reviewer` vs `policyId`/`reviewedBy` |
+| 8 | 🟠 Important | [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) L411 | Webhook failed-payment: query by `razorpayPaymentId` always null |
+| 9 | 🟠 Important | [policy.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/policy.controller.js) L333 | `.customerId.toString()` returns `[object Object]` when populated |
+| 10 | 🟠 Important | [commission.util.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/utils/commission.util.js) L53 | Zero-amount commission records created unnecessarily |
+| 11 | 🟠 Important | [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) L731 | Refresh blocks agents with unverified email |
+| 12 | 🟡 Logic | [auth.middleware.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/middleware/auth.middleware.js) L138–151 | Same JWT secret for access and refresh tokens |
+| 13 | 🟡 Logic | [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) L44 | OTP logged to console (security risk in production) |
+| 14 | 🟡 Logic | Multiple controllers | `error.message` exposed in 500 responses |
+| 15 | 🟡 Logic | [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) L370 | `a.user?.fullName` → should be `a.userId?.fullName` |
+| 16 | 🟡 Logic | [agent.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js) L760 | No null check on [agent](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/agent.controller.js#932-1082) before `agent._id` access |
+| 17 | 🟡 Logic | [admin.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/admin.controller.js) L749 | All agents loaded into memory for pagination (scalability) |
+| 18 | 🟡 Logic | [payment.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/payment.controller.js) L304 | Webhook verified against re-serialized JSON, not raw body |
+| 19 | 🟡 Logic | [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) L660 | OTP expiry checked after invalidity (reversed order) |
+| 20 | 🔵 Minor | [package.json](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/package.json) (Agent/Customer) | `razorpay` server SDK installed as frontend dep (wrong package) |
+| 21 | 🔵 Minor | [api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) L5 (both) | `isBrowser` declared but never used |
+| 22 | 🔵 Minor | All three frontends | ESLint `no-unused-vars` errors (build quality: exit code 1) |
+| 23 | 🔵 Minor | [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) L122 | Redundant ternary with hardcoded `'customer'` role |
+| 24 | 🔵 Minor | [api.service.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js) L340–353 | Commented-out dead code block |
+| 25 | 🔵 Minor | [auth.controller.js](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/controllers/auth.controller.js) L566–587 | Reset token saved before email sent; not rollbacked on failure |
+
+---
+
+## ✅ What IS Working Correctly
+
+- **Authentication flow** (register → OTP → login → logout → refresh) — logic sound
+- **Role-based access guards** ([authenticate](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/middleware/auth.middleware.js#4-83) + [authorize](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/Backend/middleware/auth.middleware.js#118-137) middleware) — correct
+- **Multi-level commission calculation** (up to 5 parent levels) — correct hierarchy traversal
+- **Policy approval workflow** (admin approve → PDF generate → email → commissions) — mostly correct
+- **Cookie-based auth** (HTTP-only cookies + cross-tab sync) — well implemented
+- **File upload middleware** (multer, type filters, size limits) — correct
+- **Razorpay payment signature verification** in [verifyPayment](file:///d:/Reimvide/pashudhan%20shuraksha/Insurance-Website/AgentFrontend/src/services/api.service.js#169-173) — correct HMAC SHA-256
+- **Policy renewal logic** (marks old policy RENEWED) — correct in both customer + agent flows
+- **KYC document handling** on User and Agent models — correct structure
+- **Pagination math** on admin list endpoints — correct
+- **CORS configuration** with env-based custom origins — correct
+
+---
+
+> 📌 **Recommended Fix Priority:** #1 → #2 → #3 → #4 → #8 → #6 → #7 → #9 → #15 → #16 → #18

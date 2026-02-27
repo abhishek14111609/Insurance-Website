@@ -367,7 +367,7 @@ export const getAgentStats = async (req, res) => {
             recentCommissions,
             upcomingRenewalsCount,
             topPerformers: topPerformers.map(a => ({
-                name: a.user?.fullName,
+                name: a.userId?.fullName,
                 agentCode: a.agentCode,
                 totalEarnings: parseFloat(a.totalEarnings),
                 policiesSold: 0 // We'd need an extra count if we want this exact value per performer
@@ -759,6 +759,13 @@ export const updateCustomerNotes = async (req, res) => {
         const { notes } = req.body;
 
         const agent = await Agent.findOne({ userId: req.user._id });
+
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agent profile not found'
+            });
+        }
 
         // Verify customer belongs to this agent (has sold them a policy)
         const policy = await Policy.findOne({

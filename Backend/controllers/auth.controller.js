@@ -40,8 +40,10 @@ const generateOTP = () => {
 };
 
 const sendOtpEmail = async (user, otp) => {
-    // Log OTP for debugging purposes
-    console.log(`Sending OTP to ${user.email} (Name: ${user.fullName}): ${otp}`);
+    // Only log OTP in development (never expose in production logs)
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV] Sending OTP to ${user.email}: ${otp}`);
+    }
 
     if (!otp) {
         console.error('CRITICAL ERROR: OTP is missing in sendOtpEmail');
@@ -119,9 +121,9 @@ export const register = async (req, res) => {
             pincode,
             role: targetRole,
             status: 'active',
-            emailVerified: targetRole === 'admin' ? true : false, // Admin auto-verified
-            otpCode: targetRole === 'admin' ? null : otp,
-            otpExpires: targetRole === 'admin' ? null : otpExpires
+            emailVerified: false, // Always false for public registration (customer role)
+            otpCode: otp,
+            otpExpires: otpExpires
         });
 
         // Generate tokens
@@ -564,22 +566,35 @@ export const forgotPassword = async (req, res) => {
         }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
+        // Save token first
         user.resetPasswordToken = hashToken(resetToken);
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
 
         const resetUrl = `${process.env.FRONTEND_URL || ''}/reset-password/${resetToken}`;
-        await sendEmail({
-            to: email,
-            subject: 'Password Reset - Pashudhan Suraksha',
-            html: `
-                <h1>Password Reset Request</h1>
-                <p>You requested a password reset. Please click the link below to reset your password:</p>
-                <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
-                <p>This link will expire in 1 hour.</p>
-                <p>If you did not request this, please ignore this email.</p>
-            `
-        });
+        try {
+            await sendEmail({
+                to: email,
+                subject: 'Password Reset - Pashudhan Suraksha',
+                html: `
+                    <h1>Password Reset Request</h1>
+                    <p>You requested a password reset. Please click the link below to reset your password:</p>
+                    <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+                    <p>This link will expire in 1 hour.</p>
+                    <p>If you did not request this, please ignore this email.</p>
+                `
+            });
+        } catch (emailError) {
+            // Rollback: clear the token if email could not be sent
+            console.error('Forgot password email send failed, rolling back token:', emailError);
+            user.resetPasswordToken = null;
+            user.resetPasswordExpires = null;
+            await user.save();
+            return res.status(500).json({
+                success: false,
+                message: 'Unable to send password reset email. Please try again later.'
+            });
+        }
 
         res.json({
             success: true,
@@ -589,8 +604,7 @@ export const forgotPassword = async (req, res) => {
         console.error('Forgot password error:', error);
         res.status(500).json({
             success: false,
-            message: 'Error processing forgot password request',
-            error: error.message
+            message: 'Error processing forgot password request'
         });
     }
 };
@@ -657,12 +671,13 @@ export const verifyEmailOTP = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' });
         }
 
-        if (user.otpCode !== otp) {
-            return res.status(400).json({ success: false, message: 'Invalid OTP' });
-        }
-
+        // Check expiry FIRST — gives clearer message to user
         if (user.otpExpires < new Date()) {
             return res.status(400).json({ success: false, message: 'OTP expired. Please request a new one.' });
+        }
+
+        if (user.otpCode !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
         }
 
         user.emailVerified = true;
@@ -728,8 +743,12 @@ export const refreshSession = async (req, res) => {
         }
 
         const user = await User.findById(decoded.id);
-        if (!user || user.status !== 'active' || !user.emailVerified) {
-            return res.status(401).json({ success: false, message: 'User not allowed' });
+        if (!user || user.status !== 'active') {
+            return res.status(401).json({ success: false, message: 'User account is inactive or not found.' });
+        }
+        // Only block unverified email for customers (agents/admins may be programmatically created)
+        if (user.role === 'customer' && !user.emailVerified) {
+            return res.status(401).json({ success: false, message: 'Email not verified. Please verify your email to continue.' });
         }
 
         const newAccessToken = generateToken(user);

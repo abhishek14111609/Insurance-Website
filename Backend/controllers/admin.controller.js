@@ -619,7 +619,7 @@ export const rejectPolicy = async (req, res) => {
 export const downloadPolicyPDF = async (req, res) => {
     try {
         const { policyNumber } = req.params;
-        
+
         // Find policy by policy number
         const policy = await Policy.findOne({ policyNumber })
             .populate('customerId', 'fullName email phone')
@@ -642,7 +642,7 @@ export const downloadPolicyPDF = async (req, res) => {
 
         // Check if PDF already exists
         const pdfPath = path.join(process.cwd(), 'uploads', 'policy_docs', `Policy-${policyNumber}.pdf`);
-        
+
         if (!fs.existsSync(pdfPath)) {
             // Generate PDF if it doesn't exist
             console.log(`[DownloadPDF] PDF not found, generating for policy ${policyNumber}`);
@@ -709,22 +709,20 @@ export const getAllAgents = async (req, res) => {
             return uploadIndex !== -1 ? normalized.substring(uploadIndex) : normalized;
         };
 
-        // Fetch agents (with populate) and apply search on the populated fields if provided
-        const baseQuery = Agent.find(where)
-            .populate({ path: 'userId', select: 'fullName email phone city state address createdAt' })
-            .populate({
-                path: 'parentAgentId',
-                select: 'agentCode level userId',
-                populate: { path: 'userId', select: 'fullName' }
-            })
-            .sort({ createdAt: -1 })
-            .lean();
-
-        let agents = [];
-        let totalCount = 0;
-
+        // Use aggregation to filter out orphaned agents (userId null) at the DB level
+        // This avoids loading the entire collection into memory before paginating
         if (search) {
-            const allAgents = await baseQuery;
+            // For search: load filtered set (usually small) and do in-memory text match
+            const allAgents = await Agent.find(where)
+                .populate({ path: 'userId', select: 'fullName email phone city state address createdAt' })
+                .populate({
+                    path: 'parentAgentId',
+                    select: 'agentCode level userId',
+                    populate: { path: 'userId', select: 'fullName' }
+                })
+                .sort({ createdAt: -1 })
+                .lean();
+
             const lowerSearch = search.toLowerCase();
             const filtered = allAgents.filter((agent) => {
                 if (!agent.userId) return false; // Filter orphans
@@ -743,16 +741,50 @@ export const getAllAgents = async (req, res) => {
             totalCount = filtered.length;
             agents = filtered.slice((numericPage - 1) * numericLimit, numericPage * numericLimit);
         } else {
-            // Fetch ALL agents first to filter orphans, then paginate manually. 
-            // This is safer than skipping in DB which might skip valid records if we just hide orphans.
-            // Ideally we should use aggregation $lookup + $match, but for now this fixes the "disgusting" UI.
-            const allAgents = await baseQuery;
-            const validAgents = allAgents.filter(a => a.userId); // Only agents with valid user
+            // For normal listing: use aggregation to filter orphans + paginate at the DB level
+            // This is efficient even with large agent collections
+            const pipeline = [
+                { $match: where },
+                // Lookup the linked User document
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userId',
+                        foreignField: '_id',
+                        as: 'userDoc'
+                    }
+                },
+                // Only keep agents where userId resolved to a user (exclude orphans)
+                { $match: { 'userDoc.0': { $exists: true } } },
+                { $sort: { createdAt: -1 } },
+                {
+                    $facet: {
+                        metadata: [{ $count: 'total' }],
+                        data: [
+                            { $skip: (numericPage - 1) * numericLimit },
+                            { $limit: numericLimit }
+                        ]
+                    }
+                }
+            ];
 
-            totalCount = validAgents.length;
-            agents = validAgents.slice((numericPage - 1) * numericLimit, numericPage * numericLimit);
+            const [aggResult] = await Agent.aggregate(pipeline);
+            totalCount = aggResult?.metadata?.[0]?.total || 0;
+            const agentIds = (aggResult?.data || []).map((a) => a._id);
+
+            // Re-fetch those agents with full populate (aggregation doesn't do deep populate)
+            agents = await Agent.find({ _id: { $in: agentIds } })
+                .populate({ path: 'userId', select: 'fullName email phone city state address createdAt' })
+                .populate({
+                    path: 'parentAgentId',
+                    select: 'agentCode level userId',
+                    populate: { path: 'userId', select: 'fullName' }
+                })
+                .sort({ createdAt: -1 })
+                .lean();
         }
 
+        // Collect IDs of the current page of agents for stats aggregation
         const agentIds = agents.map((a) => a._id);
 
         // Aggregate policy stats for the current page of agents

@@ -299,9 +299,11 @@ export const handleWebhook = async (req, res) => {
     try {
         const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-        // Verify webhook signature
+        // Verify webhook signature against raw body (not re-serialized JSON)
+        // req.rawBody is set by the raw-body middleware in server.js
+        const rawPayload = req.rawBody || JSON.stringify(req.body);
         const shasum = crypto.createHmac('sha256', secret);
-        shasum.update(JSON.stringify(req.body));
+        shasum.update(rawPayload);
         const digest = shasum.digest('hex');
 
         if (digest !== req.headers['x-razorpay-signature']) {
@@ -375,11 +377,12 @@ async function handlePaymentCaptured(paymentEntity) {
         try {
             const customerEmail = policy?.ownerEmail;
             const customerName = policy?.ownerName || 'Customer';
-            const amountPaid = payment?.amount ? parseFloat(payment.amount) : null;
+            // Use paymentRecord (the correct variable) for amount
+            const amountPaid = paymentRecord?.amount ? parseFloat(paymentRecord.amount) : null;
 
             if (customerEmail) {
                 const amountText = amountPaid ? `₹${amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'N/A';
-                const policyLabel = policy?.policyNumber || payment.policyId?.toString();
+                const policyLabel = policy?.policyNumber || paymentRecord.policyId?.toString();
 
                 const html = `
                     <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
@@ -408,7 +411,13 @@ async function handlePaymentCaptured(paymentEntity) {
 
 // Helper function for payment failed event
 async function handlePaymentFailed(paymentEntity) {
-    const payment = await Payment.findOne({ razorpayPaymentId: paymentEntity.id });
+    // Query by razorpayOrderId since razorpayPaymentId is only set on SUCCESS
+    const payment = await Payment.findOne({
+        $or: [
+            { razorpayOrderId: paymentEntity.order_id },
+            { razorpayPaymentId: paymentEntity.id }
+        ]
+    });
 
     if (payment) {
         payment.status = 'failed';
