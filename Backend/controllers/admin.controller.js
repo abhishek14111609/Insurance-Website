@@ -698,6 +698,8 @@ export const getAllAgents = async (req, res) => {
         const numericLimit = Math.max(parseInt(limit, 10) || 20, 1);
 
         const where = {};
+        let totalCount = 0;
+        let agents = [];
         if (status && status !== 'all') where.status = status.toLowerCase();
         if (level && level !== 'all') where.level = parseInt(level, 10);
 
